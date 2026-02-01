@@ -1,90 +1,36 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+/**
+ * @deprecated Use engram-client.ts instead
+ *
+ * This file is kept for backwards compatibility.
+ * Import from './engram-client' for the full typed client.
+ */
 
-export interface Memory {
-  id: string;
-  content: string;
-  userId: string;
-  layer: "IDENTITY" | "PROJECT" | "SESSION" | "TASK";
-  importance: number;
-  confidence: number;
-  createdAt: string;
-  retrievalCount: number;
-  extraction?: {
-    who?: string;
-    what?: string;
-    when?: string;
-    where?: string;
-    why?: string;
-    how?: string;
-    topics?: string[];
-    entities?: string[];
-  };
-}
+import { engram, EngramClient } from './engram-client';
+import type {
+  Memory,
+  MemoryWithScore,
+  MemoryLayer,
+  User,
+  UserWithStats,
+  ApiKey,
+  DashboardStats,
+  QueryResult,
+} from './types';
 
-export interface User {
-  id: string;
-  memoryCount: number;
-  lastActive: string;
-}
+// Re-export types for backwards compatibility
+export type { Memory, MemoryWithScore, MemoryLayer, User, ApiKey, DashboardStats };
 
-export interface ApiKey {
-  id: string;
-  name: string;
-  keyHint: string;
-  createdAt: string;
-}
-
-export interface DashboardStats {
-  totalMemories: number;
-  memoryTrend: number;
-  totalUsers: number;
-  userTrend: number;
-  healthScore: number;
-  memoryByLayer: {
-    layer: string;
-    count: number;
-    percentage: number;
-  }[];
-  recentActivity: {
-    id: string;
-    action: string;
-    timestamp: string;
-  }[];
-  apiRequests: {
-    date: string;
-    requests: number;
-  }[];
-}
-
-class EngramApi {
-  private baseUrl: string;
+// Legacy API wrapper for backwards compatibility with existing components
+class LegacyEngramApi {
+  private client: EngramClient;
 
   constructor() {
-    this.baseUrl = API_BASE;
-  }
-
-  private async fetch<T>(
-    endpoint: string,
-    options?: RequestInit
-  ): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
-    }
-
-    return response.json();
+    this.client = engram;
   }
 
   // Dashboard
   async getStats(): Promise<DashboardStats> {
-    return this.fetch<DashboardStats>("/api/v1/stats");
+    return this.client.getStats();
   }
 
   // Memories
@@ -95,48 +41,75 @@ class EngramApi {
     limit?: number;
     offset?: number;
   }): Promise<{ memories: Memory[]; total: number }> {
-    const searchParams = new URLSearchParams();
-    if (params?.userId) searchParams.set("userId", params.userId);
-    if (params?.layer) searchParams.set("layer", params.layer);
-    if (params?.search) searchParams.set("q", params.search);
-    if (params?.limit) searchParams.set("limit", String(params.limit));
-    if (params?.offset) searchParams.set("offset", String(params.offset));
-
-    return this.fetch(`/api/v1/memories?${searchParams}`);
+    const result = await this.client.getMemories({
+      ...params,
+      layer: params?.layer as MemoryLayer,
+    });
+    return {
+      memories: result.memories,
+      total: result.total,
+    };
   }
 
   async getMemory(id: string): Promise<Memory> {
-    return this.fetch<Memory>(`/api/v1/memories/${id}`);
+    const memory = await this.client.getMemory(id);
+    if (!memory) {
+      throw new Error(`Memory ${id} not found`);
+    }
+    return memory;
   }
 
   async deleteMemory(id: string): Promise<void> {
-    await this.fetch(`/api/v1/memories/${id}`, { method: "DELETE" });
+    await this.client.deleteMemory(id);
+  }
+
+  // Search
+  async queryMemories(
+    query: string,
+    options?: { limit?: number; layers?: MemoryLayer[] }
+  ): Promise<QueryResult> {
+    return this.client.searchMemories(query, options);
   }
 
   // Users
-  async getUsers(): Promise<{ users: User[] }> {
-    return this.fetch("/api/v1/users");
+  async getUsers(): Promise<{ users: UserWithStats[] }> {
+    const result = await this.client.getUsers();
+    return { users: result.users };
   }
 
-  async getUser(id: string): Promise<User & { memories: Memory[] }> {
-    return this.fetch(`/api/v1/users/${id}`);
+  async getUser(id: string): Promise<UserWithStats & { memories: Memory[] }> {
+    const user = await this.client.getUser(id);
+    if (!user) {
+      throw new Error(`User ${id} not found`);
+    }
+    return {
+      id: user.id,
+      externalId: user.externalId,
+      agentId: user.agentId,
+      memoryCount: user.memoryCount,
+      lastActive: user.lastActive ?? '',
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      deletedAt: user.deletedAt,
+      memories: user.memories,
+    };
   }
 
   // API Keys
   async getApiKeys(): Promise<{ keys: ApiKey[] }> {
-    return this.fetch("/api/v1/api-keys");
+    return this.client.getApiKeys();
   }
 
   async createApiKey(name: string): Promise<{ key: string; id: string }> {
-    return this.fetch("/api/v1/api-keys", {
-      method: "POST",
-      body: JSON.stringify({ name }),
-    });
+    return this.client.createApiKey(name);
   }
 
   async revokeApiKey(id: string): Promise<void> {
-    await this.fetch(`/api/v1/api-keys/${id}`, { method: "DELETE" });
+    await this.client.revokeApiKey(id);
   }
 }
 
-export const api = new EngramApi();
+/**
+ * @deprecated Use `engram` from './engram-client' instead
+ */
+export const api = new LegacyEngramApi();
