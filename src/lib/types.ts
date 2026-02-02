@@ -269,14 +269,14 @@ export interface DashboardStats {
 
   recentActivity: Array<{
     id: string;
-    action: 'created' | 'retrieved' | 'deleted' | 'updated';
+    action: string; // e.g., "Memory created (EXPLICIT_STATEMENT)"
     memoryId?: string;
     userId?: string;
-    timestamp: string;
+    time: string; // ISO timestamp - API returns 'time', not 'timestamp'
   }>;
 
   apiRequests: Array<{
-    date: string;
+    day: string; // Date string like "2026-01-27" - API returns 'day', not 'date'
     requests: number;
   }>;
 }

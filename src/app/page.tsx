@@ -179,11 +179,11 @@ export default function OverviewPage() {
     requests: item.requests,
   }));
 
-  // Format recent activity
+  // Format recent activity - API returns 'time' field, not 'timestamp'
   const recentActivity = stats.recentActivity.map((activity) => ({
     id: activity.id,
     action: activity.action,
-    time: formatRelativeTime(activity.timestamp),
+    time: formatRelativeTime(activity.time),
   }));
 
   return (
