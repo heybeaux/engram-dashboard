@@ -174,7 +174,8 @@ export default function OverviewPage() {
 
   // Format API requests data for chart
   const apiRequestsData = stats.apiRequests.map((item) => ({
-    day: new Date(item.date).toLocaleDateString("en-US", { weekday: "short" }),
+    // API returns 'day' field with date string like "2026-01-27"
+    day: new Date(item.day).toLocaleDateString("en-US", { weekday: "short" }),
     requests: item.requests,
   }));
 
