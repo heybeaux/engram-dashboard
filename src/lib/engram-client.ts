@@ -52,7 +52,10 @@ const getConfig = () => ({
   baseUrl: process.env.NEXT_PUBLIC_ENGRAM_API_URL ||
            process.env.ENGRAM_API_URL ||
            'http://localhost:3001',
-  apiKey: process.env.ENGRAM_API_KEY || '',
+  apiKey: process.env.NEXT_PUBLIC_ENGRAM_API_KEY ||
+          process.env.ENGRAM_API_KEY || '',
+  defaultUserId: process.env.NEXT_PUBLIC_ENGRAM_USER_ID ||
+                 process.env.ENGRAM_USER_ID || '',
 });
 
 // ============================================================================
@@ -72,7 +75,7 @@ export class EngramClient {
     const config = getConfig();
     this.baseUrl = options?.baseUrl ?? config.baseUrl;
     this.apiKey = options?.apiKey ?? config.apiKey;
-    this.defaultUserId = options?.defaultUserId;
+    this.defaultUserId = options?.defaultUserId ?? config.defaultUserId;
   }
 
   // ==========================================================================
