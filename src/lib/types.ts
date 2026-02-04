@@ -323,6 +323,57 @@ export interface ApiKey {
 }
 
 // ============================================================================
+// GRAPH VISUALIZATION TYPES
+// ============================================================================
+
+export interface GraphNode {
+  id: string;
+  raw: string;
+  layer: MemoryLayer;
+  source: MemorySource;
+  importanceScore: number;
+  confidence: number;
+  createdAt: string;
+  extraction: {
+    who: string | null;
+    what: string | null;
+    when: string | null;
+    where: string | null;
+    why: string | null;
+    how: string | null;
+    topics: string[];
+  } | null;
+  entities: Array<{
+    id: string;
+    name: string;
+    type: string;
+  }>;
+  primaryEntityType: string;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  linkType: ChainLinkType;
+  confidence: number;
+  createdAt: string;
+}
+
+export interface GraphEntity {
+  id: string;
+  name: string;
+  type: string;
+  normalizedName: string;
+}
+
+export interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  entities: GraphEntity[];
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 

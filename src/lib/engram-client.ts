@@ -37,6 +37,7 @@ import {
   LoadContextRequest,
   ObserveRequest,
   DashboardStats,
+  GraphData,
   ListMemoriesResponse,
   ListUsersResponse,
   UserDetailResponse,
@@ -302,6 +303,18 @@ export class EngramClient {
   // ==========================================================================
   // DASHBOARD ENDPOINTS (NOT YET IMPLEMENTED IN ENGRAM)
   // ==========================================================================
+
+  /**
+   * Get memory graph data for visualization
+   * @endpoint GET /v1/memories/graph
+   */
+  async getGraphData(params?: { limit?: number }): Promise<GraphData> {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/v1/memories/graph?${queryString}` : '/v1/memories/graph';
+    return this.fetch<GraphData>(endpoint);
+  }
 
   /**
    * Get dashboard statistics

@@ -55,27 +55,27 @@ function formatRelativeTime(dateString: string): string {
 
 function MemoryDetailSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Skeleton className="h-9 w-40" />
-        <Skeleton className="h-9 w-24" />
+        <Skeleton className="h-11 w-24" />
       </div>
 
       {/* Content */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-4 md:pt-6">
           <Skeleton className="h-8 w-full" />
         </CardContent>
       </Card>
 
       {/* Metadata */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2 md:pb-4">
           <Skeleton className="h-6 w-24" />
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             {[...Array(4)].map((_, i) => (
               <div key={i}>
                 <Skeleton className="h-4 w-16 mb-2" />
@@ -84,7 +84,7 @@ function MemoryDetailSkeleton() {
             ))}
           </div>
           <Separator />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             {[...Array(2)].map((_, i) => (
               <div key={i}>
                 <Skeleton className="h-4 w-24 mb-2" />
@@ -97,11 +97,11 @@ function MemoryDetailSkeleton() {
 
       {/* 5W1H */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2 md:pb-4">
           <Skeleton className="h-6 w-32" />
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <div key={i}>
                 <Skeleton className="h-3 w-12 mb-2" />
@@ -117,21 +117,21 @@ function MemoryDetailSkeleton() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
+        <Button variant="ghost" size="sm" asChild className="h-11">
           <Link href="/memories">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Memories
+            Back
           </Link>
         </Button>
       </div>
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-4 md:pt-6">
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Memory Not Found</h2>
-            <p className="text-muted-foreground">{message}</p>
+            <AlertCircle className="h-10 w-10 md:h-12 md:w-12 text-destructive mb-4" />
+            <h2 className="text-base md:text-lg font-semibold mb-2">Memory Not Found</h2>
+            <p className="text-sm text-muted-foreground">{message}</p>
           </div>
         </CardContent>
       </Card>
@@ -210,18 +210,20 @@ export default function MemoryDetailPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/memories">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Memories
-            </Link>
-          </Button>
-        </div>
-        <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" asChild className="h-11 w-fit">
+          <Link href="/memories">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Memories
+          </Link>
+        </Button>
+        <Button 
+          variant="destructive" 
+          onClick={() => setDeleteDialogOpen(true)}
+          className="h-11 w-full sm:w-auto"
+        >
           <Trash2 className="mr-2 h-4 w-4" />
           Delete
         </Button>
@@ -229,25 +231,25 @@ export default function MemoryDetailPage() {
 
       {/* Memory Content */}
       <Card>
-        <CardContent className="pt-6">
-          <p className="text-2xl font-medium">&ldquo;{memory.raw}&rdquo;</p>
+        <CardContent className="pt-4 md:pt-6">
+          <p className="text-lg md:text-2xl font-medium">&ldquo;{memory.raw}&rdquo;</p>
         </CardContent>
       </Card>
 
       {/* Metadata */}
       <Card>
-        <CardHeader>
-          <CardTitle>Metadata</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Metadata</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div>
               <p className="text-sm text-muted-foreground">ID</p>
-              <code className="text-sm">{memory.id}</code>
+              <code className="text-xs sm:text-sm break-all">{memory.id}</code>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">User</p>
-              <code className="text-sm">{memory.userId}</code>
+              <code className="text-xs sm:text-sm break-all">{memory.userId}</code>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Layer</p>
@@ -263,11 +265,11 @@ export default function MemoryDetailPage() {
 
           <Separator />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div>
               <p className="text-sm text-muted-foreground mb-2">Importance</p>
               <div className="flex items-center gap-3">
-                <div className="h-2 w-32 rounded-full bg-muted">
+                <div className="h-2 w-full max-w-[128px] rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-primary"
                     style={{ width: `${memory.importanceScore * 100}%` }}
@@ -281,7 +283,7 @@ export default function MemoryDetailPage() {
             <div>
               <p className="text-sm text-muted-foreground mb-2">Confidence</p>
               <div className="flex items-center gap-3">
-                <div className="h-2 w-32 rounded-full bg-muted">
+                <div className="h-2 w-full max-w-[128px] rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-green-500"
                     style={{ width: `${memory.confidence * 100}%` }}
@@ -312,11 +314,11 @@ export default function MemoryDetailPage() {
 
       {/* 5W1H Extraction */}
       <Card>
-        <CardHeader>
-          <CardTitle>5W1H Extraction</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">5W1H Extraction</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
             {extractionItems.map((item) => (
               <div key={item.label}>
                 <p className="text-xs font-semibold text-muted-foreground">
@@ -349,12 +351,12 @@ export default function MemoryDetailPage() {
 
       {/* Memory Chain */}
       <Card>
-        <CardHeader>
-          <CardTitle>Memory Chain</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Memory Chain</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No linked memories</p>
-          <Button variant="outline" size="sm" className="mt-4">
+          <Button variant="outline" size="sm" className="mt-4 h-11">
             <LinkIcon className="mr-2 h-4 w-4" />
             Link Memory
           </Button>
@@ -363,13 +365,14 @@ export default function MemoryDetailPage() {
 
       {/* Embedding Info */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Embedding</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Embedding</CardTitle>
           {memory.embeddingId && (
             <Button
               variant="outline"
               size="sm"
               onClick={copyEmbeddingId}
+              className="h-11 w-full sm:w-auto"
             >
               {copied ? (
                 <>
@@ -407,18 +410,19 @@ export default function MemoryDetailPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md mx-4">
           <DialogHeader>
             <DialogTitle>Delete Memory</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this memory? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
               disabled={deleting}
+              className="h-11 w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -426,6 +430,7 @@ export default function MemoryDetailPage() {
               variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
+              className="h-11 w-full sm:w-auto"
             >
               {deleting ? (
                 <>

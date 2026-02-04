@@ -16,6 +16,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  DataList,
+  DataListItem,
+  DataListRow,
+  DataListHeader,
+  DataListActions,
+} from "@/components/ui/data-list";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -97,6 +104,23 @@ function TableSkeleton() {
         </TableRow>
       ))}
     </>
+  );
+}
+
+function MobileListSkeleton() {
+  return (
+    <DataList>
+      {[...Array(5)].map((_, i) => (
+        <DataListItem key={i}>
+          <Skeleton className="h-4 w-full mb-2" />
+          <Skeleton className="h-3 w-24" />
+          <div className="flex gap-2 pt-2">
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-20" />
+          </div>
+        </DataListItem>
+      ))}
+    </DataList>
   );
 }
 
@@ -194,12 +218,77 @@ export default function MemoriesPage() {
   const hasNextPage = (page + 1) * PAGE_SIZE < total;
   const hasPrevPage = page > 0;
 
+  // Render memory card for mobile
+  const renderMemoryCard = (memory: Memory | MemoryWithScore) => {
+    const score = "score" in memory ? memory.score : null;
+    return (
+      <DataListItem key={memory.id}>
+        <DataListHeader>
+          <p className="line-clamp-2 text-sm">{memory.raw}</p>
+          <p className="text-xs text-muted-foreground mt-1 font-mono truncate">
+            {memory.id}
+          </p>
+        </DataListHeader>
+
+        <div className="flex flex-wrap gap-2 items-center">
+          <Badge variant="outline" className={layerColors[memory.layer]}>
+            {memory.layer}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {memory.userId}
+          </span>
+        </div>
+
+        <DataListRow label="Created">
+          {formatDate(memory.createdAt)}
+        </DataListRow>
+
+        <DataListRow label={isSemanticSearch ? "Similarity" : "Importance"}>
+          {isSemanticSearch && score !== null && score !== undefined ? (
+            <span className="flex items-center gap-1">
+              <Sparkles className="h-3 w-3 text-yellow-500" />
+              {(score * 100).toFixed(1)}%
+            </span>
+          ) : (
+            <span>{(memory.importanceScore * 100).toFixed(0)}%</span>
+          )}
+        </DataListRow>
+
+        <DataListRow label="Retrieved">
+          {memory.retrievalCount} times
+        </DataListRow>
+
+        <DataListActions>
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="flex-1 h-11"
+          >
+            <Link href={`/memories/${memory.id}`}>
+              <Eye className="h-4 w-4 mr-2" />
+              View
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-11 text-destructive hover:text-destructive"
+            onClick={() => confirmDelete(memory.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </DataListActions>
+      </DataListItem>
+    );
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Memories</h1>
-        <Button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Memories</h1>
+        <Button className="h-11 w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Create Test Memory
         </Button>
@@ -207,9 +296,9 @@ export default function MemoriesPage() {
 
       {/* Search and Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
+        <CardContent className="pt-4 md:pt-6">
+          <div className="flex flex-col gap-3">
+            <div className="relative">
               {searching ? (
                 <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground animate-spin" />
               ) : (
@@ -217,7 +306,7 @@ export default function MemoriesPage() {
               )}
               <Input
                 placeholder="Search memories semantically..."
-                className="pl-10"
+                className="pl-10 h-11"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -225,19 +314,20 @@ export default function MemoriesPage() {
             <div className="flex gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    {userFilter || "All Users"}
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                  <Button variant="outline" className="flex-1 sm:flex-none h-11 justify-between">
+                    <span className="truncate">{userFilter || "All Users"}</span>
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setUserFilter(null)}>
+                <DropdownMenuContent className="max-h-64 overflow-y-auto">
+                  <DropdownMenuItem onClick={() => setUserFilter(null)} className="py-3">
                     All Users
                   </DropdownMenuItem>
                   {users.map((userId) => (
                     <DropdownMenuItem
                       key={userId}
                       onClick={() => setUserFilter(userId)}
+                      className="py-3"
                     >
                       {userId}
                     </DropdownMenuItem>
@@ -247,19 +337,20 @@ export default function MemoriesPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    {layerFilter || "All Layers"}
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                  <Button variant="outline" className="flex-1 sm:flex-none h-11 justify-between">
+                    <span className="truncate">{layerFilter || "All Layers"}</span>
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setLayerFilter(null)}>
+                  <DropdownMenuItem onClick={() => setLayerFilter(null)} className="py-3">
                     All Layers
                   </DropdownMenuItem>
                   {LAYER_OPTIONS.map((layer) => (
                     <DropdownMenuItem
                       key={layer}
                       onClick={() => setLayerFilter(layer)}
+                      className="py-3"
                     >
                       {layer.charAt(0) + layer.slice(1).toLowerCase()}
                     </DropdownMenuItem>
@@ -277,8 +368,8 @@ export default function MemoriesPage() {
         </CardContent>
       </Card>
 
-      {/* Memories Table */}
-      <Card>
+      {/* Desktop Table */}
+      <Card className="hidden lg:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -351,7 +442,7 @@ export default function MemoriesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" asChild>
+                          <Button variant="ghost" size="icon" asChild className="h-11 w-11">
                             <Link href={`/memories/${memory.id}`}>
                               <Eye className="h-4 w-4" />
                             </Link>
@@ -359,6 +450,7 @@ export default function MemoriesPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-11 w-11"
                             onClick={() => confirmDelete(memory.id)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -374,21 +466,39 @@ export default function MemoriesPage() {
         </CardContent>
       </Card>
 
+      {/* Mobile Card List */}
+      <div className="lg:hidden">
+        {loading ? (
+          <MobileListSkeleton />
+        ) : memories.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              {search ? "No memories found matching your search" : "No memories yet"}
+            </CardContent>
+          </Card>
+        ) : (
+          <DataList>
+            {memories.map(renderMemoryCard)}
+          </DataList>
+        )}
+      </div>
+
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p className="text-sm text-muted-foreground order-2 sm:order-1">
           {total > 0 ? (
             <>Showing {startIdx}-{endIdx} of {total.toLocaleString()}</>
           ) : (
             "No memories"
           )}
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
           <Button
             variant="outline"
             size="sm"
             disabled={!hasPrevPage || loading}
             onClick={() => setPage((p) => p - 1)}
+            className="flex-1 sm:flex-none h-11"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Previous
@@ -398,6 +508,7 @@ export default function MemoriesPage() {
             size="sm"
             disabled={!hasNextPage || loading}
             onClick={() => setPage((p) => p + 1)}
+            className="flex-1 sm:flex-none h-11"
           >
             Next
             <ChevronRight className="ml-1 h-4 w-4" />
@@ -407,18 +518,19 @@ export default function MemoriesPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Memory</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this memory? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
               disabled={deleting}
+              className="h-11 w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -426,6 +538,7 @@ export default function MemoriesPage() {
               variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
+              className="h-11 w-full sm:w-auto"
             >
               {deleting ? (
                 <>

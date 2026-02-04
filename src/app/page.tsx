@@ -62,7 +62,7 @@ function ChartSkeleton() {
         <div className="h-6 w-40 bg-muted animate-pulse rounded" />
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] bg-muted animate-pulse rounded" />
+        <div className="h-[250px] md:h-[300px] bg-muted animate-pulse rounded" />
       </CardContent>
     </Card>
   );
@@ -80,13 +80,13 @@ function ErrorState({
   
   return (
     <Card className="border-destructive/50 bg-destructive/5">
-      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+      <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 text-center px-4">
         {isConnectionError ? (
-          <WifiOff className="h-12 w-12 text-destructive mb-4" />
+          <WifiOff className="h-10 w-10 md:h-12 md:w-12 text-destructive mb-4" />
         ) : (
-          <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+          <AlertCircle className="h-10 w-10 md:h-12 md:w-12 text-destructive mb-4" />
         )}
-        <h3 className="text-lg font-semibold mb-2">
+        <h3 className="text-base md:text-lg font-semibold mb-2">
           {isConnectionError ? "API Not Connected" : "Failed to Load Data"}
         </h3>
         <p className="text-sm text-muted-foreground mb-4 max-w-md">
@@ -94,7 +94,7 @@ function ErrorState({
             ? "Unable to connect to the Engram API. Make sure the server is running at the configured URL."
             : error}
         </p>
-        <Button onClick={onRetry} variant="outline" size="sm">
+        <Button onClick={onRetry} variant="outline" size="sm" className="h-11">
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry
         </Button>
@@ -109,13 +109,13 @@ export default function OverviewPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Overview</h1>
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Overview</h1>
           <Badge variant="outline">Loading...</Badge>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <StatsCardSkeleton />
           <StatsCardSkeleton />
           <StatsCardSkeleton />
@@ -123,7 +123,7 @@ export default function OverviewPage() {
         
         <ChartSkeleton />
         
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           <ChartSkeleton />
           <ChartSkeleton />
         </div>
@@ -134,9 +134,9 @@ export default function OverviewPage() {
   // Error state
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Overview</h1>
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Overview</h1>
           <Badge variant="destructive">Error</Badge>
         </div>
         <ErrorState error={error} onRetry={refetch} />
@@ -147,14 +147,14 @@ export default function OverviewPage() {
   // No data state
   if (!stats) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Overview</h1>
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Overview</h1>
         </div>
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Brain className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Data Available</h3>
+          <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+            <Brain className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mb-4" />
+            <h3 className="text-base md:text-lg font-semibold mb-2">No Data Available</h3>
             <p className="text-sm text-muted-foreground">
               Start storing memories to see your dashboard statistics.
             </p>
@@ -187,16 +187,16 @@ export default function OverviewPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Overview</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Overview</h1>
         <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={refetch}
-            className="h-8"
+            className="h-11 w-11"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -205,7 +205,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Memories</CardTitle>
@@ -244,7 +244,7 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="sm:col-span-2 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Health Score</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
@@ -261,24 +261,33 @@ export default function OverviewPage() {
       {/* API Requests Chart */}
       {apiRequestsData.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5" />
               API Requests (7 days)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
+          <CardContent className="pl-2 pr-4 md:pl-4 md:pr-6">
+            <div className="h-[200px] sm:h-[250px] md:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={apiRequestsData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
-                  <YAxis className="text-xs" />
+                  <XAxis 
+                    dataKey="day" 
+                    className="text-xs" 
+                    tick={{ fontSize: 11 }}
+                  />
+                  <YAxis 
+                    className="text-xs" 
+                    tick={{ fontSize: 11 }}
+                    width={40}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "8px",
+                      fontSize: "12px",
                     }}
                   />
                   <Bar
@@ -294,11 +303,11 @@ export default function OverviewPage() {
       )}
 
       {/* Bottom Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Memory by Layer */}
         <Card>
-          <CardHeader>
-            <CardTitle>Memory by Layer</CardTitle>
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="text-base md:text-lg">Memory by Layer</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {memoryByLayer.length > 0 ? (
@@ -328,19 +337,19 @@ export default function OverviewPage() {
 
         {/* Recent Activity */}
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="text-base md:text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {recentActivity.length > 0 ? (
                 recentActivity.map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex items-center justify-between"
+                    className="flex items-start justify-between gap-2"
                   >
-                    <span className="text-sm truncate mr-2">{activity.action}</span>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="text-sm line-clamp-2 flex-1">{activity.action}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                       {activity.time}
                     </span>
                   </div>

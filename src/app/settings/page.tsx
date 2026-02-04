@@ -16,11 +16,11 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <Button onClick={handleSave}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Settings</h1>
+        <Button onClick={handleSave} className="h-11 w-full sm:w-auto">
           {saved ? (
             <>
               <Check className="mr-2 h-4 w-4" />
@@ -37,8 +37,8 @@ export default function SettingsPage() {
 
       {/* General */}
       <Card>
-        <CardHeader>
-          <CardTitle>General</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">General</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -46,7 +46,7 @@ export default function SettingsPage() {
             <Input
               placeholder="My AI Agent"
               defaultValue="My AI Agent"
-              className="mt-1 max-w-md"
+              className="mt-1 max-w-full md:max-w-md"
             />
             <p className="mt-1 text-xs text-muted-foreground">
               A friendly name to identify your agent
@@ -57,14 +57,14 @@ export default function SettingsPage() {
 
       {/* LLM Configuration */}
       <Card>
-        <CardHeader>
-          <CardTitle>LLM Configuration</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">LLM Configuration</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium">Provider</label>
-              <select className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm">
+              <select className="mt-1 w-full h-11 rounded-md border bg-background px-3 py-2 text-sm">
                 <option>OpenAI</option>
                 <option>Anthropic</option>
                 <option>Google</option>
@@ -72,7 +72,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="text-sm font-medium">Model</label>
-              <select className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm">
+              <select className="mt-1 w-full h-11 rounded-md border bg-background px-3 py-2 text-sm">
                 <option>gpt-4o-mini</option>
                 <option>gpt-4o</option>
                 <option>gpt-4-turbo</option>
@@ -82,7 +82,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="text-sm font-medium">Embedding Model</label>
-            <select className="mt-1 w-full max-w-md rounded-md border bg-background px-3 py-2 text-sm">
+            <select className="mt-1 w-full h-11 max-w-full md:max-w-md rounded-md border bg-background px-3 py-2 text-sm">
               <option>text-embedding-3-small</option>
               <option>text-embedding-3-large</option>
               <option>text-embedding-ada-002</option>
@@ -93,19 +93,19 @@ export default function SettingsPage() {
 
       {/* Vector Storage */}
       <Card>
-        <CardHeader>
-          <CardTitle>Vector Storage</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Vector Storage</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <label className="flex items-start gap-3 cursor-pointer">
+          <div className="space-y-4">
+            <label className="flex items-start gap-3 cursor-pointer p-3 -m-3 rounded-lg hover:bg-muted/50 transition-colors">
               <input
                 type="radio"
                 name="vector-provider"
                 defaultChecked
-                className="mt-1"
+                className="mt-1 h-4 w-4"
               />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-medium">pgvector (Local)</p>
                 <p className="text-sm text-muted-foreground">
                   PostgreSQL extension for vector similarity search. Free and
@@ -113,9 +113,9 @@ export default function SettingsPage() {
                 </p>
               </div>
             </label>
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input type="radio" name="vector-provider" className="mt-1" />
-              <div>
+            <label className="flex items-start gap-3 cursor-pointer p-3 -m-3 rounded-lg hover:bg-muted/50 transition-colors">
+              <input type="radio" name="vector-provider" className="mt-1 h-4 w-4" />
+              <div className="flex-1 min-w-0">
                 <p className="font-medium">Pinecone (Cloud)</p>
                 <p className="text-sm text-muted-foreground">
                   Managed vector database. Scales to billions of vectors.
@@ -128,15 +128,15 @@ export default function SettingsPage() {
 
       {/* Webhooks */}
       <Card>
-        <CardHeader>
-          <CardTitle>Webhooks</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Webhooks</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <label className="text-sm font-medium">Endpoint URL</label>
             <Input
               placeholder="https://myapp.com/webhooks/engram"
-              className="mt-1 max-w-lg"
+              className="mt-1"
             />
           </div>
 
@@ -144,21 +144,21 @@ export default function SettingsPage() {
 
           <div>
             <label className="text-sm font-medium mb-3 block">Events</label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" defaultChecked />
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+              <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded-lg hover:bg-muted/50 min-h-[44px]">
+                <input type="checkbox" defaultChecked className="h-4 w-4" />
                 <span className="text-sm">Proactive Surface</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" defaultChecked />
+              <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded-lg hover:bg-muted/50 min-h-[44px]">
+                <input type="checkbox" defaultChecked className="h-4 w-4" />
                 <span className="text-sm">Contradiction Detected</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" />
+              <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded-lg hover:bg-muted/50 min-h-[44px]">
+                <input type="checkbox" className="h-4 w-4" />
                 <span className="text-sm">Pattern Detected</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" defaultChecked />
+              <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded-lg hover:bg-muted/50 min-h-[44px]">
+                <input type="checkbox" defaultChecked className="h-4 w-4" />
                 <span className="text-sm">Consolidation Complete</span>
               </label>
             </div>
@@ -168,19 +168,21 @@ export default function SettingsPage() {
 
       {/* Danger Zone */}
       <Card className="border-destructive/50">
-        <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-destructive text-base md:text-lg">Danger Zone</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
               <p className="font-medium">Clear All Memories</p>
               <p className="text-sm text-muted-foreground">
                 Permanently delete all memories for all users. This cannot be
                 undone.
               </p>
             </div>
-            <Button variant="destructive">Clear All</Button>
+            <Button variant="destructive" className="h-11 w-full sm:w-auto shrink-0">
+              Clear All
+            </Button>
           </div>
         </CardContent>
       </Card>

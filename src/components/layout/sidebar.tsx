@@ -10,11 +10,13 @@ import {
   Key,
   Settings,
   BookOpen,
+  Network,
 } from "lucide-react";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Memories", href: "/memories", icon: Brain },
+  { name: "Graph", href: "/graph", icon: Network },
   { name: "Users", href: "/users", icon: Users },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -24,7 +26,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r bg-card">
+    <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-card">
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b px-6">
         <Brain className="h-8 w-8 text-primary" />

@@ -13,6 +13,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  DataList,
+  DataListItem,
+  DataListRow,
+  DataListHeader,
+  DataListActions,
+} from "@/components/ui/data-list";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -93,19 +100,48 @@ export default function ApiKeysPage() {
     setCopied(false);
   };
 
+  // Render key card for mobile
+  const renderKeyCard = (key: typeof mockApiKeys[0]) => (
+    <DataListItem key={key.id}>
+      <DataListHeader>
+        <span className="font-medium">{key.name}</span>
+      </DataListHeader>
+
+      <DataListRow label="Key">
+        <code className="text-muted-foreground">{key.keyHint}</code>
+      </DataListRow>
+
+      <DataListRow label="Created">
+        {key.createdAt}
+      </DataListRow>
+
+      <DataListActions>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 h-11 text-destructive hover:text-destructive"
+          onClick={() => handleRevokeKey(key.id)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Revoke
+        </Button>
+      </DataListActions>
+    </DataListItem>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">API Keys</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">API Keys</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="h-11 w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Create Key
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md mx-4">
             <DialogHeader>
               <DialogTitle>
                 {newKey ? "API Key Created" : "Create API Key"}
@@ -123,7 +159,7 @@ export default function ApiKeysPage() {
                   <code className="flex-1 rounded bg-muted p-3 text-sm break-all">
                     {newKey}
                   </code>
-                  <Button variant="outline" size="icon" onClick={handleCopyKey}>
+                  <Button variant="outline" size="icon" onClick={handleCopyKey} className="h-11 w-11 shrink-0">
                     {copied ? (
                       <Check className="h-4 w-4 text-green-500" />
                     ) : (
@@ -147,21 +183,21 @@ export default function ApiKeysPage() {
                     placeholder="e.g., Production, Development"
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 h-11"
                   />
                 </div>
               </div>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               {newKey ? (
-                <Button onClick={handleCloseDialog}>Done</Button>
+                <Button onClick={handleCloseDialog} className="h-11 w-full sm:w-auto">Done</Button>
               ) : (
                 <>
-                  <Button variant="outline" onClick={handleCloseDialog}>
+                  <Button variant="outline" onClick={handleCloseDialog} className="h-11 w-full sm:w-auto">
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateKey} disabled={!newKeyName.trim()}>
+                  <Button onClick={handleCreateKey} disabled={!newKeyName.trim()} className="h-11 w-full sm:w-auto">
                     Create Key
                   </Button>
                 </>
@@ -171,8 +207,8 @@ export default function ApiKeysPage() {
         </Dialog>
       </div>
 
-      {/* API Keys Table */}
-      <Card>
+      {/* Desktop Table */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -197,7 +233,7 @@ export default function ApiKeysPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive h-11"
                       onClick={() => handleRevokeKey(key.id)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -211,10 +247,25 @@ export default function ApiKeysPage() {
         </CardContent>
       </Card>
 
+      {/* Mobile Card List */}
+      <div className="md:hidden">
+        {keys.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              No API keys yet
+            </CardContent>
+          </Card>
+        ) : (
+          <DataList>
+            {keys.map(renderKeyCard)}
+          </DataList>
+        )}
+      </div>
+
       {/* Warning */}
       <Card className="border-yellow-500/50 bg-yellow-500/5">
-        <CardContent className="flex items-start gap-3 pt-6">
-          <AlertTriangle className="h-5 w-5 text-yellow-500 flex-shrink-0" />
+        <CardContent className="flex items-start gap-3 pt-4 md:pt-6">
+          <AlertTriangle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-yellow-600 dark:text-yellow-400">
               Keep your API keys secure
