@@ -82,8 +82,7 @@ export function MobileNav() {
 
         <div className="border-t p-4 mt-auto">
           <Link
-            href="https://docs.engram.dev"
-            target="_blank"
+            href="/docs"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground min-h-[44px] px-3"
           >

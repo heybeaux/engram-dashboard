@@ -60,8 +60,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t p-4">
         <Link
-          href="https://docs.engram.dev"
-          target="_blank"
+          href="/docs"
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <BookOpen className="h-4 w-4" />
