@@ -430,6 +430,18 @@ export class EngramClient {
     }
   }
 
+  /**
+   * Delete a user
+   * @endpoint DELETE /v1/users/:id
+   */
+  async deleteUser(id: string, deleteMemories: boolean = false): Promise<{ deleted: boolean; memoriesDeleted?: number }> {
+    const params = deleteMemories ? '?deleteMemories=true' : '';
+    return this.fetch<{ deleted: boolean; memoriesDeleted?: number }>(
+      `/v1/users/${id}${params}`,
+      { method: 'DELETE' }
+    );
+  }
+
   // ==========================================================================
   // API KEYS (NOT YET IMPLEMENTED IN ENGRAM)
   // ==========================================================================

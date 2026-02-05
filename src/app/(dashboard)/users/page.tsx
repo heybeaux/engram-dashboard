@@ -21,7 +21,7 @@ import {
   DataListActions,
 } from "@/components/ui/data-list";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye, Download, RefreshCw, Loader2 } from "lucide-react";
+import { Search, Eye, Download, RefreshCw, Loader2, Trash2 } from "lucide-react";
 import { engram } from "@/lib/engram-client";
 
 interface User {
@@ -87,6 +87,20 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const handleDelete = async (userId: string, externalId: string) => {
+    if (!confirm(`Delete user "${externalId}"? This cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await engram.deleteUser(userId);
+      setUsers(users.filter(u => u.id !== userId));
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      alert("Failed to delete user: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
+  };
 
   const filteredUsers = users.filter((user) =>
     (user.externalId || user.id).toLowerCase().includes(search.toLowerCase())
@@ -169,6 +183,14 @@ export default function UsersPage() {
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-11 text-destructive border-destructive/50"
+          onClick={() => handleDelete(user.id, user.externalId || user.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </DataListActions>
     </DataListItem>
   );
@@ -239,6 +261,14 @@ export default function UsersPage() {
                         <Button variant="ghost" size="sm" className="h-11">
                           <Download className="mr-2 h-4 w-4" />
                           Export
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-11 text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(user.id, user.externalId || user.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
