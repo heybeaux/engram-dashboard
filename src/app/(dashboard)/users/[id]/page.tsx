@@ -110,11 +110,11 @@ export default function UserDetailPage() {
           lastActive: foundUser.lastActive || "",
           createdAt: foundUser.createdAt || "",
         });
-      }
 
-      // Fetch memories for this user
-      const memoriesResponse = await engram.getMemories({ userId, limit: 10 });
-      setMemories(memoriesResponse.memories || []);
+        // Fetch memories using the internal user ID, not the route param
+        const memoriesResponse = await engram.getMemories({ userId: foundUser.id, limit: 10 });
+        setMemories(memoriesResponse.memories || []);
+      }
     } catch (err) {
       console.error("Failed to fetch user data:", err);
       setError(err instanceof Error ? err.message : "Failed to load user data");
