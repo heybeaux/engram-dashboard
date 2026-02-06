@@ -374,6 +374,80 @@ export interface GraphData {
 }
 
 // ============================================================================
+// ANALYTICS TYPES
+// ============================================================================
+
+export type MemoryType =
+  | 'CONSTRAINT'
+  | 'PREFERENCE'
+  | 'FACT'
+  | 'TASK'
+  | 'EVENT'
+  | 'LESSON';
+
+export interface TimelineDataPoint {
+  timestamp: string;
+  count: number;
+  cumulative?: number;
+}
+
+export interface TimelineResponse {
+  granularity: 'hour' | 'day' | 'week';
+  data: TimelineDataPoint[];
+  total: number;
+  range: {
+    start: string;
+    end: string;
+  };
+}
+
+export interface TypeBreakdownPoint {
+  timestamp: string;
+  types: Record<MemoryType, number>;
+  total: number;
+}
+
+export interface TypeBreakdownResponse {
+  granularity: 'day' | 'week' | 'month';
+  data: TypeBreakdownPoint[];
+  summary: {
+    dominant: MemoryType | null;
+    distribution: Record<string, { count: number; percentage: number }>;
+  };
+}
+
+export interface LayerDistribution {
+  layer: MemoryLayer;
+  count: number;
+  percentage: number;
+}
+
+export interface LayerTrendPoint {
+  timestamp: string;
+  layers: Record<MemoryLayer, number>;
+}
+
+export interface LayerDistributionResponse {
+  current: LayerDistribution[];
+  total: number;
+  trend?: {
+    granularity: 'day' | 'week';
+    data: LayerTrendPoint[];
+  };
+}
+
+export interface AnalyticsSummaryResponse {
+  totalMemories: number;
+  memoriesToday: number;
+  memoriesThisWeek: number;
+  avgImportance: number;
+  timeline: TimelineDataPoint[];
+  typeDistribution: Record<string, { count: number; percentage: number }>;
+  layerDistribution: LayerDistribution[];
+  lastUpdated: string;
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 

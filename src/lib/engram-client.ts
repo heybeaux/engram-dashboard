@@ -485,6 +485,75 @@ export class EngramClient {
   }
 
   // ==========================================================================
+  // ANALYTICS ENDPOINTS
+  // ==========================================================================
+
+  /**
+   * Get analytics summary
+   * @endpoint GET /v1/analytics/summary
+   */
+  async getAnalyticsSummary(): Promise<import('./types').AnalyticsSummaryResponse> {
+    return this.fetch<import('./types').AnalyticsSummaryResponse>('/v1/analytics/summary');
+  }
+
+  /**
+   * Get timeline data
+   * @endpoint GET /v1/analytics/timeline
+   */
+  async getAnalyticsTimeline(params?: {
+    granularity?: 'hour' | 'day' | 'week';
+    start?: string;
+    end?: string;
+    cumulative?: boolean;
+  }): Promise<import('./types').TimelineResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.granularity) searchParams.set('granularity', params.granularity);
+    if (params?.start) searchParams.set('start', params.start);
+    if (params?.end) searchParams.set('end', params.end);
+    if (params?.cumulative) searchParams.set('cumulative', 'true');
+    
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/v1/analytics/timeline?${queryString}` : '/v1/analytics/timeline';
+    return this.fetch<import('./types').TimelineResponse>(endpoint);
+  }
+
+  /**
+   * Get type breakdown
+   * @endpoint GET /v1/analytics/breakdown/type
+   */
+  async getAnalyticsTypeBreakdown(params?: {
+    granularity?: 'day' | 'week' | 'month';
+    start?: string;
+    end?: string;
+  }): Promise<import('./types').TypeBreakdownResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.granularity) searchParams.set('granularity', params.granularity);
+    if (params?.start) searchParams.set('start', params.start);
+    if (params?.end) searchParams.set('end', params.end);
+    
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/v1/analytics/breakdown/type?${queryString}` : '/v1/analytics/breakdown/type';
+    return this.fetch<import('./types').TypeBreakdownResponse>(endpoint);
+  }
+
+  /**
+   * Get layer distribution
+   * @endpoint GET /v1/analytics/breakdown/layer
+   */
+  async getAnalyticsLayerBreakdown(params?: {
+    includeTrend?: boolean;
+    granularity?: 'day' | 'week';
+  }): Promise<import('./types').LayerDistributionResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.includeTrend !== undefined) searchParams.set('includeTrend', String(params.includeTrend));
+    if (params?.granularity) searchParams.set('granularity', params.granularity);
+    
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/v1/analytics/breakdown/layer?${queryString}` : '/v1/analytics/breakdown/layer';
+    return this.fetch<import('./types').LayerDistributionResponse>(endpoint);
+  }
+
+  // ==========================================================================
   // MOCK DATA (for unimplemented endpoints)
   // ==========================================================================
 

@@ -13,12 +13,17 @@ export default function GraphPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get the Engram API URL from environment
+    // Get the Engram API URL and credentials from environment
     const apiUrl = process.env.NEXT_PUBLIC_ENGRAM_API_URL || 'http://localhost:3001';
+    const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || '';
+    const userId = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'Beaux';
     
     // The graph HTML is served from the public directory of Engram
-    // Accessible at /memory-graph.html
-    const graphPath = `${apiUrl}/memory-graph.html`;
+    // Pass credentials as URL params so the graph can authenticate
+    const params = new URLSearchParams();
+    if (apiKey) params.set('apiKey', apiKey);
+    if (userId) params.set('userId', userId);
+    const graphPath = `${apiUrl}/memory-graph.html?${params.toString()}`;
     
     // Verify the graph is accessible
     fetch(graphPath, { method: 'HEAD' })
