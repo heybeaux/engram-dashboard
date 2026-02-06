@@ -12,12 +12,14 @@ import {
   BookOpen,
   Network,
   BarChart3,
+  Layers,
 } from "lucide-react";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Memories", href: "/memories", icon: Brain },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Ensemble", href: "/ensemble", icon: Layers },
   { name: "Graph", href: "/graph", icon: Network },
   { name: "Users", href: "/users", icon: Users },
   { name: "API Keys", href: "/api-keys", icon: Key },

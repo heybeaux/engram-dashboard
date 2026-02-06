@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +17,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Trash2, Link as LinkIcon, Copy, Loader2, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, Trash2, Link as LinkIcon, Copy, Loader2, Check, AlertCircle, Info, Layers } from "lucide-react";
 import { engram, Memory } from "@/lib/engram-client";
+import { MemoryEmbeddingsTab } from "@/components/ensemble/memory-embeddings-tab";
 
 const layerColors: Record<string, string> = {
   IDENTITY: "bg-blue-500/10 text-blue-500 border-blue-500/20",
@@ -236,6 +238,20 @@ export default function MemoryDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Tabbed Content */}
+      <Tabs defaultValue="details" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="details">
+            <Info className="mr-2 h-4 w-4" />
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="embeddings">
+            <Layers className="mr-2 h-4 w-4" />
+            Embeddings
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details" className="space-y-4 md:space-y-6">
       {/* Metadata */}
       <Card>
         <CardHeader className="pb-2 md:pb-4">
@@ -363,10 +379,10 @@ export default function MemoryDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Embedding Info */}
+      {/* Embedding Info (Legacy - single model) */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 md:pb-4">
-          <CardTitle className="text-base md:text-lg">Embedding</CardTitle>
+          <CardTitle className="text-base md:text-lg">Primary Embedding</CardTitle>
           {memory.embeddingId && (
             <Button
               variant="outline"
@@ -407,6 +423,12 @@ export default function MemoryDetailPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="embeddings">
+          <MemoryEmbeddingsTab memoryId={memoryId} />
+        </TabsContent>
+      </Tabs>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
