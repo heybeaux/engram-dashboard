@@ -2,6 +2,8 @@
 
 Web UI for the [Engram](https://github.com/heybeaux/engram) memory infrastructure service.
 
+**Ecosystem:** [Core API](https://github.com/heybeaux/engram) • [Dashboard](https://github.com/heybeaux/engram-dashboard) • [Local Embeddings](https://github.com/heybeaux/engram-embed)
+
 ## Features
 
 - 📊 **Overview Dashboard** - Key metrics, health status, and API usage charts
