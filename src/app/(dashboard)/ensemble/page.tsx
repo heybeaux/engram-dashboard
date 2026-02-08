@@ -134,7 +134,7 @@ function ModelRegistrySection({
             {models.map((model) => {
               const statusStyle = statusColors[model.status];
               const config = MODEL_CONFIGS[model.modelId];
-              const qualityScore = model.qualityMetrics.correlationWithGoldStandard;
+              const qualityScore = model.qualityMetrics?.correlationWithGoldStandard ?? null;
               
               return (
                 <TableRow key={model.modelId}>
@@ -158,7 +158,7 @@ function ModelRegistrySection({
                     <span className="font-mono">{model.weight.toFixed(2)}</span>
                   </TableCell>
                   <TableCell className="text-right">
-                    {qualityScore > 0 ? (
+                    {qualityScore != null && qualityScore > 0 ? (
                       <div className="flex items-center justify-end gap-2">
                         <div className="h-2 w-16 rounded-full bg-muted">
                           <div
