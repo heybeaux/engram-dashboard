@@ -85,15 +85,15 @@ export function ChunkCard({
     >
       <CardContent className="p-4">
         {/* Header row */}
-        <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 mb-3">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <FileCode className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-medium truncate" title={chunk.filePath}>
-                  {formatFilePath(chunk.filePath)}
+                <span className="font-medium truncate text-sm sm:text-base" title={chunk.filePath}>
+                  {formatFilePath(chunk.filePath, 40)}
                 </span>
-                <span className="text-muted-foreground text-sm">
+                <span className="text-muted-foreground text-xs sm:text-sm">
                   :{chunk.lineStart}
                   {chunk.lineEnd !== chunk.lineStart && `-${chunk.lineEnd}`}
                 </span>
@@ -108,7 +108,7 @@ export function ChunkCard({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             {score !== undefined && (
               <div
                 className={cn(
@@ -127,7 +127,7 @@ export function ChunkCard({
             <Badge variant="outline" className="text-xs">
               {chunk.language}
             </Badge>
-            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
           </div>
         </div>
 

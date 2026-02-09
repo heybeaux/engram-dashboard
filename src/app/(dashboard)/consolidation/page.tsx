@@ -5,18 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Moon, RefreshCw, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Moon, RefreshCw, Clock, CheckCircle2, AlertCircle, Loader2, Brain, Trash2, BarChart3, Archive } from "lucide-react";
 
 interface DreamCycleReport {
   id: string;
+  userId: string;
   startedAt: string;
   completedAt?: string;
-  status: "running" | "completed" | "failed";
-  memoriesProcessed?: number;
-  memoriesConsolidated?: number;
-  memoriesDeduplicated?: number;
   durationMs?: number;
-  error?: string;
+  dryRun: boolean;
+  status: string;
+  scoresRefreshed: number;
+  duplicatesMerged: number;
+  patternsCreated: number;
+  memoriesArchived: number;
+  totalActive: number;
+  avgEffectiveScore: number;
+  stageDetails: Record<string, any>;
+  errors: string[];
 }
 
 const API_URL = process.env.NEXT_PUBLIC_ENGRAM_API_URL || "http://localhost:3001";
@@ -41,11 +47,8 @@ function formatDuration(ms: number): string {
 }
 
 const statusConfig: Record<string, { icon: any; color: string; iconClass: string }> = {
-  running: { icon: Loader2, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", iconClass: "animate-spin" },
   RUNNING: { icon: Loader2, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", iconClass: "animate-spin" },
-  completed: { icon: CheckCircle2, color: "bg-green-500/10 text-green-500 border-green-500/20", iconClass: "" },
   COMPLETED: { icon: CheckCircle2, color: "bg-green-500/10 text-green-500 border-green-500/20", iconClass: "" },
-  failed: { icon: AlertCircle, color: "bg-red-500/10 text-red-500 border-red-500/20", iconClass: "" },
   FAILED: { icon: AlertCircle, color: "bg-red-500/10 text-red-500 border-red-500/20", iconClass: "" },
   DRY_RUN: { icon: CheckCircle2, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", iconClass: "" },
 };
@@ -67,7 +70,8 @@ export default function ConsolidationPage() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setReports(data.reports || data || []);
+      // API returns array directly, but handle wrapped format too
+      setReports(Array.isArray(data) ? data : data.reports || []);
     } catch (err) {
       console.error("Failed to fetch dream cycle reports:", err);
       setError("Could not load consolidation reports. The consolidation service may not be running.");
@@ -137,7 +141,7 @@ export default function ConsolidationPage() {
         </div>
       )}
 
-      {/* Reports List */}
+      {/* Empty State */}
       {!loading && !error && reports.length === 0 && (
         <Card>
           <CardContent className="pt-6">
@@ -153,9 +157,12 @@ export default function ConsolidationPage() {
         </Card>
       )}
 
+      {/* Reports List */}
       {!loading && !error && reports.map((report) => {
         const config = statusConfig[report.status] || { icon: AlertCircle, color: "bg-gray-500/10 text-gray-500 border-gray-500/20", iconClass: "" };
         const StatusIcon = config.icon;
+        const stageDetails = report.stageDetails || {};
+
         return (
           <Card key={report.id}>
             <CardHeader className="pb-2 md:pb-4">
@@ -164,36 +171,115 @@ export default function ConsolidationPage() {
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   {formatDate(report.startedAt)}
                 </CardTitle>
-                <Badge variant="outline" className={config.color}>
-                  <StatusIcon className={`mr-1 h-3 w-3 ${config.iconClass}`} />
-                  {report.status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {report.dryRun && (
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                      Dry Run
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className={config.color}>
+                    <StatusIcon className={`mr-1 h-3 w-3 ${config.iconClass}`} />
+                    {report.status}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Main Stats */}
               <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Processed</p>
-                  <p className="text-lg font-semibold">{report.memoriesProcessed ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Trash2 className="h-3 w-3" /> Duplicates Merged
+                  </p>
+                  <p className="text-lg font-semibold">{report.duplicatesMerged}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Consolidated</p>
-                  <p className="text-lg font-semibold">{report.memoriesConsolidated ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Archive className="h-3 w-3" /> Archived
+                  </p>
+                  <p className="text-lg font-semibold">{report.memoriesArchived}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Deduplicated</p>
-                  <p className="text-lg font-semibold">{report.memoriesDeduplicated ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <BarChart3 className="h-3 w-3" /> Scores Refreshed
+                  </p>
+                  <p className="text-lg font-semibold">{report.scoresRefreshed}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Brain className="h-3 w-3" /> Patterns Created
+                  </p>
+                  <p className="text-lg font-semibold">{report.patternsCreated}</p>
+                </div>
+              </div>
+
+              {/* Health & Duration Row */}
+              <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Active</p>
+                  <p className="font-medium">{report.totalActive || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Score</p>
+                  <p className="font-medium">
+                    {report.avgEffectiveScore ? report.avgEffectiveScore.toFixed(3) : "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Duration</p>
-                  <p className="text-lg font-semibold">
+                  <p className="font-medium">
                     {report.durationMs ? formatDuration(report.durationMs) : "—"}
                   </p>
                 </div>
               </div>
-              {report.error && (
-                <div className="mt-4 p-3 rounded-lg bg-red-500/10 text-red-500 text-sm">
-                  {report.error}
+
+              {/* Stage Details (collapsible-style) */}
+              {Object.keys(stageDetails).length > 0 && (
+                <div className="border-t pt-3 mt-2">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">Stage Details</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {stageDetails.dedup && (
+                      <div className="text-xs bg-muted/50 rounded-md p-2">
+                        <span className="font-medium">Stage 1 — Dedup:</span>{" "}
+                        {stageDetails.dedup.scanned} scanned, {stageDetails.dedup.merged} merged, {stageDetails.dedup.flagged} flagged
+                      </div>
+                    )}
+                    {stageDetails.staleness && (
+                      <div className="text-xs bg-muted/50 rounded-md p-2">
+                        <span className="font-medium">Stage 2 — Staleness:</span>{" "}
+                        {stageDetails.staleness.scoresRefreshed} refreshed, {stageDetails.staleness.archived} archived, {stageDetails.staleness.candidates} candidates
+                      </div>
+                    )}
+                    {stageDetails.patterns && (
+                      <div className="text-xs bg-muted/50 rounded-md p-2">
+                        <span className="font-medium">Stage 3 — Patterns:</span>{" "}
+                        {stageDetails.patterns.clustersFound} clusters, {stageDetails.patterns.patternsCreated} created, {stageDetails.patterns.llmCalls} LLM calls
+                      </div>
+                    )}
+                    {stageDetails.report && (
+                      <div className="text-xs bg-muted/50 rounded-md p-2">
+                        <span className="font-medium">Stage 4 — Report:</span>{" "}
+                        {stageDetails.report.totalActive} active, avg score {stageDetails.report.avgEffectiveScore?.toFixed(3)}
+                      </div>
+                    )}
+                    {stageDetails.generateContext && (
+                      <div className="text-xs bg-muted/50 rounded-md p-2">
+                        <span className="font-medium">Stage 5 — Context:</span>{" "}
+                        {stageDetails.generateContext.memoriesIncluded} memories, {stageDetails.generateContext.tokenCount} tokens
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Errors */}
+              {report.errors && report.errors.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {report.errors.map((err, i) => (
+                    <div key={i} className="p-2 rounded-lg bg-red-500/10 text-red-500 text-xs">
+                      {err}
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>

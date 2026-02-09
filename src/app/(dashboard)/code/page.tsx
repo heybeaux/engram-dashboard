@@ -227,7 +227,7 @@ export default function CodePage() {
       {/* Search Section */}
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Filters Panel */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 order-2 lg:order-1">
           <Card>
             <CardContent className="pt-6">
               <SearchFilters
@@ -246,15 +246,15 @@ export default function CodePage() {
         </div>
 
         {/* Search Results */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 space-y-4 order-1 lg:order-2">
           {/* Search Bar */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search code... e.g., 'where is authentication handled?'"
+                    placeholder="Search code..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={handleKeyDown}

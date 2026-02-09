@@ -389,87 +389,153 @@ export default function CodeProjectsPage() {
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Project</TableHead>
-                  <TableHead>Languages</TableHead>
-                  <TableHead className="text-right">
-                    <FileCode className="inline h-4 w-4 mr-1" />
-                    Files
-                  </TableHead>
-                  <TableHead className="text-right">
-                    <Database className="inline h-4 w-4 mr-1" />
-                    Chunks
-                  </TableHead>
-                  <TableHead>Last Ingested</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {projects.map((project) => (
-                  <TableRow key={project.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{project.name}</div>
-                        <div className="text-sm text-muted-foreground font-mono truncate max-w-xs">
-                          {project.rootPath}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {project.languages.length > 0 ? (
-                          project.languages.map((lang) => (
-                            <Badge key={lang} variant="secondary" className="text-xs">
-                              {lang}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-muted-foreground text-sm">Any</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {project.stats?.totalFiles?.toLocaleString() ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {project.stats?.totalChunks?.toLocaleString() ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {formatRelativeTime(project.lastIngestedAt)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleIngest(project.id)}
-                          disabled={ingestingProjectId === project.id}
-                        >
-                          {ingestingProjectId === project.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
-                          )}
-                          <span className="sr-only">Re-ingest</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteClick(project)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+            {/* Desktop: Table layout */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Languages</TableHead>
+                    <TableHead className="text-right">
+                      <FileCode className="inline h-4 w-4 mr-1" />
+                      Files
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Database className="inline h-4 w-4 mr-1" />
+                      Chunks
+                    </TableHead>
+                    <TableHead>Last Ingested</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {projects.map((project) => (
+                    <TableRow key={project.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{project.name}</div>
+                          <div className="text-sm text-muted-foreground font-mono truncate max-w-xs">
+                            {project.rootPath}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {project.languages.length > 0 ? (
+                            project.languages.map((lang) => (
+                              <Badge key={lang} variant="secondary" className="text-xs">
+                                {lang}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Any</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {project.stats?.totalFiles?.toLocaleString() ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {project.stats?.totalChunks?.toLocaleString() ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {formatRelativeTime(project.lastIngestedAt)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleIngest(project.id)}
+                            disabled={ingestingProjectId === project.id}
+                          >
+                            {ingestingProjectId === project.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">Re-ingest</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteClick(project)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile: Card layout */}
+            <div className="md:hidden space-y-3">
+              {projects.map((project) => (
+                <div key={project.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium">{project.name}</div>
+                      <div className="text-xs text-muted-foreground font-mono truncate">
+                        {project.rootPath}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleIngest(project.id)}
+                        disabled={ingestingProjectId === project.id}
+                      >
+                        {ingestingProjectId === project.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(project)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {project.languages.length > 0 ? (
+                      project.languages.map((lang) => (
+                        <Badge key={lang} variant="secondary" className="text-xs">
+                          {lang}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Any language</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <FileCode className="h-3.5 w-3.5" />
+                      {project.stats?.totalFiles?.toLocaleString() ?? "—"} files
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Database className="h-3.5 w-3.5" />
+                      {project.stats?.totalChunks?.toLocaleString() ?? "—"} chunks
+                    </span>
+                    <span className="ml-auto text-xs">
+                      {formatRelativeTime(project.lastIngestedAt)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
