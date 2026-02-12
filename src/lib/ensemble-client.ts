@@ -364,6 +364,84 @@ export async function reembedMemory(
 // EXPORT ALL
 // ============================================================================
 
+// ============================================================================
+// DRIFT DETECTION
+// ============================================================================
+
+export interface DriftSnapshotResponse {
+  id: string;
+  modelId: string;
+  avgDrift: number;
+  maxDrift: number;
+  sampleCount: number;
+  alertLevel: string;
+  createdAt: string;
+}
+
+export interface DriftLatestResponse {
+  perModel: Array<{
+    modelId: string;
+    avgDrift: number;
+    maxDrift: number;
+    sampleCount: number;
+    alertLevel: string;
+    createdAt: string;
+  }>;
+  thresholds: { drift: number; alert: number };
+}
+
+export interface DriftHistoryResponse {
+  snapshots: DriftSnapshotResponse[];
+  count: number;
+}
+
+export interface DriftAnalyzeResponse {
+  snapshots: Array<{
+    modelId: string;
+    avgDrift: number;
+    maxDrift: number;
+    sampleCount: number;
+    alertLevel: string;
+  }>;
+  summary: string;
+}
+
+/**
+ * Get latest drift per model
+ */
+export async function getLatestDrift(): Promise<DriftLatestResponse> {
+  return apiFetch<DriftLatestResponse>('/ensemble/drift');
+}
+
+/**
+ * Get drift history for charting
+ */
+export async function getDriftHistory(params?: {
+  modelId?: string;
+  limit?: number;
+  since?: string;
+}): Promise<DriftHistoryResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.modelId) searchParams.set('modelId', params.modelId);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.since) searchParams.set('since', params.since);
+  const query = searchParams.toString();
+  return apiFetch<DriftHistoryResponse>(query ? `/ensemble/drift/history?${query}` : '/ensemble/drift/history');
+}
+
+/**
+ * Trigger drift analysis
+ */
+export async function analyzeDrift(): Promise<DriftAnalyzeResponse> {
+  return apiFetch<DriftAnalyzeResponse>('/ensemble/drift/analyze', {
+    method: 'POST',
+  });
+}
+
+// ============================================================================
+// EXPORT ALL
+// ============================================================================
+
 export const ensembleApi = {
   getStatus: getEnsembleStatus,
   getModels: getRegisteredModels,
@@ -380,5 +458,10 @@ export const ensembleApi = {
     trigger: triggerReembed,
     previewEnrichment,
     reembedMemory,
+  },
+  drift: {
+    getLatest: getLatestDrift,
+    getHistory: getDriftHistory,
+    analyze: analyzeDrift,
   },
 };

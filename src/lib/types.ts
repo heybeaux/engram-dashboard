@@ -448,6 +448,132 @@ export interface AnalyticsSummaryResponse {
 }
 
 // ============================================================================
+// DEDUPLICATION / MERGE CANDIDATES
+// ============================================================================
+
+export interface MergeCandidateMemory {
+  id: string;
+  content: string;
+  raw?: string;
+  effectiveScore: number;
+  type?: string;
+  source?: string;
+  layer?: string;
+  createdAt: string;
+}
+
+export interface MergeCandidate {
+  id: string;
+  memoryA: MergeCandidateMemory;
+  memoryB: MergeCandidateMemory;
+  similarity: number;
+  status: 'PENDING' | 'REVIEWED';
+  reviewedAt?: string;
+  reviewAction?: 'MERGE' | 'KEEP' | 'SKIP';
+  createdAt: string;
+}
+
+// ============================================================================
+// MULTI-AGENT TYPES (v0.7)
+// ============================================================================
+
+export type AgentSessionStatus = 'ACTIVE' | 'COMPLETED' | 'TERMINATED';
+export type PoolVisibility = 'GLOBAL' | 'SHARED' | 'PRIVATE';
+export type AccessType = 'CREATED' | 'RECALLED' | 'UPDATED' | 'CONTEXT_LOADED';
+
+export interface AgentSession {
+  id: string;
+  sessionKey: string;
+  label: string | null;
+  status: AgentSessionStatus;
+  parentSessionKey: string | null;
+  taskDescription: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentSessionSummary {
+  sessionKey: string;
+  label: string | null;
+  status: AgentSessionStatus;
+  memoriesCreated: number;
+  memoriesAccessed: number;
+  uniqueMemories: number;
+  duration: number | null; // ms
+  topTopics: string[];
+}
+
+export interface MemoryPool {
+  id: string;
+  name: string;
+  description: string | null;
+  visibility: PoolVisibility;
+  createdBySession: string | null;
+  memberCount?: number;
+  grantCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PoolGrant {
+  id: string;
+  poolId: string;
+  sessionKey: string;
+  permissions: string;
+  grantedAt: string;
+}
+
+export interface PoolMember {
+  memoryId: string;
+  raw: string;
+  layer: MemoryLayer;
+  createdAt: string;
+  importanceScore: number;
+}
+
+export interface MemoryAccessLog {
+  id: string;
+  memoryId: string;
+  sessionKey: string;
+  accessType: AccessType;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface MemoryAttribution {
+  memoryId: string;
+  createdBySession: AgentSession | null;
+  accessLog: MemoryAccessLog[];
+  pools: MemoryPool[];
+}
+
+// ============================================================================
+// FOG INDEX TYPES
+// ============================================================================
+
+export interface FogIndexComponent {
+  name: string;
+  score: number;
+  weight: number;
+  details: string;
+}
+
+export interface FogIndexResult {
+  score: number;
+  tier: string;
+  components: FogIndexComponent[];
+  computedAt: string;
+}
+
+export interface FogIndexHistory {
+  score: number;
+  tier: string;
+  computedAt: string;
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 

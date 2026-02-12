@@ -21,6 +21,7 @@ interface DreamCycleReport {
   memoriesArchived: number;
   totalActive: number;
   avgEffectiveScore: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stageDetails: Record<string, any>;
   errors: string[];
 }
@@ -46,6 +47,7 @@ function formatDuration(ms: number): string {
   return `${(ms / 60000).toFixed(1)}m`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const statusConfig: Record<string, { icon: any; color: string; iconClass: string }> = {
   RUNNING: { icon: Loader2, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", iconClass: "animate-spin" },
   COMPLETED: { icon: CheckCircle2, color: "bg-green-500/10 text-green-500 border-green-500/20", iconClass: "" },

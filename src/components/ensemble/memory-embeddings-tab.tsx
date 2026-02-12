@@ -119,7 +119,13 @@ function DriftIndicator({ driftScore }: { driftScore?: number }) {
 }
 
 function EmbeddingCard({ embedding }: { embedding: MemoryEmbeddingInfo }) {
-  const config = statusConfig[embedding.status];
+  const config = statusConfig[embedding.status as keyof typeof statusConfig] ?? {
+    icon: HelpCircle,
+    label: embedding.status || "Unknown",
+    color: "text-gray-500",
+    bgColor: "bg-gray-500/10",
+    borderColor: "border-gray-500/20",
+  };
   const StatusIcon = config.icon;
   const modelConfig = MODEL_CONFIGS[embedding.model];
 

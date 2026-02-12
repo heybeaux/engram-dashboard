@@ -43,6 +43,7 @@ import {
   UserDetailResponse,
   ApiKey,
   EngramApiError,
+  MergeCandidate,
 } from './types';
 
 // ============================================================================
@@ -554,6 +555,100 @@ export class EngramClient {
   }
 
   // ==========================================================================
+  // DEDUPLICATION / MERGE CANDIDATES
+  // ==========================================================================
+
+  /**
+   * List merge candidates
+   * @endpoint GET /v1/deduplication/candidates
+   */
+  async getMergeCandidates(params?: {
+    status?: 'PENDING' | 'REVIEWED';
+    minSimilarity?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ candidates: MergeCandidate[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.minSimilarity !== undefined) searchParams.set('minSimilarity', String(params.minSimilarity));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/v1/deduplication/candidates?${queryString}` : '/v1/deduplication/candidates';
+    return this.fetch<{ candidates: MergeCandidate[]; total: number }>(endpoint);
+  }
+
+  /**
+   * Review a merge candidate
+   * @endpoint POST /v1/deduplication/candidates/:id/review
+   */
+  async reviewMergeCandidate(
+    id: string,
+    decision: { action: 'MERGE' | 'KEEP' | 'SKIP'; winnerId?: string }
+  ): Promise<void> {
+    await this.fetch<void>(`/v1/deduplication/candidates/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify(decision),
+    });
+  }
+
+  // ==========================================================================
+  // MULTI-AGENT (v0.7)
+  // ==========================================================================
+
+  async getAgentSessions(params?: {
+    status?: import('./types').AgentSessionStatus;
+    parentSessionKey?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ sessions: import('./types').AgentSession[]; total: number }> {
+    const sp = new URLSearchParams();
+    if (params?.status) sp.set('status', params.status);
+    if (params?.parentSessionKey) sp.set('parentSessionKey', params.parentSessionKey);
+    if (params?.limit) sp.set('limit', String(params.limit));
+    if (params?.offset) sp.set('offset', String(params.offset));
+    const qs = sp.toString();
+    return this.fetch(`/v1/agent-sessions${qs ? `?${qs}` : ''}`);
+  }
+
+  async getAgentSessionSummary(key: string): Promise<import('./types').AgentSessionSummary> {
+    return this.fetch(`/v1/agent-sessions/${encodeURIComponent(key)}/summary`);
+  }
+
+  async getPools(params?: {
+    visibility?: import('./types').PoolVisibility;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ pools: import('./types').MemoryPool[]; total: number }> {
+    const sp = new URLSearchParams();
+    if (params?.visibility) sp.set('visibility', params.visibility);
+    if (params?.limit) sp.set('limit', String(params.limit));
+    if (params?.offset) sp.set('offset', String(params.offset));
+    const qs = sp.toString();
+    return this.fetch(`/v1/pools${qs ? `?${qs}` : ''}`);
+  }
+
+  async getPool(id: string): Promise<import('./types').MemoryPool> {
+    return this.fetch(`/v1/pools/${id}`);
+  }
+
+  async getPoolMembers(id: string, params?: { limit?: number; offset?: number }): Promise<{ members: import('./types').PoolMember[]; total: number }> {
+    const sp = new URLSearchParams();
+    if (params?.limit) sp.set('limit', String(params.limit));
+    if (params?.offset) sp.set('offset', String(params.offset));
+    const qs = sp.toString();
+    return this.fetch(`/v1/pools/${id}/members${qs ? `?${qs}` : ''}`);
+  }
+
+  async getPoolGrants(id: string): Promise<{ grants: import('./types').PoolGrant[] }> {
+    return this.fetch(`/v1/pools/${id}/grants`);
+  }
+
+  async getMemoryAttribution(memoryId: string): Promise<import('./types').MemoryAttribution> {
+    return this.fetch(`/v1/memories/${memoryId}/attribution`);
+  }
+
+  // ==========================================================================
   // MOCK DATA (for unimplemented endpoints)
   // ==========================================================================
 
@@ -573,6 +668,19 @@ export class EngramClient {
       recentActivity: [],
       apiRequests: [],
     };
+  }
+
+  // ==========================================================================
+  // FOG INDEX
+  // ==========================================================================
+
+  async getFogIndex(userId?: string): Promise<import('./types').FogIndexResult> {
+    const params = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    return this.fetch(`/v1/fog-index${params}`);
+  }
+
+  async getFogIndexHistory(limit = 30): Promise<import('./types').FogIndexHistory[]> {
+    return this.fetch(`/v1/fog-index/history?limit=${limit}`);
   }
 }
 

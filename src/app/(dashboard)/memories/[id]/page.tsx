@@ -17,8 +17,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Trash2, Link as LinkIcon, Copy, Loader2, Check, AlertCircle, Info, Layers } from "lucide-react";
+import { ArrowLeft, Trash2, Link as LinkIcon, Copy, Loader2, Check, AlertCircle, Info, Layers, Cpu } from "lucide-react";
 import { engram, Memory } from "@/lib/engram-client";
+import type { MemoryAttribution } from "@/lib/types";
 import { MemoryEmbeddingsTab } from "@/components/ensemble/memory-embeddings-tab";
 
 const layerColors: Record<string, string> = {
@@ -152,6 +153,23 @@ export default function MemoryDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [attribution, setAttribution] = useState<MemoryAttribution | null>(null);
+  const [attrLoading, setAttrLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchAttribution() {
+      setAttrLoading(true);
+      try {
+        const data = await engram.getMemoryAttribution(memoryId);
+        setAttribution(data);
+      } catch {
+        // Attribution may not exist for older memories
+      } finally {
+        setAttrLoading(false);
+      }
+    }
+    fetchAttribution();
+  }, [memoryId]);
 
   useEffect(() => {
     async function fetchMemory() {
@@ -248,6 +266,10 @@ export default function MemoryDetailPage() {
           <TabsTrigger value="embeddings">
             <Layers className="mr-2 h-4 w-4" />
             Embeddings
+          </TabsTrigger>
+          <TabsTrigger value="attribution">
+            <Cpu className="mr-2 h-4 w-4" />
+            Attribution
           </TabsTrigger>
         </TabsList>
 
@@ -427,6 +449,106 @@ export default function MemoryDetailPage() {
 
         <TabsContent value="embeddings">
           <MemoryEmbeddingsTab memoryId={memoryId} />
+        </TabsContent>
+
+        <TabsContent value="attribution" className="space-y-4 md:space-y-6">
+          {attrLoading ? (
+            <Card><CardContent className="pt-6"><Skeleton className="h-24" /></CardContent></Card>
+          ) : !attribution ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">No attribution data available for this memory</CardContent></Card>
+          ) : (
+            <>
+              {/* Created By */}
+              <Card>
+                <CardHeader className="pb-2 md:pb-4">
+                  <CardTitle className="text-base md:text-lg">Created By</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {attribution.createdBySession ? (
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Session Key</p>
+                        <code className="text-xs">{attribution.createdBySession.sessionKey}</code>
+                      </div>
+                      {attribution.createdBySession.label && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Label</p>
+                          <p className="text-sm">{attribution.createdBySession.label}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <Badge variant="outline" className={
+                          attribution.createdBySession.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                          attribution.createdBySession.status === 'COMPLETED' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                          'bg-red-500/10 text-red-500 border-red-500/20'
+                        }>
+                          {attribution.createdBySession.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Unknown (pre-v0.7 memory)</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Access History */}
+              <Card>
+                <CardHeader className="pb-2 md:pb-4">
+                  <CardTitle className="text-base md:text-lg">Access History ({attribution.accessLog.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {attribution.accessLog.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No access records</p>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {attribution.accessLog.map((log) => (
+                        <div key={log.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                          <div>
+                            <code className="text-xs">{log.sessionKey}</code>
+                            <Badge variant="secondary" className="ml-2 text-xs">{log.accessType}</Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(log.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Pool Memberships */}
+              <Card>
+                <CardHeader className="pb-2 md:pb-4">
+                  <CardTitle className="text-base md:text-lg">Pool Memberships ({attribution.pools.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {attribution.pools.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Not in any pools</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {attribution.pools.map((pool) => (
+                        <div key={pool.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                          <div className="flex items-center gap-2">
+                            <Link href={`/pools/${pool.id}`} className="text-sm hover:underline font-medium">{pool.name}</Link>
+                            <Badge variant="outline" className={
+                              pool.visibility === 'GLOBAL' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                              pool.visibility === 'SHARED' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                              'bg-red-500/10 text-red-500 border-red-500/20'
+                            }>
+                              {pool.visibility}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
 

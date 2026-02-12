@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Brain,
+  GitMerge,
   Users,
   Key,
   Settings,
@@ -25,15 +26,18 @@ import {
   Layers,
   Code2,
   Moon,
+  Activity,
 } from "lucide-react";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Memories", href: "/memories", icon: Brain },
+  { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Code", href: "/code", icon: Code2 },
   { name: "Consolidation", href: "/consolidation", icon: Moon },
   { name: "Ensemble", href: "/ensemble", icon: Layers },
+  { name: "Drift", href: "/ensemble/drift", icon: Activity },
   { name: "Graph", href: "/graph", icon: Network },
   { name: "Users", href: "/users", icon: Users },
   { name: "API Keys", href: "/api-keys", icon: Key },
