@@ -43,8 +43,8 @@ export default function PoolsPage() {
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
       });
-      setPools(result.pools);
-      setTotal(result.total);
+      setPools(result.pools ?? []);
+      setTotal(result.total ?? 0);
     } catch (error) {
       console.error("Failed to fetch pools:", error);
     } finally {

@@ -138,6 +138,7 @@ export default function MemoriesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memoryToDelete, setMemoryToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // Fetch users for the filter dropdown
   useEffect(() => {
@@ -160,7 +161,7 @@ export default function MemoriesPage() {
           { limit: PAGE_SIZE, layers },
           userFilter || undefined
         );
-        setMemories(result.memories);
+        setMemories(result.memories ?? []);
         setTotal(result.memories.length);
         setPage(0); // Reset to first page on new search
       } else {
@@ -172,8 +173,8 @@ export default function MemoriesPage() {
           limit: PAGE_SIZE,
           offset: page * PAGE_SIZE,
         });
-        setMemories(result.memories);
-        setTotal(result.total);
+        setMemories(result.memories ?? []);
+        setTotal(result.total ?? 0);
       }
     } catch (error) {
       console.error("Failed to fetch memories:", error);
@@ -288,9 +289,35 @@ export default function MemoriesPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Memories</h1>
-        <Button className="h-11 w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Test Memory
+        <Button
+          className="h-11 w-full sm:w-auto"
+          disabled={creating}
+          onClick={async () => {
+            setCreating(true);
+            try {
+              await engram.createMemory({
+                raw: "Test memory created from dashboard at " + new Date().toISOString(),
+                layer: "SESSION",
+              });
+              fetchMemories();
+            } catch (err) {
+              console.error("Failed to create test memory:", err);
+            } finally {
+              setCreating(false);
+            }
+          }}
+        >
+          {creating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Test Memory
+            </>
+          )}
         </Button>
       </div>
 

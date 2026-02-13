@@ -166,7 +166,7 @@ export default function OverviewPage() {
   }
 
   // Format layer data for display
-  const memoryByLayer = stats.memoryByLayer.map((layer) => ({
+  const memoryByLayer = (stats.memoryByLayer ?? []).map((layer) => ({
     layer: layer.layer.charAt(0) + layer.layer.slice(1).toLowerCase(),
     percentage: layer.percentage,
     count: layer.count,
@@ -174,14 +174,14 @@ export default function OverviewPage() {
   }));
 
   // Format API requests data for chart
-  const apiRequestsData = stats.apiRequests.map((item) => ({
+  const apiRequestsData = (stats.apiRequests ?? []).map((item) => ({
     // API returns 'day' field with date string like "2026-01-27"
     day: new Date(item.day).toLocaleDateString("en-US", { weekday: "short" }),
     requests: item.requests,
   }));
 
   // Format recent activity - API returns 'time' field, not 'timestamp'
-  const recentActivity = stats.recentActivity.map((activity) => ({
+  const recentActivity = (stats.recentActivity ?? []).map((activity) => ({
     id: activity.id,
     action: activity.action,
     time: formatRelativeTime(activity.time),

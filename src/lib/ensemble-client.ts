@@ -28,6 +28,8 @@ const getConfig = () => ({
            'http://localhost:3001',
   apiKey: process.env.NEXT_PUBLIC_ENGRAM_API_KEY ||
           process.env.ENGRAM_API_KEY || '',
+  userId: process.env.NEXT_PUBLIC_ENGRAM_USER_ID ||
+          process.env.ENGRAM_USER_ID || '',
 });
 
 // ============================================================================
@@ -48,6 +50,10 @@ async function apiFetch<T>(
 
   if (config.apiKey) {
     headers['X-AM-API-Key'] = config.apiKey;
+  }
+
+  if (config.userId) {
+    headers['X-AM-User-ID'] = config.userId;
   }
 
   const response = await fetch(url, {
@@ -426,7 +432,7 @@ export async function getDriftHistory(params?: {
   if (params?.limit) searchParams.set('limit', String(params.limit));
   if (params?.since) searchParams.set('since', params.since);
   const query = searchParams.toString();
-  return apiFetch<DriftHistoryResponse>(query ? `/ensemble/drift/history?${query}` : '/v1/ensemble/drift/history');
+  return apiFetch<DriftHistoryResponse>(query ? `/v1/ensemble/drift/history?${query}` : '/v1/ensemble/drift/history');
 }
 
 /**

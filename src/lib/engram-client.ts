@@ -560,7 +560,7 @@ export class EngramClient {
 
   /**
    * List merge candidates
-   * @endpoint GET /v1/deduplication/candidates
+   * @endpoint GET /v1/dedup/candidates
    */
   async getMergeCandidates(params?: {
     status?: 'PENDING' | 'REVIEWED';
@@ -574,21 +574,45 @@ export class EngramClient {
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.offset) searchParams.set('offset', String(params.offset));
     const queryString = searchParams.toString();
-    const endpoint = queryString ? `/v1/deduplication/candidates?${queryString}` : '/v1/deduplication/candidates';
+    const endpoint = queryString ? `/v1/dedup/candidates?${queryString}` : '/v1/dedup/candidates';
     return this.fetch<{ candidates: MergeCandidate[]; total: number }>(endpoint);
   }
 
   /**
    * Review a merge candidate
-   * @endpoint POST /v1/deduplication/candidates/:id/review
+   * @endpoint POST /v1/dedup/candidates/:id/review
    */
   async reviewMergeCandidate(
     id: string,
     decision: { action: 'MERGE' | 'KEEP' | 'SKIP'; winnerId?: string }
   ): Promise<void> {
-    await this.fetch<void>(`/v1/deduplication/candidates/${id}/review`, {
+    await this.fetch<void>(`/v1/dedup/candidates/${id}/review`, {
       method: 'POST',
       body: JSON.stringify(decision),
+    });
+  }
+
+  /**
+   * Trigger a dedup scan
+   * @endpoint POST /v1/dedup/scan
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async runDedupScan(): Promise<any> {
+    return this.fetch('/v1/dedup/scan', {
+      method: 'POST',
+      body: JSON.stringify({ userId: this.defaultUserId }),
+    });
+  }
+
+  /**
+   * Trigger a dream cycle (consolidation)
+   * @endpoint POST /v1/consolidation/dream-cycle
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async runDreamCycle(dryRun: boolean = false): Promise<any> {
+    return this.fetch('/v1/consolidation/dream-cycle', {
+      method: 'POST',
+      body: JSON.stringify({ dryRun }),
     });
   }
 
@@ -608,7 +632,12 @@ export class EngramClient {
     if (params?.limit) sp.set('limit', String(params.limit));
     if (params?.offset) sp.set('offset', String(params.offset));
     const qs = sp.toString();
-    return this.fetch(`/v1/agent-sessions${qs ? `?${qs}` : ''}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.fetch<any>(`/v1/agent-sessions${qs ? `?${qs}` : ''}`);
+    return {
+      sessions: Array.isArray(data) ? data : data.sessions ?? [],
+      total: Array.isArray(data) ? data.length : data.total ?? 0,
+    };
   }
 
   async getAgentSessionSummary(key: string): Promise<import('./types').AgentSessionSummary> {
@@ -625,7 +654,12 @@ export class EngramClient {
     if (params?.limit) sp.set('limit', String(params.limit));
     if (params?.offset) sp.set('offset', String(params.offset));
     const qs = sp.toString();
-    return this.fetch(`/v1/pools${qs ? `?${qs}` : ''}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.fetch<any>(`/v1/pools${qs ? `?${qs}` : ''}`);
+    return {
+      pools: Array.isArray(data) ? data : data.pools ?? [],
+      total: Array.isArray(data) ? data.length : data.total ?? 0,
+    };
   }
 
   async getPool(id: string): Promise<import('./types').MemoryPool> {
@@ -637,11 +671,34 @@ export class EngramClient {
     if (params?.limit) sp.set('limit', String(params.limit));
     if (params?.offset) sp.set('offset', String(params.offset));
     const qs = sp.toString();
-    return this.fetch(`/v1/pools/${id}/members${qs ? `?${qs}` : ''}`);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.fetch<any>(`/v1/pools/${id}/members${qs ? `?${qs}` : ''}`);
+      return {
+        members: Array.isArray(data) ? data : data.members ?? [],
+        total: Array.isArray(data) ? data.length : data.total ?? 0,
+      };
+    } catch (error) {
+      if (error instanceof EngramApiError && error.statusCode === 404) {
+        return { members: [], total: 0 };
+      }
+      throw error;
+    }
   }
 
   async getPoolGrants(id: string): Promise<{ grants: import('./types').PoolGrant[] }> {
-    return this.fetch(`/v1/pools/${id}/grants`);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.fetch<any>(`/v1/pools/${id}/grants`);
+      return {
+        grants: Array.isArray(data) ? data : data.grants ?? [],
+      };
+    } catch (error) {
+      if (error instanceof EngramApiError && error.statusCode === 404) {
+        return { grants: [] };
+      }
+      throw error;
+    }
   }
 
   async getMemoryAttribution(memoryId: string): Promise<import('./types').MemoryAttribution> {

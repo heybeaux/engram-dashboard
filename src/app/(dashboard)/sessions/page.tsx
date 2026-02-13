@@ -53,8 +53,8 @@ export default function SessionsPage() {
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
       });
-      setSessions(result.sessions);
-      setTotal(result.total);
+      setSessions(result.sessions ?? []);
+      setTotal(result.total ?? 0);
     } catch (error) {
       console.error("Failed to fetch sessions:", error);
     } finally {

@@ -59,6 +59,8 @@ export default function ConsolidationPage() {
   const [reports, setReports] = useState<DreamCycleReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [runningCycle, setRunningCycle] = useState(false);
+  const [cycleResult, setCycleResult] = useState<string | null>(null);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -96,16 +98,68 @@ export default function ConsolidationPage() {
             Dream cycle reports — memory consolidation and deduplication runs
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={fetchReports}
-          disabled={loading}
-          className="h-11 w-full sm:w-auto"
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            onClick={async () => {
+              setRunningCycle(true);
+              setCycleResult(null);
+              try {
+                const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle`, {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json",
+                    "X-AM-API-Key": API_KEY,
+                  },
+                  body: JSON.stringify({ dryRun: false }),
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                setCycleResult("Dream cycle started successfully!");
+                // Refresh reports after a delay to let it complete
+                setTimeout(fetchReports, 3000);
+              } catch (err) {
+                setCycleResult(`Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+              } finally {
+                setRunningCycle(false);
+              }
+            }}
+            disabled={runningCycle}
+            className="h-11 flex-1 sm:flex-none"
+          >
+            {runningCycle ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <Moon className="mr-2 h-4 w-4" />
+                Run Consolidation
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={fetchReports}
+            disabled={loading}
+            className="h-11 flex-1 sm:flex-none"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {/* Cycle Result */}
+      {cycleResult && (
+        <Card>
+          <CardContent className="py-3 text-center text-sm">
+            <p className={cycleResult.startsWith("Failed") ? "text-destructive" : "text-green-600"}>
+              {cycleResult}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Error State */}
       {error && (

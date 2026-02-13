@@ -46,8 +46,8 @@ export default function PoolDetailPage() {
           engram.getPoolGrants(poolId),
         ]);
         setPool(poolData);
-        setMembers(membersData.members);
-        setGrants(grantsData.grants);
+        setMembers(membersData.members ?? []);
+        setGrants(grantsData.grants ?? []);
       } catch (err) {
         console.error("Failed to fetch pool:", err);
         setError("Could not load pool details.");

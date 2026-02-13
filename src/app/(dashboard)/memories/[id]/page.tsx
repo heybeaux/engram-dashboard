@@ -496,14 +496,14 @@ export default function MemoryDetailPage() {
               {/* Access History */}
               <Card>
                 <CardHeader className="pb-2 md:pb-4">
-                  <CardTitle className="text-base md:text-lg">Access History ({attribution.accessLog.length})</CardTitle>
+                  <CardTitle className="text-base md:text-lg">Access History ({attribution?.accessLog?.length ?? 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {attribution.accessLog.length === 0 ? (
+                  {(attribution?.accessLog?.length ?? 0) === 0 ? (
                     <p className="text-sm text-muted-foreground">No access records</p>
                   ) : (
                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {attribution.accessLog.map((log) => (
+                      {attribution?.accessLog?.map((log) => (
                         <div key={log.id} className="flex items-center justify-between py-2 border-b last:border-0">
                           <div>
                             <code className="text-xs">{log.sessionKey}</code>
@@ -522,14 +522,14 @@ export default function MemoryDetailPage() {
               {/* Pool Memberships */}
               <Card>
                 <CardHeader className="pb-2 md:pb-4">
-                  <CardTitle className="text-base md:text-lg">Pool Memberships ({attribution.pools.length})</CardTitle>
+                  <CardTitle className="text-base md:text-lg">Pool Memberships ({attribution?.pools?.length ?? 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {attribution.pools.length === 0 ? (
+                  {(attribution?.pools?.length ?? 0) === 0 ? (
                     <p className="text-sm text-muted-foreground">Not in any pools</p>
                   ) : (
                     <div className="space-y-2">
-                      {attribution.pools.map((pool) => (
+                      {(attribution?.pools ?? []).map((pool) => (
                         <div key={pool.id} className="flex items-center justify-between py-2 border-b last:border-0">
                           <div className="flex items-center gap-2">
                             <Link href={`/pools/${pool.id}`} className="text-sm hover:underline font-medium">{pool.name}</Link>

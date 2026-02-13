@@ -7,7 +7,8 @@ import { MergeCard } from "@/components/merge-review/MergeCard";
 import { BulkActions } from "@/components/merge-review/BulkActions";
 import { engram } from "@/lib/engram-client";
 import { MergeCandidate } from "@/lib/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function MergeReviewPage() {
   const [candidates, setCandidates] = useState<MergeCandidate[]>([]);
@@ -15,6 +16,8 @@ export default function MergeReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanResult, setScanResult] = useState<string | null>(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<"PENDING" | "REVIEWED" | "ALL">("PENDING");
@@ -42,8 +45,8 @@ export default function MergeReviewPage() {
       }
 
       const result = await engram.getMergeCandidates(params);
-      setCandidates(result.candidates);
-      setTotal(result.total);
+      setCandidates(result.candidates ?? []);
+      setTotal(result.total ?? 0);
     } catch (err) {
       console.error("Failed to fetch merge candidates:", err);
       setError(
@@ -194,9 +197,45 @@ export default function MergeReviewPage() {
             <p className="text-lg font-medium">No merge candidates</p>
             <p className="mt-1 text-sm">
               {statusFilter === "PENDING"
-                ? "All candidates have been reviewed!"
+                ? "No candidates found — run a dedup scan to find duplicates."
                 : "No candidates match your filters."}
             </p>
+            {scanResult && (
+              <p className="mt-2 text-sm text-green-600">{scanResult}</p>
+            )}
+            <Button
+              className="mt-4"
+              onClick={async () => {
+                setScanLoading(true);
+                setScanResult(null);
+                try {
+                  const result = await engram.runDedupScan();
+                  setScanResult(
+                    `Scan complete! Found ${result?.candidatesCreated ?? result?.potentialDuplicates ?? 0} candidates.`
+                  );
+                  fetchCandidates();
+                } catch (err) {
+                  setScanResult(
+                    `Scan failed: ${err instanceof Error ? err.message : "Unknown error"}`
+                  );
+                } finally {
+                  setScanLoading(false);
+                }
+              }}
+              disabled={scanLoading}
+            >
+              {scanLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Scanning...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  Run Dedup Scan
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
       )}
