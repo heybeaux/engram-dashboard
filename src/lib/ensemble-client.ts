@@ -85,7 +85,7 @@ async function apiFetch<T>(
  * @endpoint GET /ensemble/status
  */
 export async function getEnsembleStatus(): Promise<EnsembleStatusResponse> {
-  return apiFetch<EnsembleStatusResponse>('/ensemble/status');
+  return apiFetch<EnsembleStatusResponse>('/v1/ensemble/status');
 }
 
 // ============================================================================
@@ -99,7 +99,7 @@ export async function getEnsembleStatus(): Promise<EnsembleStatusResponse> {
  */
 export async function getRegisteredModels(): Promise<ModelRegistryEntry[]> {
   try {
-    return await apiFetch<ModelRegistryEntry[]>('/ensemble/models');
+    return await apiFetch<ModelRegistryEntry[]>('/v1/ensemble/models');
   } catch (error) {
     if (error instanceof EngramApiError && error.statusCode === 404) {
       console.warn('GET /ensemble/models not implemented. Using status fallback.');
@@ -207,7 +207,7 @@ export async function getMemoryEmbeddings(
  */
 export async function getEmbeddingCoverage(): Promise<EmbeddingCoverageResponse> {
   try {
-    return await apiFetch<EmbeddingCoverageResponse>('/ensemble/coverage');
+    return await apiFetch<EmbeddingCoverageResponse>('/v1/ensemble/coverage');
   } catch (error) {
     if (error instanceof EngramApiError && error.statusCode === 404) {
       console.warn('GET /ensemble/coverage not implemented. Returning mock data.');
@@ -248,7 +248,7 @@ export async function getABTestResults(params?: {
     if (params?.start) searchParams.set('start', params.start);
     if (params?.end) searchParams.set('end', params.end);
     const query = searchParams.toString();
-    const endpoint = query ? `/ensemble/ab-results?${query}` : '/ensemble/ab-results';
+    const endpoint = query ? `/ensemble/ab-results?${query}` : '/v1/ensemble/ab-results';
     return await apiFetch<ABTestResults>(endpoint);
   } catch (error) {
     if (error instanceof EngramApiError && error.statusCode === 404) {
@@ -410,7 +410,7 @@ export interface DriftAnalyzeResponse {
  * Get latest drift per model
  */
 export async function getLatestDrift(): Promise<DriftLatestResponse> {
-  return apiFetch<DriftLatestResponse>('/ensemble/drift');
+  return apiFetch<DriftLatestResponse>('/v1/ensemble/drift');
 }
 
 /**
@@ -426,14 +426,14 @@ export async function getDriftHistory(params?: {
   if (params?.limit) searchParams.set('limit', String(params.limit));
   if (params?.since) searchParams.set('since', params.since);
   const query = searchParams.toString();
-  return apiFetch<DriftHistoryResponse>(query ? `/ensemble/drift/history?${query}` : '/ensemble/drift/history');
+  return apiFetch<DriftHistoryResponse>(query ? `/ensemble/drift/history?${query}` : '/v1/ensemble/drift/history');
 }
 
 /**
  * Trigger drift analysis
  */
 export async function analyzeDrift(): Promise<DriftAnalyzeResponse> {
-  return apiFetch<DriftAnalyzeResponse>('/ensemble/drift/analyze', {
+  return apiFetch<DriftAnalyzeResponse>('/v1/ensemble/drift/analyze', {
     method: 'POST',
   });
 }
