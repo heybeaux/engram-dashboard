@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { useFogIndex } from "@/hooks/use-fog-index";
+import Link from "next/link";
 
 function getTierColor(score: number): string {
   if (score >= 90) return "text-emerald-400";
@@ -75,10 +76,11 @@ function Sparkline({ data }: { data: Array<{ score: number }> }) {
   );
 }
 
-function ComponentBar({ name, score, details }: {
+function ComponentBar({ name, score, details, href }: {
   name: string;
   score: number;
   details: string;
+  href?: string;
 }) {
   const barColor =
     score >= 75 ? "bg-green-500" :
@@ -98,7 +100,15 @@ function ComponentBar({ name, score, details }: {
           style={{ width: `${Math.min(100, score)}%` }}
         />
       </div>
-      <p className="text-xs text-muted-foreground/70">{details}</p>
+      <p className="text-xs text-muted-foreground/70">
+        {href ? (
+          <Link href={href} className="hover:underline cursor-pointer hover:text-foreground transition-colors">
+            {details}
+          </Link>
+        ) : (
+          details
+        )}
+      </p>
     </div>
   );
 }
@@ -186,6 +196,7 @@ export function FogIndexCard() {
                       name={c.name}
                       score={c.score}
                       details={c.details}
+                      href={c.name === "Dedup Health" ? "/memories/merge-review" : undefined}
                     />
                   ))}
               </div>

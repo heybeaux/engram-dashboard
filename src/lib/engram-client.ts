@@ -575,7 +575,15 @@ export class EngramClient {
     if (params?.offset) searchParams.set('offset', String(params.offset));
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/v1/dedup/candidates?${queryString}` : '/v1/dedup/candidates';
-    return this.fetch<{ candidates: MergeCandidate[]; total: number }>(endpoint);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = await this.fetch<{ candidates: any[]; total: number; pendingCount?: number }>(endpoint);
+    // API returns memories[] array; frontend expects memoryA/memoryB
+    const candidates = (raw.candidates ?? []).map((c) => ({
+      ...c,
+      memoryA: c.memoryA ?? c.memories?.[0] ?? null,
+      memoryB: c.memoryB ?? c.memories?.[1] ?? null,
+    }));
+    return { candidates, total: raw.total ?? 0 };
   }
 
   /**
@@ -586,9 +594,20 @@ export class EngramClient {
     id: string,
     decision: { action: 'MERGE' | 'KEEP' | 'SKIP'; winnerId?: string }
   ): Promise<void> {
-    await this.fetch<void>(`/v1/dedup/candidates/${id}/review`, {
+    // Engram exposes POST /v1/dedup/review/:candidateId/approve|reject|skip
+    const actionMap: Record<string, string> = {
+      'MERGE': 'approve',
+      'KEEP': 'reject',
+      'SKIP': 'skip',
+    };
+    const endpoint = actionMap[decision.action] || 'skip';
+    const body: Record<string, unknown> = {};
+    if (decision.winnerId) {
+      body.winnerId = decision.winnerId;
+    }
+    await this.fetch<void>(`/v1/dedup/review/${id}/${endpoint}`, {
       method: 'POST',
-      body: JSON.stringify(decision),
+      body: JSON.stringify(body),
     });
   }
 

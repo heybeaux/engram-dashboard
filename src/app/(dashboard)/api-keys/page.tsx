@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, AlertTriangle, Check } from "lucide-react";
+import { trackEvent } from "@/lib/posthog";
 
 // Mock data
 const mockApiKeys = [
@@ -79,6 +80,7 @@ export default function ApiKeysPage() {
     };
     setKeys([...keys, newKeyObj]);
     setNewKeyName("");
+    trackEvent('api_key_created', { name: newKeyObj.name });
   };
 
   const handleCopyKey = () => {

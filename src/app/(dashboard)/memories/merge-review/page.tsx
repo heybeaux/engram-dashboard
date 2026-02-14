@@ -82,10 +82,11 @@ export default function MergeReviewPage() {
       );
       for (const candidate of highSimilarity) {
         // Pick the memory with the higher effective score as winner
-        const winnerId =
-          candidate.memoryA.effectiveScore >= candidate.memoryB.effectiveScore
-            ? candidate.memoryA.id
-            : candidate.memoryB.id;
+        const scoreA = candidate.memoryA?.effectiveScore ?? candidate.memoryA?.importanceScore ?? 0;
+        const scoreB = candidate.memoryB?.effectiveScore ?? candidate.memoryB?.importanceScore ?? 0;
+        const winnerId = scoreA >= scoreB
+            ? candidate.memoryA?.id
+            : candidate.memoryB?.id;
         await engram.reviewMergeCandidate(candidate.id, {
           action: "MERGE",
           winnerId,

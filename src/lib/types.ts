@@ -455,7 +455,9 @@ export interface MergeCandidateMemory {
   id: string;
   content: string;
   raw?: string;
-  effectiveScore: number;
+  effectiveScore?: number;
+  importanceScore?: number;
+  memoryType?: string;
   type?: string;
   source?: string;
   layer?: string;

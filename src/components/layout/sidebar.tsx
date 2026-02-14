@@ -19,6 +19,7 @@ import {
   Activity,
   Cpu,
   Database,
+  CreditCard,
 } from "lucide-react";
 
 const navigation = [
@@ -35,6 +36,7 @@ const navigation = [
   { name: "Graph", href: "/graph", icon: Network },
   { name: "Users", href: "/users", icon: Users },
   { name: "API Keys", href: "/api-keys", icon: Key },
+  { name: "Billing", href: "/billing", icon: CreditCard },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

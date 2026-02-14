@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { FogIndexCard } from "@/components/fog-index-card";
+import { AccountUsageCard } from "@/components/account-usage-card";
 
 // Layer colors for visualization
 const LAYER_COLORS: Record<string, string> = {
@@ -206,7 +207,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Memories</CardTitle>
@@ -259,6 +260,8 @@ export default function OverviewPage() {
         </Card>
 
         <FogIndexCard />
+
+        <AccountUsageCard />
       </div>
 
       {/* API Requests Chart */}
