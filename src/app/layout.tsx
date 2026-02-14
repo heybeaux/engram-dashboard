@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth-context";
+import { PostHogProvider } from "@/components/posthog-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,9 +21,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
+        <AuthProvider>
+          <Suspense fallback={null}>
+            <PostHogProvider>
+              <TooltipProvider>
+                {children}
+              </TooltipProvider>
+            </PostHogProvider>
+          </Suspense>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,5 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { FeedbackWidget } from "@/components/feedback-widget";
+import { NpsSurvey } from "@/components/nps-survey";
 
 export default function DashboardLayout({
   children,
@@ -13,6 +15,8 @@ export default function DashboardLayout({
         <Header />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
+      <FeedbackWidget />
+      <NpsSurvey />
     </div>
   );
 }
