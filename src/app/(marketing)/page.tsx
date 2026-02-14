@@ -51,9 +51,29 @@ const { context } = await engram.loadContext({
 });
 // → "User has a peanut allergy (CONSTRAINT)"`;
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Open Engram',
+  description: 'Persistent memory for AI agents — store, recall, and evolve memories with semantic search, knowledge graphs, and autonomous consolidation.',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Cloud',
+  url: 'https://openengram.ai',
+  offers: [
+    { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', description: '1,000 memories, 100 API calls/day' },
+    { '@type': 'Offer', name: 'Starter', price: '9', priceCurrency: 'USD', description: '10,000 memories, 1,000 API calls/day' },
+    { '@type': 'Offer', name: 'Pro', price: '39', priceCurrency: 'USD', description: '100,000 memories, knowledge graph' },
+    { '@type': 'Offer', name: 'Scale', price: '99', priceCurrency: 'USD', description: '1,000,000 memories, unlimited API calls' },
+  ],
+};
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Navigation */}
       <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,0 +1,27 @@
+# Open Engram
+
+> Persistent memory for AI agents
+
+## API
+- Base URL: https://api.openengram.ai/v1
+- Auth: API key (Bearer token) or JWT
+- Docs: https://openengram.ai/docs
+
+## Quick Start
+1. Sign up at https://openengram.ai/signup
+2. Get your API key
+3. Store a memory: POST /v1/memories { "content": "...", "metadata": {} }
+4. Recall: POST /v1/memories/search { "query": "...", "limit": 5 }
+
+## Key Endpoints
+- POST /v1/memories — Store a memory
+- POST /v1/memories/search — Semantic search
+- GET /v1/memories/:id — Get a memory
+- POST /v1/memories/context — Contextual recall (topic-aware)
+- GET /v1/health — Service health
+
+## Pricing
+- Free: 1,000 memories, 100 API calls/day
+- Starter ($9/mo): 10,000 memories
+- Pro ($39/mo): 100,000 memories, knowledge graph
+- Scale ($99/mo): 1,000,000 memories
