@@ -50,6 +50,11 @@ async function apiFetch<T>(
 
   if (config.apiKey) {
     headers['X-AM-API-Key'] = config.apiKey;
+  } else if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('engram_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
   }
 
   if (config.userId) {

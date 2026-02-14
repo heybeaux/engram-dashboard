@@ -98,6 +98,11 @@ export class EngramClient {
 
     if (this.apiKey) {
       headers['X-AM-API-Key'] = this.apiKey;
+    } else if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('engram_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
     }
 
     if (userId) {
