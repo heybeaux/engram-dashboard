@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center gap-2">
-          <Link href="/" className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
+          <Link href="/dashboard" className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
             <Brain className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold">Engram</span>
           </Link>

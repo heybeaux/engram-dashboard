@@ -47,7 +47,7 @@ export function Sidebar() {
     <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-card">
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b px-6">
-        <Brain className="h-8 w-8 text-primary" />
+        <Brain className="h-8 w-8 text-brand-500" />
         <span className="text-xl font-bold">Engram</span>
       </div>
 

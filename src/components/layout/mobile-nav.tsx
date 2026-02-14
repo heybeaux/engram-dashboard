@@ -63,7 +63,7 @@ export function MobileNav() {
       <SheetContent side="left" className="w-72 p-0">
         <SheetHeader className="border-b px-6 py-4">
           <SheetTitle className="flex items-center gap-2">
-            <Brain className="h-7 w-7 text-primary" />
+            <Brain className="h-7 w-7 text-brand-500" />
             <span className="text-xl font-bold">Engram</span>
           </SheetTitle>
         </SheetHeader>

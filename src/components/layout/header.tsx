@@ -20,7 +20,7 @@ export function Header() {
       {/* Mobile: Nav + Logo */}
       <div className="flex items-center gap-2 md:hidden">
         <MobileNav />
-        <Brain className="h-6 w-6 text-primary" />
+        <Brain className="h-6 w-6 text-brand-500" />
       </div>
 
       {/* Search - responsive width */}
