@@ -14,6 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import {
   Cloud,
   CloudOff,
@@ -26,6 +28,7 @@ import {
   Layers,
   HardDrive,
   ArrowLeftRight,
+  Upload,
 } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
 
@@ -38,6 +41,20 @@ interface CloudStatus {
   lastVerified?: string;
 }
 
+interface SyncStatus {
+  lastSyncedAt: string | null;
+  totalMemories: number;
+  syncedCount: number;
+  pendingCount: number;
+  autoSync: boolean;
+}
+
+interface SyncResult {
+  syncedCount: number;
+  errorCount: number;
+  lastSyncedAt: string | null;
+}
+
 function getAuthHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("engram_token") : null;
@@ -47,7 +64,7 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 export default function CloudSettingsPage() {
-  const { mode, refreshInstance } = useInstance();
+  const { mode, features, refreshInstance } = useInstance();
   const [status, setStatus] = useState<CloudStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -62,6 +79,12 @@ export default function CloudSettingsPage() {
   // Disconnect
   const [showDisconnect, setShowDisconnect] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+
+  // Sync
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [togglingAutoSync, setTogglingAutoSync] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -80,9 +103,72 @@ export default function CloudSettingsPage() {
     }
   }, []);
 
+  const fetchSyncStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/cloud/sync/status`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSyncStatus(data);
+    } catch {
+      // Silent — sync status is supplementary
+    }
+  }, []);
+
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
+
+  useEffect(() => {
+    if (status?.linked && features.cloudBackup) {
+      fetchSyncStatus();
+    }
+  }, [status?.linked, features.cloudBackup, fetchSyncStatus]);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/v1/cloud/sync`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Sync failed");
+        return;
+      }
+      setSyncResult(data);
+      await fetchSyncStatus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleToggleAutoSync = async (enabled: boolean) => {
+    setTogglingAutoSync(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/cloud/sync/auto-sync`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ enabled }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message || "Failed to toggle auto-sync");
+        return;
+      }
+      setSyncStatus((prev) => prev ? { ...prev, autoSync: enabled } : prev);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to toggle auto-sync");
+    } finally {
+      setTogglingAutoSync(false);
+    }
+  };
 
   const handleLink = async () => {
     if (!apiKey.trim()) return;
@@ -282,6 +368,85 @@ export default function CloudSettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* ── Cloud Backup Sync ─────────────────────────────────── */}
+          {features.cloudBackup && syncStatus && (
+            <Card>
+              <CardHeader className="pb-2 md:pb-4">
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-primary" />
+                  Cloud Backup
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Sync progress */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {syncStatus.syncedCount} of {syncStatus.totalMemories} memories synced
+                    </span>
+                    {syncStatus.pendingCount > 0 && (
+                      <span className="text-muted-foreground">
+                        {syncStatus.pendingCount} pending
+                      </span>
+                    )}
+                  </div>
+                  <Progress
+                    value={
+                      syncStatus.totalMemories > 0
+                        ? (syncStatus.syncedCount / syncStatus.totalMemories) * 100
+                        : 0
+                    }
+                  />
+                  {syncStatus.lastSyncedAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Last synced: {new Date(syncStatus.lastSyncedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+
+                {/* Sync result */}
+                {syncResult && (
+                  <div className="flex items-center gap-2 rounded-md bg-muted p-3 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                    <span>
+                      Synced {syncResult.syncedCount} memories
+                      {syncResult.errorCount > 0 && (
+                        <span className="text-destructive">
+                          {" "}({syncResult.errorCount} errors)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  {/* Sync Now button */}
+                  <Button
+                    onClick={handleSync}
+                    disabled={syncing || syncStatus.pendingCount === 0}
+                  >
+                    {syncing ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    {syncing ? "Syncing..." : "Sync Now"}
+                  </Button>
+
+                  {/* Auto-sync toggle */}
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={syncStatus.autoSync}
+                      onCheckedChange={handleToggleAutoSync}
+                      disabled={togglingAutoSync}
+                    />
+                    <span className="text-sm">Auto-sync new memories</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       ) : (
         /* ── Not Linked State ───────────────────────────────────────── */
