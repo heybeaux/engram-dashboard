@@ -80,20 +80,20 @@ const PLANS: PlanDef[] = [
     limits: { memories: 100_000, apiCalls: 10_000, agents: 10 },
   },
   {
-    id: "team",
-    name: "Team",
+    id: "scale",
+    name: "Scale",
     price: "$99",
     priceNote: "/month",
     features: [
-      "Unlimited memories",
-      "Unlimited API calls",
+      "1,000,000 memories",
+      "100,000 API calls/day",
       "Unlimited agents",
       "Dedicated support",
       "SSO / SAML",
       "Custom retention policies",
       "SLA guarantee",
     ],
-    limits: { memories: Infinity, apiCalls: Infinity, agents: Infinity },
+    limits: { memories: 1_000_000, apiCalls: 100_000, agents: Infinity },
   },
 ];
 
@@ -172,7 +172,7 @@ export default function BillingPage() {
     setCheckoutLoading(planId);
     trackEvent('plan_upgraded', { plan: planId, from: currentPlan });
     try {
-      const { url } = await createCheckout(planId);
+      const { url } = await createCheckout(planId.toUpperCase());
       window.location.href = url;
     } catch {
       // TODO: error toast

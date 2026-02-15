@@ -7,7 +7,7 @@ import { X, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/lib/posthog';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 const NPS_DISMISS_KEY = 'engram_nps_dismissed';
 const NPS_LOGIN_COUNT_KEY = 'engram_login_count';
 const NPS_FIRST_SEEN_KEY = 'engram_first_seen';

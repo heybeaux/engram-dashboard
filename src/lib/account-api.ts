@@ -134,11 +134,12 @@ export async function getApiKeys(): Promise<{ keys: ApiKeyInfo[] }> {
   return data;
 }
 
-export function createApiKey(name: string) {
-  return authFetch<{ key: string; id: string }>('/v1/account/api-keys', {
+export async function createApiKey(name: string) {
+  const result = await authFetch<{ apiKey: string; agent: { id: string; name: string; apiKeyHint: string } }>('/v1/account/api-keys', {
     method: 'POST',
     body: JSON.stringify({ name }),
   });
+  return { key: result.apiKey, id: result.agent.id };
 }
 
 export function deleteApiKey(id: string) {

@@ -21,7 +21,7 @@ import {
   DataListActions,
 } from "@/components/ui/data-list";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye, Download, RefreshCw, Loader2, Trash2 } from "lucide-react";
+import { Search, Eye, Download, RefreshCw, Loader2, Trash2, Users as UsersIcon } from "lucide-react";
 import { engram } from "@/lib/engram-client";
 
 interface User {
@@ -140,15 +140,20 @@ export default function UsersPage() {
     return (
       <div className="space-y-4 md:space-y-6">
         <h1 className="text-2xl md:text-3xl font-bold">Users</h1>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={fetchUsers} variant="outline" className="h-11">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Retry
-              </Button>
-            </div>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 text-center px-4">
+            <UsersIcon className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground/40 mb-4" />
+            <h3 className="text-base md:text-lg font-semibold mb-2">User Management</h3>
+            <p className="text-sm text-muted-foreground mb-2 max-w-md">
+              User listing is not available yet. This feature is coming in a future release.
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Users are automatically tracked when memories are stored with a user ID.
+            </p>
+            <Button onClick={fetchUsers} variant="outline" size="sm" className="h-11">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>

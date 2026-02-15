@@ -25,7 +25,7 @@ import { EngramApiError } from './types';
 const getConfig = () => ({
   baseUrl: process.env.NEXT_PUBLIC_ENGRAM_API_URL ||
            process.env.ENGRAM_API_URL ||
-           'http://localhost:3001',
+           'https://api.openengram.ai',
   apiKey: process.env.NEXT_PUBLIC_ENGRAM_API_KEY ||
           process.env.ENGRAM_API_KEY || '',
   userId: process.env.NEXT_PUBLIC_ENGRAM_USER_ID ||

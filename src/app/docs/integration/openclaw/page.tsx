@@ -54,7 +54,7 @@ events:
 
 import { HookEvent, HookResult } from '@openclaw/types';
 
-const ENGRAM_API_URL = process.env.ENGRAM_API_URL || 'http://localhost:3001';
+const ENGRAM_API_URL = process.env.ENGRAM_API_URL || 'https://api.openengram.ai';
 const ENGRAM_API_KEY = process.env.ENGRAM_API_KEY;
 const ENGRAM_USER_ID = process.env.ENGRAM_USER_ID || 'default';
 const ENGRAM_AGENT_ID = process.env.ENGRAM_AGENT_ID;
@@ -153,7 +153,7 @@ export default { handle };`}
           <h3>4. Configure Environment</h3>
           <p>Add to your OpenClaw config or workspace <code>.env</code>:</p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`ENGRAM_API_URL=http://localhost:3001
+{`ENGRAM_API_URL=https://api.openengram.ai
 ENGRAM_API_KEY=eg_sk_live_xxxxxxxxxxxx
 ENGRAM_USER_ID=Beaux
 ENGRAM_AGENT_ID=rook`}
@@ -259,7 +259,7 @@ ENGRAM_AGENT_ID=rook`}
           <ul>
             <li>Check <code>ENGRAM_API_KEY</code> is valid</li>
             <li>Check <code>ENGRAM_USER_ID</code> matches</li>
-            <li>Verify Engram server is running: <code>curl http://localhost:3001/v1/health</code></li>
+            <li>Verify Engram server is running: <code>curl https://api.openengram.ai/v1/health</code></li>
           </ul>
 
           <h3>Messages not being captured</h3>

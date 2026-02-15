@@ -7,7 +7,7 @@ import { MessageSquarePlus, Star, X, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/lib/posthog';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 
 const CATEGORIES = [
   { value: 'general', label: 'General' },

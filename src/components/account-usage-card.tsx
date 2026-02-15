@@ -8,12 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Brain, Zap, Users, ArrowRight } from "lucide-react";
 import { getAccount, type Account } from "@/lib/account-api";
 
-const PLAN_LIMITS: Record<string, { memories: number; apiCalls: number; agents: number }> = {
-  free: { memories: 1_000, apiCalls: 100, agents: 1 },
-  starter: { memories: 10_000, apiCalls: 1_000, agents: 3 },
-  pro: { memories: 100_000, apiCalls: 10_000, agents: 10 },
-  team: { memories: Infinity, apiCalls: Infinity, agents: Infinity },
-};
+/** Treat -1 as unlimited (Infinity) */
+function effectiveLimit(v: number): number {
+  return v === -1 ? Infinity : v;
+}
 
 function MiniMeter({ used, limit }: { used: number; limit: number }) {
   const isUnlimited = !isFinite(limit);
@@ -37,7 +35,11 @@ export function AccountUsageCard() {
 
   if (!account) return null;
 
-  const limits = PLAN_LIMITS[account.plan] ?? PLAN_LIMITS.free;
+  const limits = {
+    memories: effectiveLimit(account.limits.memories),
+    apiCalls: effectiveLimit(account.limits.apiCallsPerDay),
+    agents: effectiveLimit(account.limits.agents),
+  };
   const isFreeTier = account.plan === "free";
 
   return (

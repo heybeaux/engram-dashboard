@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,9 @@ function MobileListSkeleton() {
 }
 
 export default function MemoriesPage() {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
+  const [search, setSearch] = useState(initialQuery);
   const [layerFilter, setLayerFilter] = useState<MemoryLayer | null>(null);
   const [userFilter, setUserFilter] = useState<string | null>(null);
   const [memories, setMemories] = useState<(Memory | MemoryWithScore)[]>([]);
@@ -295,10 +298,13 @@ export default function MemoriesPage() {
           onClick={async () => {
             setCreating(true);
             try {
-              await engram.createMemory({
-                raw: "Test memory created from dashboard at " + new Date().toISOString(),
-                layer: "SESSION",
-              });
+              await engram.createMemory(
+                {
+                  raw: "Test memory created from dashboard at " + new Date().toISOString(),
+                  layer: "SESSION",
+                },
+                "dashboard-test"
+              );
               fetchMemories();
             } catch (err) {
               console.error("Failed to create test memory:", err);

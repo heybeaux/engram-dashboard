@@ -28,7 +28,7 @@ export default function OnboardingPage() {
     setTimeout(() => setter(false), 2000);
   }
 
-  const curlExample = `curl -X POST http://localhost:3001/v1/memories \\
+  const curlExample = `curl -X POST https://api.openengram.ai/v1/memories \\
   -H "Authorization: Bearer ${apiKey || 'YOUR_API_KEY'}" \\
   -H "Content-Type: application/json" \\
   -d '{"content": "User prefers dark mode", "userId": "user-1"}'`;

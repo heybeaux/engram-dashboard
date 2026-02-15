@@ -132,7 +132,7 @@ Response:
           <h3>Cron Example</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`# Run consolidation every night at 3am
-0 3 * * * curl -X POST http://localhost:3001/v1/consolidate \\
+0 3 * * * curl -X POST https://api.openengram.ai/v1/consolidate \\
   -H "X-AM-API-Key: $API_KEY" \\
   -H "X-AM-User-ID: beaux"`}
           </pre>

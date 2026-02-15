@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 
 import { resetPostHog } from '@/lib/posthog';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 
 interface User {
   id: string;
@@ -27,7 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, name: string) => Promise<{ success: boolean; apiKey?: string; error?: string }>;
+  register: (email: string, password: string, name: string, plan?: string, accessCode?: string) => Promise<{ success: boolean; apiKey?: string; needsPayment?: boolean; selectedPlan?: string; error?: string }>;
   logout: () => void;
 }
 
@@ -114,24 +114,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (email: string, password: string, name: string) => {
+  const register = useCallback(async (email: string, password: string, name: string, plan?: string, accessCode?: string) => {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, plan, accessCode }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         return { success: false, error: data.message || 'Registration failed' };
       }
-      const data: AuthResponse = await res.json();
+      const data = await res.json();
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.account));
       setCookie(TOKEN_KEY, data.token);
       setToken(data.token);
       setUser(data.account);
-      return { success: true, apiKey: data.apiKey };
+      return { success: true, apiKey: data.apiKey, needsPayment: data.needsPayment, selectedPlan: data.selectedPlan };
     } catch {
       return { success: false, error: 'Network error. Please try again.' };
     }

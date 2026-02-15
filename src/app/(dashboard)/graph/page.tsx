@@ -1,6 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Network, ExternalLink } from 'lucide-react';
 
 /**
  * Memory Graph Page
@@ -11,65 +15,107 @@ import { useEffect, useState } from 'react';
 export default function GraphPage() {
   const [graphUrl, setGraphUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get the Engram API URL and credentials from environment
-    const apiUrl = process.env.NEXT_PUBLIC_ENGRAM_API_URL || 'http://localhost:3001';
+  const checkGraph = () => {
+    setLoading(true);
+    setError(null);
+    
+    const apiUrl = process.env.NEXT_PUBLIC_ENGRAM_API_URL || 'https://api.openengram.ai';
     const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || '';
     const userId = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'Beaux';
     
-    // The graph HTML is served from the public directory of Engram
-    // Pass credentials as URL params so the graph can authenticate
     const params = new URLSearchParams();
     if (apiKey) params.set('apiKey', apiKey);
     if (userId) params.set('userId', userId);
     const graphPath = `${apiUrl}/memory-graph.html?${params.toString()}`;
     
-    // Verify the graph is accessible
     fetch(graphPath, { method: 'HEAD' })
       .then((res) => {
         if (res.ok) {
           setGraphUrl(graphPath);
         } else {
-          setError(`Graph not available at ${graphPath} (status ${res.status})`);
+          setError(`Graph visualization not available (HTTP ${res.status}). The Engram API may not be serving static files.`);
         }
       })
       .catch((err) => {
-        setError(`Failed to connect to Engram: ${err.message}`);
-      });
+        setError(`Cannot connect to Engram API: ${err.message}`);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    checkGraph();
   }, []);
 
-  if (error) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="text-center p-8">
-          <h1 className="text-2xl font-bold text-destructive mb-4">Graph Unavailable</h1>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <p className="text-sm text-muted-foreground">
-            Make sure the Engram API server is running and accessible.
-          </p>
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
+          <Badge variant="outline">Loading...</Badge>
         </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="animate-pulse text-muted-foreground">Connecting to graph visualization...</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (!graphUrl) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading graph...</div>
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
+          <Badge variant="destructive">Unavailable</Badge>
+        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 text-center px-4">
+            <Network className="h-10 w-10 md:h-12 md:w-12 text-destructive mb-4" />
+            <h3 className="text-base md:text-lg font-semibold mb-2">Graph Unavailable</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md">{error}</p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Make sure the Engram API server is running and the memory-graph.html file is in its public directory.
+            </p>
+            <Button onClick={checkGraph} variant="outline" size="sm" className="h-11">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-background">
-      {/* Full-screen iframe for the D3 graph */}
-      <iframe
-        src={graphUrl}
-        className="w-full h-full border-0"
-        title="Memory Graph"
-        allow="fullscreen"
-      />
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-11" asChild>
+            <a href={graphUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open Full Screen
+            </a>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={checkGraph} className="h-11 w-11">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <iframe
+            src={graphUrl}
+            className="w-full border-0"
+            style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}
+            title="Memory Graph"
+            allow="fullscreen"
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

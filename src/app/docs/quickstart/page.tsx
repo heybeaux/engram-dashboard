@@ -73,12 +73,14 @@ pnpm prisma generate`}
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`pnpm start
 
-# Server running on http://localhost:3001`}
+# Server running on http://localhost:3001
+# Or use the hosted version at https://api.openengram.ai`}
           </pre>
 
           <h2>6. Store Your First Memory</h2>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`curl -X POST http://localhost:3001/v1/memories \\
+{`# Use https://api.openengram.ai for the hosted version
+curl -X POST http://localhost:3001/v1/memories \\
   -H "Content-Type: application/json" \\
   -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
   -H "X-AM-User-ID: alice" \\
@@ -104,7 +106,8 @@ pnpm prisma generate`}
 
           <h2>7. Query Memories</h2>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`curl -X POST http://localhost:3001/v1/memories/query \\
+{`# Use https://api.openengram.ai for the hosted version
+curl -X POST http://localhost:3001/v1/memories/query \\
   -H "Content-Type: application/json" \\
   -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
   -H "X-AM-User-ID: alice" \\
@@ -117,7 +120,8 @@ pnpm prisma generate`}
 
           <h2>8. Load Context for Agent</h2>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`curl -X POST http://localhost:3001/v1/context \\
+{`# Use https://api.openengram.ai for the hosted version
+curl -X POST http://localhost:3001/v1/context \\
   -H "Content-Type: application/json" \\
   -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
   -H "X-AM-User-ID: alice" \\
@@ -140,7 +144,8 @@ pnpm prisma generate`}
 
           <h2>9. Check System Health</h2>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`curl http://localhost:3001/v1/health
+{`# Use https://api.openengram.ai for the hosted version
+curl http://localhost:3001/v1/health
 
 {
   "status": "healthy",

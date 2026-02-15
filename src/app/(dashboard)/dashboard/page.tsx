@@ -3,19 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Brain, Users, Activity, TrendingUp, RefreshCw, AlertCircle, WifiOff } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { Brain, Users, Activity, RefreshCw, AlertCircle, WifiOff } from "lucide-react";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { FogIndexCard } from "@/components/fog-index-card";
 import { AccountUsageCard } from "@/components/account-usage-card";
+import { ApiRequestsCard } from "@/components/api-requests-card";
 
 // Layer colors for visualization
 const LAYER_COLORS: Record<string, string> = {
@@ -174,13 +166,6 @@ export default function OverviewPage() {
     color: LAYER_COLORS[layer.layer] || "bg-gray-500",
   }));
 
-  // Format API requests data for chart
-  const apiRequestsData = (stats.apiRequests ?? []).map((item) => ({
-    // API returns 'day' field with date string like "2026-01-27"
-    day: new Date(item.day).toLocaleDateString("en-US", { weekday: "short" }),
-    requests: item.requests,
-  }));
-
   // Format recent activity - API returns 'time' field, not 'timestamp'
   const recentActivity = (stats.recentActivity ?? []).map((activity) => ({
     id: activity.id,
@@ -264,49 +249,8 @@ export default function OverviewPage() {
         <AccountUsageCard />
       </div>
 
-      {/* API Requests Chart */}
-      {apiRequestsData.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2 md:pb-4">
-            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-              <TrendingUp className="h-4 w-4 md:h-5 md:w-5" />
-              API Requests (7 days)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2 pr-4 md:pl-4 md:pr-6">
-            <div className="h-[200px] sm:h-[250px] md:h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={apiRequestsData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="day" 
-                    className="text-xs" 
-                    tick={{ fontSize: 11 }}
-                  />
-                  <YAxis 
-                    className="text-xs" 
-                    tick={{ fontSize: 11 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="requests"
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* API Requests Usage */}
+      <ApiRequestsCard />
 
       {/* Bottom Row */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">

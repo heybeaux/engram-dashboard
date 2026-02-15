@@ -8,7 +8,7 @@
 // Model Configuration Types
 // ============================================================================
 
-export type ModelId = 'bge-base' | 'nomic' | 'minilm' | 'gte-base';
+export type ModelId = 'bge-base' | 'nomic' | 'minilm' | 'gte-base' | 'openai-small' | 'openai-large' | 'cohere-v3' | string;
 export type ModelStatus = 'active' | 'shadow' | 'deprecated' | 'disabled';
 export type ReembedJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type ReembedMode = 'incremental' | 'full';
@@ -23,7 +23,7 @@ export interface ModelConfig {
   documentPrefix?: string;
 }
 
-export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
+export const MODEL_CONFIGS: Record<string, ModelConfig> = {
   'bge-base': {
     id: 'bge-base',
     dimensions: 768,
@@ -51,6 +51,27 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     id: 'gte-base',
     dimensions: 768,
     namespace: 'gte-base',
+    weight: 1.0,
+    maxTokens: 512,
+  },
+  'openai-small': {
+    id: 'openai-small' as ModelId,
+    dimensions: 1536,
+    namespace: 'openai-small',
+    weight: 1.0,
+    maxTokens: 8191,
+  },
+  'openai-large': {
+    id: 'openai-large' as ModelId,
+    dimensions: 3072,
+    namespace: 'openai-large',
+    weight: 1.0,
+    maxTokens: 8191,
+  },
+  'cohere-v3': {
+    id: 'cohere-v3' as ModelId,
+    dimensions: 1024,
+    namespace: 'cohere-v3',
     weight: 1.0,
     maxTokens: 512,
   },

@@ -26,7 +26,7 @@ interface DreamCycleReport {
   errors: string[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_ENGRAM_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_ENGRAM_API_URL || "https://api.openengram.ai";
 const API_KEY = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
 
 function formatDate(dateString: string): string {

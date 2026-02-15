@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,59 +28,50 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, AlertTriangle, Check } from "lucide-react";
+import { Plus, Trash2, Copy, AlertTriangle, Check, Loader2 } from "lucide-react";
 import { trackEvent } from "@/lib/posthog";
-
-// Mock data
-const mockApiKeys = [
-  {
-    id: "key_1",
-    name: "Production",
-    keyHint: "...a7f9",
-    createdAt: "Jan 15, 2026",
-  },
-  {
-    id: "key_2",
-    name: "Development",
-    keyHint: "...2345",
-    createdAt: "Feb 1, 2026",
-  },
-  {
-    id: "key_3",
-    name: "Testing",
-    keyHint: "...x8k2",
-    createdAt: "Feb 1, 2026",
-  },
-];
+import { getApiKeys, createApiKey, deleteApiKey, type ApiKeyInfo } from "@/lib/account-api";
 
 export default function ApiKeysPage() {
-  const [keys, setKeys] = useState(mockApiKeys);
+  const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreateKey = () => {
+  const fetchKeys = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await getApiKeys();
+      setKeys(data.keys);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load API keys");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchKeys();
+  }, [fetchKeys]);
+
+  const handleCreateKey = async () => {
     if (!newKeyName.trim()) return;
-
-    // Simulate creating a new key
-    const generatedKey = `engram_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-    setNewKey(generatedKey);
-
-    // Add to list
-    const newKeyObj = {
-      id: `key_${Date.now()}`,
-      name: newKeyName,
-      keyHint: `...${generatedKey.slice(-4)}`,
-      createdAt: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
-    setKeys([...keys, newKeyObj]);
-    setNewKeyName("");
-    trackEvent('api_key_created', { name: newKeyObj.name });
+    setCreating(true);
+    setError(null);
+    try {
+      const result = await createApiKey(newKeyName.trim());
+      setNewKey(result.key);
+      trackEvent("api_key_created", { name: newKeyName.trim() });
+      setNewKeyName("");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to create API key");
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleCopyKey = () => {
@@ -91,31 +82,47 @@ export default function ApiKeysPage() {
     }
   };
 
-  const handleRevokeKey = (id: string) => {
-    setKeys(keys.filter((key) => key.id !== id));
+  const handleRevokeKey = async (id: string) => {
+    try {
+      await deleteApiKey(id);
+      setKeys(keys.filter((key) => key.id !== id));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to revoke API key");
+    }
   };
 
   const handleCloseDialog = () => {
+    const hadKey = !!newKey;
     setIsDialogOpen(false);
     setNewKey(null);
     setNewKeyName("");
     setCopied(false);
+    setError(null);
+    if (hadKey) {
+      fetchKeys();
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   // Render key card for mobile
-  const renderKeyCard = (key: typeof mockApiKeys[0]) => (
+  const renderKeyCard = (key: ApiKeyInfo) => (
     <DataListItem key={key.id}>
       <DataListHeader>
         <span className="font-medium">{key.name}</span>
       </DataListHeader>
 
       <DataListRow label="Key">
-        <code className="text-muted-foreground">{key.keyHint}</code>
+        <code className="text-muted-foreground">{key.apiKeyHint}</code>
       </DataListRow>
 
-      <DataListRow label="Created">
-        {key.createdAt}
-      </DataListRow>
+      <DataListRow label="Created">{formatDate(key.createdAt)}</DataListRow>
 
       <DataListActions>
         <Button
@@ -136,7 +143,13 @@ export default function ApiKeysPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">API Keys</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            handleCloseDialog();
+          } else {
+            setIsDialogOpen(true);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="h-11 w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
@@ -161,7 +174,12 @@ export default function ApiKeysPage() {
                   <code className="flex-1 rounded bg-muted p-3 text-sm break-all">
                     {newKey}
                   </code>
-                  <Button variant="outline" size="icon" onClick={handleCopyKey} className="h-11 w-11 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyKey}
+                    className="h-11 w-11 shrink-0"
+                  >
                     {copied ? (
                       <Check className="h-4 w-4 text-green-500" />
                     ) : (
@@ -186,20 +204,43 @@ export default function ApiKeysPage() {
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
                     className="mt-1 h-11"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newKeyName.trim()) {
+                        handleCreateKey();
+                      }
+                    }}
                   />
                 </div>
               </div>
             )}
 
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
+
             <DialogFooter className="flex-col sm:flex-row gap-2">
               {newKey ? (
-                <Button onClick={handleCloseDialog} className="h-11 w-full sm:w-auto">Done</Button>
+                <Button
+                  onClick={handleCloseDialog}
+                  className="h-11 w-full sm:w-auto"
+                >
+                  Done
+                </Button>
               ) : (
                 <>
-                  <Button variant="outline" onClick={handleCloseDialog} className="h-11 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    onClick={handleCloseDialog}
+                    className="h-11 w-full sm:w-auto"
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateKey} disabled={!newKeyName.trim()} className="h-11 w-full sm:w-auto">
+                  <Button
+                    onClick={handleCreateKey}
+                    disabled={!newKeyName.trim() || creating}
+                    className="h-11 w-full sm:w-auto"
+                  >
+                    {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Key
                   </Button>
                 </>
@@ -209,58 +250,87 @@ export default function ApiKeysPage() {
         </Dialog>
       </div>
 
+      {error && !isDialogOpen && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Desktop Table */}
       <Card className="hidden md:block">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Key</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {keys.map((key) => (
-                <TableRow key={key.id}>
-                  <TableCell className="font-medium">{key.name}</TableCell>
-                  <TableCell>
-                    <code className="text-muted-foreground">{key.keyHint}</code>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {key.createdAt}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive h-11"
-                      onClick={() => handleRevokeKey(key.id)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Revoke
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Key</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {keys.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground py-8"
+                    >
+                      No API keys yet. Create one to get started.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  keys.map((key) => (
+                    <TableRow key={key.id}>
+                      <TableCell className="font-medium">{key.name}</TableCell>
+                      <TableCell>
+                        <code className="text-muted-foreground">
+                          {key.apiKeyHint}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(key.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive h-11"
+                          onClick={() => handleRevokeKey(key.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Revoke
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Mobile Card List */}
       <div className="md:hidden">
-        {keys.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : keys.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
-              No API keys yet
+              No API keys yet. Create one to get started.
             </CardContent>
           </Card>
         ) : (
-          <DataList>
-            {keys.map(renderKeyCard)}
-          </DataList>
+          <DataList>{keys.map(renderKeyCard)}</DataList>
         )}
       </div>
 

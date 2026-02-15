@@ -47,6 +47,24 @@ import {
 import { ensembleApi } from "@/lib/ensemble-client";
 
 // ============================================================================
+// Model Display Names (cloud API models get friendly names)
+// ============================================================================
+
+const MODEL_DISPLAY_NAMES: Record<string, string> = {
+  'openai-small': 'OpenAI text-embedding-3-small',
+  'openai-large': 'OpenAI text-embedding-3-large',
+  'cohere-v3': 'Cohere Embed v3',
+  'bge-base': 'BGE Base (local)',
+  'nomic': 'Nomic Embed (local)',
+  'minilm': 'MiniLM (local)',
+  'gte-base': 'GTE Base (local)',
+};
+
+function getModelDisplayName(modelId: string): string {
+  return MODEL_DISPLAY_NAMES[modelId] || modelId;
+}
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 
@@ -140,7 +158,8 @@ function ModelRegistrySection({
                 <TableRow key={model.modelId}>
                   <TableCell>
                     <div>
-                      <span className="font-medium">{model.modelId}</span>
+                      <span className="font-medium">{getModelDisplayName(model.modelId)}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{model.modelId}</p>
                       {config?.queryPrefix && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Uses query prefix

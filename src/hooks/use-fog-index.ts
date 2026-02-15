@@ -14,12 +14,14 @@ export function useFogIndex() {
     setLoading(true);
     setError(null);
     try {
-      const [current, hist] = await Promise.all([
+      const [current, hist] = await Promise.allSettled([
         engram.getFogIndex(),
         engram.getFogIndexHistory(30),
       ]);
-      setData(current);
-      setHistory(hist);
+      if (current.status === 'fulfilled') setData(current.value);
+      else throw current.reason;
+      if (hist.status === 'fulfilled') setHistory(hist.value);
+      // History failure is non-fatal — just show current score without sparkline
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch Fog Index";
       setError(message);

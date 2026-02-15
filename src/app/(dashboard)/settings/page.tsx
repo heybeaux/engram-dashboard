@@ -406,7 +406,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{key.name}</span>
                       <code className="text-xs text-muted-foreground">
-                        ····{key.lastFour}
+                        ····{key.apiKeyHint}
                       </code>
                     </div>
                     <div className="flex gap-3 text-xs text-muted-foreground mt-1">
