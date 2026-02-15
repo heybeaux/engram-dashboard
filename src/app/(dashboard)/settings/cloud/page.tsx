@@ -515,12 +515,12 @@ export default function CloudSettingsPage() {
                 <p className="text-xs text-muted-foreground">
                   Get your API key from{" "}
                   <a
-                    href="https://cloud.openengram.ai"
+                    href="https://app.openengram.ai"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-foreground"
                   >
-                    cloud.openengram.ai
+                    app.openengram.ai
                   </a>
                 </p>
               </div>

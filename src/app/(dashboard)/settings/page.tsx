@@ -32,10 +32,12 @@ import {
   getApiKeys,
   createApiKey,
   deleteApiKey,
+  deleteAccount as deleteAccountApi,
   changePassword,
   type Account,
   type ApiKeyInfo,
 } from "@/lib/account-api";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   // ── Profile state ──────────────────────────────────────────────────────
@@ -68,6 +70,8 @@ export default function SettingsPage() {
   // ── Delete account state ───────────────────────────────────────────────
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
 
   // ── Load data ──────────────────────────────────────────────────────────
   const loadAccount = useCallback(async () => {
@@ -495,13 +499,19 @@ export default function SettingsPage() {
                   </Button>
                   <Button
                     variant="destructive"
-                    disabled={deleteConfirmText !== "delete my account"}
-                    onClick={() => {
-                      // TODO: Call deleteAccount() when endpoint exists
-                      // deleteAccount().then(() => router.push('/'));
-                      alert("Account deletion not yet implemented");
+                    disabled={deleteConfirmText !== "delete my account" || deleting}
+                    onClick={async () => {
+                      setDeleting(true);
+                      try {
+                        await deleteAccountApi();
+                        localStorage.removeItem("engram_token");
+                        router.push("/login");
+                      } catch {
+                        setDeleting(false);
+                      }
                     }}
                   >
+                    {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Delete Account
                   </Button>
                 </DialogFooter>
