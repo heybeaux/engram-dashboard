@@ -1,6 +1,6 @@
 /**
  * Engram Code Types
- * Types for the engram-code service (localhost:3002)
+ * Types for the engram-code service
  */
 
 // ============================================================================

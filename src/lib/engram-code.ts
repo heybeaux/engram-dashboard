@@ -1,7 +1,7 @@
 /**
  * Engram Code API Client
  * 
- * Client for the engram-code service (localhost:3002)
+ * Client for the engram-code service
  * 
  * ENDPOINTS:
  * - GET /v1/projects — list projects
@@ -35,7 +35,7 @@ import {
 const getConfig = () => ({
   baseUrl: process.env.NEXT_PUBLIC_ENGRAM_CODE_URL ||
            process.env.ENGRAM_CODE_URL ||
-           'http://localhost:3002',
+           'https://code.openengram.ai',
 });
 
 // ============================================================================
