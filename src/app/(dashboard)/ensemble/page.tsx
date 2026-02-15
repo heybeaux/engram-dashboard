@@ -45,6 +45,7 @@ import {
   ModelStatus,
 } from "@/lib/ensemble-types";
 import { ensembleApi } from "@/lib/ensemble-client";
+import { useInstance } from "@/context/instance-context";
 
 // ============================================================================
 // Model Display Names (cloud API models get friendly names)
@@ -640,7 +641,11 @@ function ReembeddingSection({
 // Main Page Component
 // ============================================================================
 
+const CLOUD_MODELS = new Set(["openai-small", "openai-large", "cohere-v3"]);
+const LOCAL_MODELS = new Set(["bge-base", "minilm", "gte-base", "nomic"]);
+
 export default function EnsemblePage() {
+  const { features } = useInstance();
   const [ensembleStatus, setEnsembleStatus] = useState<EnsembleStatusResponse | null>(null);
   const [models, setModels] = useState<ModelRegistryEntry[]>([]);
   const [coverage, setCoverage] = useState<EmbeddingCoverageResponse | null>(null);
@@ -752,7 +757,15 @@ export default function EnsemblePage() {
 
         <TabsContent value="overview" className="space-y-6">
           <ModelRegistrySection
-            models={models}
+            models={models.filter((m) => {
+              const isLocal = LOCAL_MODELS.has(m.modelId);
+              const isCloud = CLOUD_MODELS.has(m.modelId);
+              if (features.localEmbeddings && features.cloudEnsemble) return true; // linked: show all
+              if (features.localEmbeddings && isLocal) return true;
+              if (features.cloudEnsemble && isCloud) return true;
+              if (!isLocal && !isCloud) return true; // unknown models always shown
+              return false;
+            })}
             ensembleConfig={ensembleStatus}
             loading={loading}
           />

@@ -5,6 +5,7 @@ import "./globals.css";
 import { Suspense } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
+import { InstanceProvider } from "@/context/instance-context";
 import { PostHogProvider } from "@/components/posthog-provider";
 
 const gaId = process.env.NEXT_PUBLIC_GA_ID;
@@ -39,13 +40,15 @@ export default function RootLayout({
       )}
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>
-          <Suspense fallback={null}>
-            <PostHogProvider>
-              <TooltipProvider>
-                {children}
-              </TooltipProvider>
-            </PostHogProvider>
-          </Suspense>
+          <InstanceProvider>
+            <Suspense fallback={null}>
+              <PostHogProvider>
+                <TooltipProvider>
+                  {children}
+                </TooltipProvider>
+              </PostHogProvider>
+            </Suspense>
+          </InstanceProvider>
         </AuthProvider>
       </body>
     </html>

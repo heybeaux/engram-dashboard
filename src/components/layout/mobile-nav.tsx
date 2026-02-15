@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { useInstance } from "@/context/instance-context";
 import {
   Sheet,
   SheetContent,
@@ -38,6 +39,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   adminOnly?: boolean;
+  featureGate?: "codeSearch" | "billing" | "localEmbeddings" | "cloudEnsemble";
 }
 
 const navigation: NavItem[] = [
@@ -45,7 +47,7 @@ const navigation: NavItem[] = [
   { name: "Memories", href: "/memories", icon: Brain },
   { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Code", href: "/code", icon: Code2, badge: "Self-hosted" },
+  { name: "Code", href: "/code", icon: Code2, badge: "Self-hosted", featureGate: "codeSearch" },
   { name: "Consolidation", href: "/consolidation", icon: Moon },
   { name: "Ensemble", href: "/ensemble", icon: Layers },
   { name: "Drift", href: "/ensemble/drift", icon: Activity },
@@ -59,6 +61,7 @@ export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
+  const { features } = useInstance();
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   return (
@@ -84,6 +87,7 @@ export function MobileNav() {
         <nav className="flex-1 space-y-1 p-4">
           {navigation
             .filter((item) => !item.adminOnly || isAdmin)
+            .filter((item) => !item.featureGate || features[item.featureGate] !== false)
             .map((item) => {
               const isActive =
                 pathname === item.href ||

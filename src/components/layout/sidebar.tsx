@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { useInstance } from "@/context/instance-context";
 import {
   LayoutDashboard,
   Brain,
@@ -31,6 +32,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   adminOnly?: boolean;
+  featureGate?: "codeSearch" | "billing" | "localEmbeddings" | "cloudEnsemble";
 }
 
 const navigation: NavItem[] = [
@@ -40,20 +42,21 @@ const navigation: NavItem[] = [
   { name: "Pools", href: "/pools", icon: Database },
   { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Code", href: "/code", icon: Code2, badge: "Self-hosted" },
+  { name: "Code", href: "/code", icon: Code2, badge: "Self-hosted", featureGate: "codeSearch" },
   { name: "Consolidation", href: "/consolidation", icon: Moon },
   { name: "Ensemble", href: "/ensemble", icon: Layers },
   { name: "Drift", href: "/ensemble/drift", icon: Activity },
   { name: "Graph", href: "/graph", icon: Network },
   { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
   { name: "API Keys", href: "/api-keys", icon: Key },
-  { name: "Billing", href: "/billing", icon: CreditCard },
+  { name: "Billing", href: "/billing", icon: CreditCard, featureGate: "billing" },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { features } = useInstance();
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   return (
@@ -68,6 +71,7 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 p-4">
         {navigation
           .filter((item) => !item.adminOnly || isAdmin)
+          .filter((item) => !item.featureGate || features[item.featureGate] !== false)
           .map((item) => {
             const isActive =
               pathname === item.href ||
