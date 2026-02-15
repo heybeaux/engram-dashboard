@@ -65,6 +65,13 @@ export default function SetupPage() {
 
   // Check if setup is actually needed
   useEffect(() => {
+    // If this dashboard is configured for cloud mode, never show setup
+    const instanceMode = process.env.NEXT_PUBLIC_DEPLOYMENT_MODE;
+    if (instanceMode === 'cloud') {
+      router.replace('/login');
+      return;
+    }
+
     fetch(`${API_BASE}/v1/auth/setup-status`)
       .then((res) => res.json())
       .then((data) => {
