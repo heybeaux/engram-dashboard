@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import {
   Sheet,
   SheetContent,
@@ -16,7 +17,6 @@ import {
   LayoutDashboard,
   Brain,
   GitMerge,
-  Users,
   Key,
   Settings,
   BookOpen,
@@ -27,19 +27,30 @@ import {
   Code2,
   Moon,
   Activity,
+  ShieldAlert,
 } from "lucide-react";
 
-const navigation = [
+const ADMIN_EMAILS = ["hello@heybeaux.dev"];
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  adminOnly?: boolean;
+}
+
+const navigation: NavItem[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Memories", href: "/memories", icon: Brain },
   { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Code", href: "/code", icon: Code2 },
+  { name: "Code", href: "/code", icon: Code2, badge: "Self-hosted" },
   { name: "Consolidation", href: "/consolidation", icon: Moon },
   { name: "Ensemble", href: "/ensemble", icon: Layers },
   { name: "Drift", href: "/ensemble/drift", icon: Activity },
   { name: "Graph", href: "/graph", icon: Network },
-  { name: "Users", href: "/users", icon: Users },
+  { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -47,6 +58,8 @@ const navigation = [
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -69,27 +82,34 @@ export function MobileNav() {
         </SheetHeader>
         
         <nav className="flex-1 space-y-1 p-4">
-          {navigation.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors min-h-[44px]",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            );
-          })}
+          {navigation
+            .filter((item) => !item.adminOnly || isAdmin)
+            .map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/" && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors min-h-[44px]",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.name}
+                  {item.badge && (
+                    <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
         </nav>
 
         <div className="border-t p-4 mt-auto">

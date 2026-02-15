@@ -5,7 +5,7 @@
  * These are separate from the Engram memory API which uses API keys.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.openengram.ai';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -35,6 +35,31 @@ async function authFetch<T>(endpoint: string, options?: RequestInit): Promise<T>
 
 // ── Account ──────────────────────────────────────────────────────────────────
 
+export interface AccountRaw {
+  id: string;
+  email: string;
+  name: string;
+  plan: string;
+  usage?: {
+    memoriesUsed?: number;
+    apiCallsToday?: number;
+  };
+  limits?: {
+    memories?: number;
+    apiCallsPerDay?: number;
+    agents?: number;
+    usersPerAgent?: number;
+  };
+  agents?: { id: string; name: string }[];
+}
+
+export interface AccountLimits {
+  memories: number;
+  apiCallsPerDay: number;
+  agents: number;
+  usersPerAgent: number;
+}
+
 export interface Account {
   id: string;
   email: string;
@@ -43,10 +68,30 @@ export interface Account {
   memoriesUsed: number;
   apiCallsToday: number;
   agents: { id: string; name: string }[];
+  limits: AccountLimits;
 }
 
-export function getAccount() {
-  return authFetch<Account>('/v1/account');
+function normalizeAccount(raw: AccountRaw): Account {
+  return {
+    id: raw.id,
+    email: raw.email,
+    name: raw.name,
+    plan: raw.plan?.toLowerCase() ?? 'free',
+    memoriesUsed: raw.usage?.memoriesUsed ?? 0,
+    apiCallsToday: raw.usage?.apiCallsToday ?? 0,
+    agents: raw.agents ?? [],
+    limits: {
+      memories: raw.limits?.memories ?? 1_000,
+      apiCallsPerDay: raw.limits?.apiCallsPerDay ?? 100,
+      agents: raw.limits?.agents ?? 1,
+      usersPerAgent: raw.limits?.usersPerAgent ?? 1,
+    },
+  };
+}
+
+export async function getAccount(): Promise<Account> {
+  const raw = await authFetch<AccountRaw>('/v1/account');
+  return normalizeAccount(raw);
 }
 
 export function updateAccount(data: { name?: string }) {
@@ -59,7 +104,7 @@ export function updateAccount(data: { name?: string }) {
 
 export function changePassword(data: { currentPassword: string; newPassword: string }) {
   // TODO: POST /v1/account/password endpoint may not exist yet
-  return authFetch<void>('/v1/account/password', {
+  return authFetch<void>('/v1/account/change-password', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -75,13 +120,18 @@ export function deleteAccount() {
 export interface ApiKeyInfo {
   id: string;
   name: string;
-  lastFour: string;
+  apiKeyHint: string;
   createdAt: string;
   lastUsedAt: string | null;
 }
 
-export function getApiKeys() {
-  return authFetch<{ keys: ApiKeyInfo[] }>('/v1/account/api-keys');
+export async function getApiKeys(): Promise<{ keys: ApiKeyInfo[] }> {
+  const data = await authFetch<ApiKeyInfo[] | { keys: ApiKeyInfo[] }>('/v1/account/api-keys');
+  // API returns a plain array, but we normalize to { keys: [...] }
+  if (Array.isArray(data)) {
+    return { keys: data };
+  }
+  return data;
 }
 
 export function createApiKey(name: string) {
@@ -107,4 +157,20 @@ export function createCheckout(plan: string) {
 
 export function getBillingPortal() {
   return authFetch<{ url: string }>('/v1/billing/portal');
+}
+
+// ── Admin ────────────────────────────────────────────────────────────────────
+
+export interface AdminAccount {
+  id: string;
+  email: string;
+  plan: string;
+  memories_used: number;
+  api_calls_today: number;
+  created_at: string;
+}
+
+export async function getAdminAccounts(): Promise<AdminAccount[]> {
+  const data = await authFetch<{ accounts: AdminAccount[] }>('/v1/admin/accounts');
+  return data.accounts;
 }
