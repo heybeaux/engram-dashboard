@@ -14,6 +14,7 @@ interface InstanceContextType {
   version: string;
   isLoading: boolean;
   error: string | null;
+  refreshInstance: () => Promise<void>;
 }
 
 const InstanceContext = createContext<InstanceContextType>({
@@ -23,10 +24,11 @@ const InstanceContext = createContext<InstanceContextType>({
   version: DEFAULT_INSTANCE_INFO.version,
   isLoading: true,
   error: null,
+  refreshInstance: async () => {},
 });
 
 export function InstanceProvider({ children }: { children: React.ReactNode }) {
-  const { info, isLoading, error } = useInstanceInfo();
+  const { info, isLoading, error, refresh } = useInstanceInfo();
   const router = useRouter();
   const pathname = usePathname();
   const [setupChecked, setSetupChecked] = useState(false);
@@ -48,6 +50,10 @@ export function InstanceProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setSetupChecked(true));
   }, [pathname, router, setupChecked]);
 
+  const refreshInstance = React.useCallback(async () => {
+    await refresh();
+  }, [refresh]);
+
   return (
     <InstanceContext.Provider
       value={{
@@ -57,6 +63,7 @@ export function InstanceProvider({ children }: { children: React.ReactNode }) {
         version: info.version,
         isLoading,
         error,
+        refreshInstance,
       }}
     >
       {children}

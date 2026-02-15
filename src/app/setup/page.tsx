@@ -118,14 +118,41 @@ export default function SetupPage() {
     }
   }
 
-  function handleChooseMode() {
-    // Save choice to localStorage for now (cloud link API comes in HEY-66)
-    if (deploymentChoice) {
-      localStorage.setItem('engram_deployment_mode', deploymentChoice);
-      if (deploymentChoice === 'cloud' && cloudApiKey) {
-        localStorage.setItem('engram_cloud_api_key', cloudApiKey);
+  const [cloudLinking, setCloudLinking] = useState(false);
+  const [cloudError, setCloudError] = useState('');
+
+  async function handleChooseMode() {
+    if (!deploymentChoice) return;
+    localStorage.setItem('engram_deployment_mode', deploymentChoice);
+
+    if (deploymentChoice === 'cloud' && cloudApiKey.trim()) {
+      setCloudLinking(true);
+      setCloudError('');
+      try {
+        const token = localStorage.getItem('engram_token');
+        const res = await fetch(`${API_BASE}/v1/cloud/link`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ apiKey: cloudApiKey.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setCloudError(data.message || data.error || 'Failed to link cloud — check your API key');
+          setCloudLinking(false);
+          return;
+        }
+      } catch {
+        setCloudError('Network error connecting to cloud');
+        setCloudLinking(false);
+        return;
+      } finally {
+        setCloudLinking(false);
       }
     }
+
     setStep(3);
   }
 
@@ -272,10 +299,18 @@ export default function SetupPage() {
                 <div className="mt-4 rounded-md bg-muted/50 border border-border p-4">
                   <p className="text-sm font-medium mb-2">Cloud Connection</p>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Cloud linking is coming soon. You can enter your API key now and we&apos;ll connect when ready.
+                    Enter your OpenEngram Cloud API key to enable backup, sync, and ensemble models.
+                    You can also set this up later in Settings → Cloud.
                   </p>
+                  {cloudError && (
+                    <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive mb-3">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      {cloudError}
+                    </div>
+                  )}
                   <Input
-                    placeholder="OpenEngram Cloud API key (optional)"
+                    placeholder="eng_cloud_..."
+                    type="password"
                     value={cloudApiKey}
                     onChange={(e) => setCloudApiKey(e.target.value)}
                   />
@@ -284,10 +319,14 @@ export default function SetupPage() {
 
               <Button
                 className="w-full mt-6"
-                disabled={!deploymentChoice}
+                disabled={!deploymentChoice || cloudLinking}
                 onClick={handleChooseMode}
               >
-                Continue <ChevronRight className="h-4 w-4 ml-1" />
+                {cloudLinking ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>Continue <ChevronRight className="h-4 w-4 ml-1" /></>
+                )}
               </Button>
             </CardContent>
           </Card>

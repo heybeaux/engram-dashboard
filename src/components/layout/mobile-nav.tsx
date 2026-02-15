@@ -29,6 +29,7 @@ import {
   Moon,
   Activity,
   ShieldAlert,
+  Cloud,
 } from "lucide-react";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
@@ -40,6 +41,7 @@ interface NavItem {
   badge?: string;
   adminOnly?: boolean;
   featureGate?: "codeSearch" | "billing" | "localEmbeddings" | "cloudEnsemble";
+  modeGate?: "self-hosted" | "cloud";
 }
 
 const navigation: NavItem[] = [
@@ -54,6 +56,7 @@ const navigation: NavItem[] = [
   { name: "Graph", href: "/graph", icon: Network },
   { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
   { name: "API Keys", href: "/api-keys", icon: Key },
+  { name: "Cloud", href: "/settings/cloud", icon: Cloud, modeGate: "self-hosted" },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -61,7 +64,7 @@ export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
-  const { features } = useInstance();
+  const { features, mode } = useInstance();
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   return (
@@ -88,6 +91,7 @@ export function MobileNav() {
           {navigation
             .filter((item) => !item.adminOnly || isAdmin)
             .filter((item) => !item.featureGate || features[item.featureGate] !== false)
+            .filter((item) => !item.modeGate || item.modeGate === mode)
             .map((item) => {
               const isActive =
                 pathname === item.href ||

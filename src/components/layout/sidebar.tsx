@@ -22,6 +22,7 @@ import {
   Database,
   CreditCard,
   ShieldAlert,
+  Cloud,
 } from "lucide-react";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
@@ -33,6 +34,7 @@ interface NavItem {
   badge?: string;
   adminOnly?: boolean;
   featureGate?: "codeSearch" | "billing" | "localEmbeddings" | "cloudEnsemble";
+  modeGate?: "self-hosted" | "cloud";
 }
 
 const navigation: NavItem[] = [
@@ -50,13 +52,14 @@ const navigation: NavItem[] = [
   { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Billing", href: "/billing", icon: CreditCard, featureGate: "billing" },
+  { name: "Cloud", href: "/settings/cloud", icon: Cloud, modeGate: "self-hosted" },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { features } = useInstance();
+  const { features, mode, cloudLinked } = useInstance();
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   return (
@@ -72,6 +75,7 @@ export function Sidebar() {
         {navigation
           .filter((item) => !item.adminOnly || isAdmin)
           .filter((item) => !item.featureGate || features[item.featureGate] !== false)
+          .filter((item) => !item.modeGate || item.modeGate === mode)
           .map((item) => {
             const isActive =
               pathname === item.href ||
@@ -100,7 +104,16 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t p-4">
+      <div className="border-t p-4 space-y-3">
+        {mode === "self-hosted" && (
+          <Link
+            href="/settings/cloud"
+            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Cloud className={cn("h-3.5 w-3.5", cloudLinked ? "text-green-500" : "text-muted-foreground")} />
+            {cloudLinked ? "Cloud Connected" : "Cloud Disconnected"}
+          </Link>
+        )}
         <Link
           href="/docs"
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
