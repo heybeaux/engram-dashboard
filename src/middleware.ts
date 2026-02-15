@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/signup', '/terms', '/privacy', '/setup'];
+const PUBLIC_PATHS = ['/login', '/signup', '/register', '/terms', '/privacy', '/setup'];
 const PUBLIC_PREFIXES = ['/docs', '/_next', '/api', '/favicon.ico', '/fonts'];
 
 export function middleware(request: NextRequest) {
@@ -20,8 +20,8 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get('engram_token')?.value;
 
-  // If accessing dashboard routes without token, redirect to login
-  if (!token && (pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding') || pathname.startsWith('/settings'))) {
+  // Protect ALL other routes — if no token, redirect to login
+  if (!token) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);

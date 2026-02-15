@@ -21,6 +21,7 @@ import {
   type Account,
 } from "@/lib/account-api";
 import { trackEvent } from "@/lib/posthog";
+import { useInstance } from "@/context/instance-context";
 
 // ── Plan definitions ──────────────────────────────────────────────────────────
 
@@ -145,6 +146,7 @@ function UsageMeter({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BillingPage() {
+  const { mode } = useInstance();
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -217,6 +219,32 @@ export default function BillingPage() {
             <Button variant="outline" className="mt-4" onClick={load}>
               Retry
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Self-hosted mode: don't show Stripe checkout, point to cloud
+  if (mode === "self-hosted") {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <h1 className="text-2xl md:text-3xl font-bold">Billing</h1>
+        <Card>
+          <CardContent className="py-8 text-center">
+            <CreditCard className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground mb-4">
+              You&apos;re running a self-hosted instance. Billing is managed through OpenEngram Cloud.
+            </p>
+            <a
+              href="https://app.openengram.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-primary underline hover:text-primary/80"
+            >
+              Manage your cloud subscription at app.openengram.ai
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </CardContent>
         </Card>
       </div>

@@ -25,7 +25,7 @@ import {
   Cloud,
 } from "lucide-react";
 
-const ADMIN_EMAILS = ["hello@heybeaux.dev"];
+// Admin visibility: self-hosted shows admin to all users; cloud hides admin entirely
 
 interface NavItem {
   name: string;
@@ -60,7 +60,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { features, mode, cloudLinked } = useInstance();
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  const isAdmin = mode === "self-hosted";
 
   return (
     <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-card">
