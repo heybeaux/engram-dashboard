@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useInstanceInfo } from "@/hooks/useInstanceInfo";
-import { InstanceInfo, InstanceFeatures, InstanceMode, DEFAULT_INSTANCE_INFO } from "@/types/instance";
+import { InstanceFeatures, InstanceMode, DEFAULT_INSTANCE_INFO } from "@/types/instance";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
 

@@ -30,6 +30,7 @@ import {
   Activity,
   ShieldAlert,
   Cloud,
+  Users,
 } from "lucide-react";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
@@ -54,6 +55,7 @@ const navigation: NavItem[] = [
   { name: "Ensemble", href: "/ensemble", icon: Layers },
   { name: "Drift", href: "/ensemble/drift", icon: Activity },
   { name: "Graph", href: "/graph", icon: Network },
+  { name: "Users", href: "/users", icon: Users, adminOnly: true },
   { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Cloud", href: "/settings/cloud", icon: Cloud, modeGate: "self-hosted" },

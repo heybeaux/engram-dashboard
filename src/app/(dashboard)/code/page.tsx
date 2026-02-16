@@ -7,7 +7,7 @@ import { Code2, Server } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
 
 export default function CodePage() {
-  const { features, mode, isLoading } = useInstance();
+  const { mode, isLoading } = useInstance();
   const router = useRouter();
 
   // Redirect to dashboard if on cloud mode (this page is self-hosted only)

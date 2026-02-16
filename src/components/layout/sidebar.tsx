@@ -49,6 +49,7 @@ const navigation: NavItem[] = [
   { name: "Ensemble", href: "/ensemble", icon: Layers },
   { name: "Drift", href: "/ensemble/drift", icon: Activity },
   { name: "Graph", href: "/graph", icon: Network },
+  { name: "Users", href: "/users", icon: Users, adminOnly: true },
   { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Billing", href: "/billing", icon: CreditCard, featureGate: "billing" },
@@ -58,8 +59,8 @@ const navigation: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
-  const { features, mode, cloudLinked, isLoading } = useInstance();
+  const { } = useAuth();
+  const { features, mode, cloudLinked } = useInstance();
   const isAdmin = mode === "self-hosted";
 
   return (
@@ -122,6 +123,10 @@ export function Sidebar() {
           Documentation
         </Link>
       </div>
+    </aside>
+  );
+}
+div>
     </aside>
   );
 }
