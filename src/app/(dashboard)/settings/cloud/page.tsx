@@ -1,6 +1,5 @@
 "use client";
 
-import { EditionGuard } from "@/components/edition-guard";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,11 +64,7 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 export default function CloudSettingsPage() {
-  return (
-    <EditionGuard edition="cloud">
-      <CloudSettingsPageContent />
-    </EditionGuard>
-  );
+  return <CloudSettingsPageContent />;
 }
 
 function CloudSettingsPageContent() {

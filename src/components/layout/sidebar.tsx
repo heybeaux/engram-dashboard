@@ -56,7 +56,7 @@ const navigation: NavItem[] = [
   { name: "Ensemble", href: "/ensemble", icon: Layers, editions: ["cloud"] },
   { name: "Drift", href: "/ensemble/drift", icon: Activity, editions: ["cloud"] },
   { name: "Analytics", href: "/analytics", icon: BarChart3, editions: ["cloud"] },
-  { name: "Cloud Link", href: "/settings/cloud", icon: Link2, editions: ["cloud"] },
+  { name: "Cloud Link", href: "/settings/cloud", icon: Link2, editions: ["local", "cloud"] },
   { name: "Usage", href: "/status", icon: Gauge, editions: ["cloud"] },
   { name: "Users", href: "/users", icon: Users, editions: ["cloud"] },
 
