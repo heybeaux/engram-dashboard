@@ -312,14 +312,55 @@ export class EngramClient {
 
   /**
    * Get memory graph data for visualization
-   * @endpoint GET /v1/memories/graph
+   * Composes data from /v1/graph/entities and /v1/graph/relationships
+   * @endpoint GET /v1/graph/entities + GET /v1/graph/relationships
    */
   async getGraphData(params?: { limit?: number }): Promise<GraphData> {
-    const searchParams = new URLSearchParams();
-    if (params?.limit) searchParams.set('limit', String(params.limit));
-    const queryString = searchParams.toString();
-    const endpoint = queryString ? `/v1/memories/graph?${queryString}` : '/v1/memories/graph';
-    return this.fetch<GraphData>(endpoint);
+    const userId = this.defaultUserId || '';
+    const limit = params?.limit ?? 200;
+
+    // Fetch entities and relationships in parallel
+    const [entitiesRaw, relationshipsRaw] = await Promise.all([
+      this.fetch<{ entities?: Array<Record<string, unknown>>; data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>>(
+        `/v1/graph/entities?userId=${encodeURIComponent(userId)}&limit=${limit}`
+      ).catch(() => []),
+      this.fetch<{ relationships?: Array<Record<string, unknown>>; data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>>(
+        `/v1/graph/relationships?userId=${encodeURIComponent(userId)}&limit=${limit}`
+      ).catch(() => []),
+    ]);
+
+    // Normalize arrays
+    const entities: Array<Record<string, unknown>> = Array.isArray(entitiesRaw)
+      ? entitiesRaw
+      : (entitiesRaw as Record<string, unknown>)?.entities as Array<Record<string, unknown>>
+        ?? (entitiesRaw as Record<string, unknown>)?.data as Array<Record<string, unknown>>
+        ?? [];
+
+    const relationships: Array<Record<string, unknown>> = Array.isArray(relationshipsRaw)
+      ? relationshipsRaw
+      : (relationshipsRaw as Record<string, unknown>)?.relationships as Array<Record<string, unknown>>
+        ?? (relationshipsRaw as Record<string, unknown>)?.data as Array<Record<string, unknown>>
+        ?? [];
+
+    // Transform to GraphData format
+    return {
+      nodes: [], // Memory nodes aren't directly available from graph API
+      edges: relationships.map((r) => ({
+        id: String(r.id ?? ''),
+        source: String(r.sourceEntityId ?? r.source ?? ''),
+        target: String(r.targetEntityId ?? r.target ?? ''),
+        linkType: String(r.type ?? r.linkType ?? 'RELATED') as import('./types').ChainLinkType,
+        confidence: Number(r.confidence ?? r.weight ?? 1.0),
+        createdAt: String(r.createdAt ?? new Date().toISOString()),
+      })),
+      entities: entities.map((e) => ({
+        id: String(e.id ?? ''),
+        name: String(e.name ?? ''),
+        normalizedName: String(e.normalizedName ?? e.name ?? ''),
+        type: String(e.type ?? 'UNKNOWN'),
+        mentionCount: Number(e.mentionCount ?? 0),
+      })),
+    };
   }
 
   /**

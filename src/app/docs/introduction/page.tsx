@@ -133,7 +133,7 @@ export default function IntroductionPage() {
 │  /v1/memories     - CRUD operations                         │
 │  /v1/observe      - Auto-extract from conversations         │
 │  /v1/context      - Load memories for injection             │
-│  /v1/consolidate  - Trigger sleep consolidation             │
+│  /v1/consolidation/dream-cycle  - Trigger consolidation     │
 │  /v1/health       - System health metrics                   │
 └─────────────────────────────────────────────────────────────┘
                               │

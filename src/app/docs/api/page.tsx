@@ -288,7 +288,7 @@ Response: {
 
           <h3>Memory Graph</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`GET /v1/memories/graph?limit=100
+{`GET /v1/graph/entities?userId=USER_ID&limit=100
 
 Response: {
   nodes: [{ id, label, layer, type, score }],

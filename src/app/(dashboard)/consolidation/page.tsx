@@ -66,11 +66,15 @@ export default function ConsolidationPage() {
     setLoading(true);
     setError(null);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (API_KEY) {
+        headers["X-AM-API-Key"] = API_KEY;
+        headers["Authorization"] = `Bearer ${API_KEY}`;
+      }
       const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle/reports`, {
-        headers: {
-          "Authorization": `Bearer ${API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -104,13 +108,16 @@ export default function ConsolidationPage() {
               setRunningCycle(true);
               setCycleResult(null);
               try {
+                const dreamHeaders: Record<string, string> = {
+                  "Content-Type": "application/json",
+                };
+                if (API_KEY) {
+                  dreamHeaders["X-AM-API-Key"] = API_KEY;
+                  dreamHeaders["Authorization"] = `Bearer ${API_KEY}`;
+                }
                 const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle`, {
                   method: "POST",
-                  headers: {
-                    "Authorization": `Bearer ${API_KEY}`,
-                    "Content-Type": "application/json",
-                    "X-AM-API-Key": API_KEY,
-                  },
+                  headers: dreamHeaders,
                   body: JSON.stringify({ dryRun: false }),
                 });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);

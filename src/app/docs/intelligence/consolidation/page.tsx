@@ -77,9 +77,8 @@ Extracted gist:
 
           <h3>Trigger Consolidation</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`POST /v1/consolidate
+{`POST /v1/consolidation/dream-cycle
 X-AM-API-Key: your-key
-X-AM-User-ID: beaux
 
 Query params:
   dryRun=true    # Preview without making changes
@@ -102,9 +101,8 @@ Response:
 
           <h3>Get Consolidation Stats</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`GET /v1/consolidate/stats
+{`GET /v1/consolidation/dream-cycle/reports
 X-AM-API-Key: your-key
-X-AM-User-ID: beaux
 
 Response:
 {
@@ -132,7 +130,7 @@ Response:
           <h3>Cron Example</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`# Run consolidation every night at 3am
-0 3 * * * curl -X POST https://api.openengram.ai/v1/consolidate \\
+0 3 * * * curl -X POST https://api.openengram.ai/v1/consolidation/dream-cycle \\
   -H "X-AM-API-Key: $API_KEY" \\
   -H "X-AM-User-ID: beaux"`}
           </pre>

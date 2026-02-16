@@ -246,9 +246,8 @@ export async function getEmbeddingCoverage(): Promise<EmbeddingCoverageResponse>
 // ============================================================================
 
 /**
- * Get A/B test results for model comparison
- * @endpoint GET /ensemble/ab-results
- * @status PROPOSED - Not yet implemented
+ * Get A/B test / eval results
+ * @endpoint GET /v1/eval/history
  */
 export async function getABTestResults(params?: {
   start?: string;
@@ -259,7 +258,7 @@ export async function getABTestResults(params?: {
     if (params?.start) searchParams.set('start', params.start);
     if (params?.end) searchParams.set('end', params.end);
     const query = searchParams.toString();
-    const endpoint = query ? `/v1/ensemble/ab-results?${query}` : '/v1/ensemble/ab-results';
+    const endpoint = query ? `/v1/eval/history?${query}` : '/v1/eval/history';
     const data = await apiFetch<ABTestResults & { results?: unknown[]; count?: number }>(endpoint);
     
     // The API may return { results: [], count: 0 } instead of the full ABTestResults shape
@@ -271,7 +270,7 @@ export async function getABTestResults(params?: {
     return data;
   } catch (error) {
     if (error instanceof EngramApiError && error.statusCode === 404) {
-      console.warn('GET /ensemble/ab-results not implemented.');
+      console.warn('GET /v1/eval/history not available.');
       return null;
     }
     throw error;
