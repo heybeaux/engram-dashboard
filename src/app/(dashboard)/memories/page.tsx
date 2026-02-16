@@ -298,13 +298,10 @@ export default function MemoriesPage() {
           onClick={async () => {
             setCreating(true);
             try {
-              await engram.createMemory(
-                {
+              await engram.createMemory({
                   raw: "Test memory created from dashboard at " + new Date().toISOString(),
                   layer: "SESSION",
-                },
-                "dashboard-test"
-              );
+                });
               fetchMemories();
             } catch (err) {
               console.error("Failed to create test memory:", err);

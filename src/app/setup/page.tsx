@@ -266,7 +266,7 @@ export default function SetupPage() {
                 <div className="mb-6 rounded-md bg-primary/5 border border-primary/20 p-4">
                   <p className="text-sm font-medium mb-1">Your API Key</p>
                   <code className="text-xs bg-muted px-2 py-1 rounded break-all">{apiKey}</code>
-                  <p className="text-xs text-muted-foreground mt-2">Save this — it won't be shown again.</p>
+                  <p className="text-xs text-muted-foreground mt-2">Save this — it won&apos;t be shown again.</p>
                 </div>
               )}
               <div className="grid gap-3">

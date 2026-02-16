@@ -23,6 +23,7 @@ import {
   CreditCard,
   ShieldAlert,
   Cloud,
+  Users,
 } from "lucide-react";
 
 // Admin visibility: self-hosted shows admin to all users; cloud hides admin entirely
@@ -59,7 +60,7 @@ const navigation: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { } = useAuth();
+  useAuth();
   const { features, mode, cloudLinked } = useInstance();
   const isAdmin = mode === "self-hosted";
 
@@ -123,10 +124,6 @@ export function Sidebar() {
           Documentation
         </Link>
       </div>
-    </aside>
-  );
-}
-div>
     </aside>
   );
 }
