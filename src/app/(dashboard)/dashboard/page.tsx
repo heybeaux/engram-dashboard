@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Brain, Users, Activity, RefreshCw, AlertCircle, WifiOff } from "lucide-react";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
+import { useInstance } from "@/context/instance-context";
 import { FogIndexCard } from "@/components/fog-index-card";
 import { AccountUsageCard } from "@/components/account-usage-card";
 import { ApiRequestsCard } from "@/components/api-requests-card";
@@ -99,6 +100,8 @@ function ErrorState({
 
 export default function OverviewPage() {
   const { stats, loading, error, refetch } = useDashboardStats();
+  const { mode } = useInstance();
+  const isAdmin = mode === "self-hosted";
 
   // Loading state
   if (loading) {
@@ -192,7 +195,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+      <div className={`grid gap-4 grid-cols-1 sm:grid-cols-2 ${isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Memories</CardTitle>
@@ -213,23 +216,25 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.userTrend >= 0 ? (
-                <span className="text-green-500">+{stats.userTrend}</span>
-              ) : (
-                <span className="text-red-500">{stats.userTrend}</span>
-              )}{" "}
-              from last week
-            </p>
-          </CardContent>
-        </Card>
+        {isAdmin && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.userTrend >= 0 ? (
+                  <span className="text-green-500">+{stats.userTrend}</span>
+                ) : (
+                  <span className="text-red-500">{stats.userTrend}</span>
+                )}{" "}
+                from last week
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

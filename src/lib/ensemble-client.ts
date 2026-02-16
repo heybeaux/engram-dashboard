@@ -259,8 +259,16 @@ export async function getABTestResults(params?: {
     if (params?.start) searchParams.set('start', params.start);
     if (params?.end) searchParams.set('end', params.end);
     const query = searchParams.toString();
-    const endpoint = query ? `/ensemble/ab-results?${query}` : '/v1/ensemble/ab-results';
-    return await apiFetch<ABTestResults>(endpoint);
+    const endpoint = query ? `/v1/ensemble/ab-results?${query}` : '/v1/ensemble/ab-results';
+    const data = await apiFetch<ABTestResults & { results?: unknown[]; count?: number }>(endpoint);
+    
+    // The API may return { results: [], count: 0 } instead of the full ABTestResults shape
+    // when there are no A/B test results yet. Treat this as "no data".
+    if (!data?.period || !data?.totalQueries) {
+      return null;
+    }
+    
+    return data;
   } catch (error) {
     if (error instanceof EngramApiError && error.statusCode === 404) {
       console.warn('GET /ensemble/ab-results not implemented.');
