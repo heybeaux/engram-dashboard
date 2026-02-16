@@ -1,5 +1,6 @@
 "use client";
 
+import { EditionGuard } from "@/components/edition-guard";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -645,6 +646,14 @@ const CLOUD_MODELS = new Set(["openai-small", "openai-large", "cohere-v3"]);
 const LOCAL_MODELS = new Set(["bge-base", "minilm", "gte-base", "nomic"]);
 
 export default function EnsemblePage() {
+  return (
+    <EditionGuard edition="cloud">
+      <EnsemblePageContent />
+    </EditionGuard>
+  );
+}
+
+function EnsemblePageContent() {
   const { features } = useInstance();
   const [ensembleStatus, setEnsembleStatus] = useState<EnsembleStatusResponse | null>(null);
   const [models, setModels] = useState<ModelRegistryEntry[]>([]);

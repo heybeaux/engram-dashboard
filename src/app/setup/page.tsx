@@ -1,5 +1,6 @@
 'use client';
 
+import { EditionGuard } from '@/components/edition-guard';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, Check, ChevronRight, Cloud, HardDrive, Loader2, AlertCircle } from 'lucide-react';
@@ -46,6 +47,14 @@ function StepIndicator({ current }: { current: number }) {
 }
 
 export default function SetupPage() {
+  return (
+    <EditionGuard edition="local">
+      <SetupPageContent />
+    </EditionGuard>
+  );
+}
+
+function SetupPageContent() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [checking, setChecking] = useState(true);

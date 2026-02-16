@@ -1,3 +1,5 @@
+export type Edition = "local" | "cloud";
+
 export interface InstanceFeatures {
   localEmbeddings: boolean;
   cloudEnsemble: boolean;
@@ -11,21 +13,30 @@ export type InstanceMode = "cloud" | "self-hosted";
 
 export interface InstanceInfo {
   mode: InstanceMode;
+  edition: Edition;
   features: InstanceFeatures;
   version: string;
   cloudLinked: boolean;
 }
 
 /**
- * Default instance info when API is unreachable.
- * If NEXT_PUBLIC_DEPLOYMENT_MODE=cloud, default to cloud (hide self-hosted features).
- * Otherwise assume self-hosted with all local features.
+ * Build-time edition flag.
+ * Set NEXT_PUBLIC_EDITION=cloud for managed SaaS; defaults to "local".
  */
-const IS_CLOUD_BUILD = process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "cloud";
+export const EDITION: Edition =
+  (process.env.NEXT_PUBLIC_EDITION as Edition) || "local";
 
-export const DEFAULT_INSTANCE_INFO: InstanceInfo = IS_CLOUD_BUILD
+export const isCloud = EDITION === "cloud";
+export const isLocal = EDITION === "local";
+
+/**
+ * Default instance info based on build-time edition.
+ * The /v1/instance/info API call can override at runtime.
+ */
+export const DEFAULT_INSTANCE_INFO: InstanceInfo = isCloud
   ? {
       mode: "cloud",
+      edition: "cloud",
       features: {
         localEmbeddings: false,
         cloudEnsemble: true,
@@ -39,6 +50,7 @@ export const DEFAULT_INSTANCE_INFO: InstanceInfo = IS_CLOUD_BUILD
     }
   : {
       mode: "self-hosted",
+      edition: "local",
       features: {
         localEmbeddings: true,
         cloudEnsemble: false,

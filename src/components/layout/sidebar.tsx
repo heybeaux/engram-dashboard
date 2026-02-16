@@ -21,48 +21,57 @@ import {
   Cpu,
   Database,
   CreditCard,
-  ShieldAlert,
   Cloud,
   Users,
+  Search,
+  Link2,
+  Gauge,
 } from "lucide-react";
-
-// Admin visibility: self-hosted shows admin to all users; cloud hides admin entirely
+import type { Edition } from "@/types/instance";
 
 interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
-  adminOnly?: boolean;
-  featureGate?: "codeSearch" | "billing" | "localEmbeddings" | "cloudEnsemble";
-  modeGate?: "self-hosted" | "cloud";
+  /** Only show in these editions. Omit = show in all. */
+  editions?: Edition[];
 }
 
 const navigation: NavItem[] = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  // === Common (both editions) ===
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Memories", href: "/memories", icon: Brain },
   { name: "Sessions", href: "/sessions", icon: Cpu },
-  { name: "Pools", href: "/pools", icon: Database },
-  { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Code", href: "/code", icon: Code2, badge: "Self-hosted", featureGate: "codeSearch" },
-  { name: "Consolidation", href: "/consolidation", icon: Moon },
-  { name: "Ensemble", href: "/ensemble", icon: Layers },
-  { name: "Drift", href: "/ensemble/drift", icon: Activity },
   { name: "Graph", href: "/graph", icon: Network },
-  { name: "Users", href: "/users", icon: Users, adminOnly: true },
-  { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
+  { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
+  { name: "Search", href: "/code", icon: Search },
+  { name: "Consolidation", href: "/consolidation", icon: Moon },
+  { name: "Pools", href: "/pools", icon: Database },
   { name: "API Keys", href: "/api-keys", icon: Key },
-  { name: "Billing", href: "/billing", icon: CreditCard, featureGate: "billing" },
-  { name: "Cloud", href: "/settings/cloud", icon: Cloud, modeGate: "self-hosted" },
   { name: "Settings", href: "/settings", icon: Settings },
+
+  // === Cloud only ===
+  { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
+  { name: "Ensemble", href: "/ensemble", icon: Layers, editions: ["cloud"] },
+  { name: "Drift", href: "/ensemble/drift", icon: Activity, editions: ["cloud"] },
+  { name: "Analytics", href: "/analytics", icon: BarChart3, editions: ["cloud"] },
+  { name: "Cloud Link", href: "/settings/cloud", icon: Link2, editions: ["cloud"] },
+  { name: "Usage", href: "/status", icon: Gauge, editions: ["cloud"] },
+  { name: "Users", href: "/users", icon: Users, editions: ["cloud"] },
+
+  // === Local only ===
+  { name: "Code", href: "/code", icon: Code2, badge: "Local", editions: ["local"] },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   useAuth();
-  const { features, mode, cloudLinked } = useInstance();
-  const isAdmin = mode === "self-hosted";
+  const { edition, cloudLinked } = useInstance();
+
+  const filteredNav = navigation.filter(
+    (item) => !item.editions || item.editions.includes(edition)
+  );
 
   return (
     <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-card">
@@ -74,46 +83,42 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
-        {navigation
-          .filter((item) => !item.adminOnly || isAdmin)
-          .filter((item) => !item.featureGate || features[item.featureGate] !== false)
-          .filter((item) => !item.modeGate || item.modeGate === mode)
-          .map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-                {item.badge && (
-                  <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        {filteredNav.map((item) => {
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/" && pathname.startsWith(item.href));
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.name}
+              {item.badge && (
+                <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Footer */}
       <div className="border-t p-4 space-y-3">
-        {mode === "self-hosted" && (
+        {edition === "local" && (
           <Link
             href="/settings/cloud"
             className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Cloud className={cn("h-3.5 w-3.5", cloudLinked ? "text-green-500" : "text-muted-foreground")} />
-            {cloudLinked ? "Cloud Connected" : "Cloud Disconnected"}
+            {cloudLinked ? "Cloud Connected" : "Connect to Cloud"}
           </Link>
         )}
         <Link

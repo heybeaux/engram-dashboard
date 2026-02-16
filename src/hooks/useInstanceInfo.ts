@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { InstanceInfo, DEFAULT_INSTANCE_INFO } from "@/types/instance";
+import { InstanceInfo, DEFAULT_INSTANCE_INFO, EDITION } from "@/types/instance";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
 

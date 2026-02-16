@@ -3,12 +3,15 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useInstanceInfo } from "@/hooks/useInstanceInfo";
-import { InstanceFeatures, InstanceMode, DEFAULT_INSTANCE_INFO } from "@/types/instance";
+import { InstanceFeatures, InstanceMode, Edition, DEFAULT_INSTANCE_INFO, EDITION, isCloud, isLocal } from "@/types/instance";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
 
 interface InstanceContextType {
   mode: InstanceMode;
+  edition: Edition;
+  isCloud: boolean;
+  isLocal: boolean;
   features: InstanceFeatures;
   cloudLinked: boolean;
   version: string;
@@ -19,6 +22,9 @@ interface InstanceContextType {
 
 const InstanceContext = createContext<InstanceContextType>({
   mode: DEFAULT_INSTANCE_INFO.mode,
+  edition: EDITION,
+  isCloud,
+  isLocal,
   features: DEFAULT_INSTANCE_INFO.features,
   cloudLinked: DEFAULT_INSTANCE_INFO.cloudLinked,
   version: DEFAULT_INSTANCE_INFO.version,
@@ -63,6 +69,9 @@ export function InstanceProvider({ children }: { children: React.ReactNode }) {
     <InstanceContext.Provider
       value={{
         mode: info.mode,
+        edition: EDITION,
+        isCloud,
+        isLocal,
         features: info.features,
         cloudLinked: info.cloudLinked,
         version: info.version,

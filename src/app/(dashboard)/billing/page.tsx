@@ -1,5 +1,6 @@
 "use client";
 
+import { EditionGuard } from "@/components/edition-guard";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -144,6 +145,14 @@ function UsageMeter({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BillingPage() {
+  return (
+    <EditionGuard edition="cloud">
+      <BillingPageContent />
+    </EditionGuard>
+  );
+}
+
+function BillingPageContent() {
   const { mode } = useInstance();
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
