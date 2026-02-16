@@ -28,6 +28,9 @@ import {
   MODEL_CONFIGS,
 } from "@/lib/ensemble-types";
 import { ensembleApi } from "@/lib/ensemble-client";
+import { useInstance } from "@/context/instance-context";
+
+const LOCAL_MODEL_IDS = new Set(["bge-base", "minilm", "gte-base", "nomic"]);
 
 interface MemoryEmbeddingsTabProps {
   memoryId: string;
@@ -195,6 +198,7 @@ function EmbeddingsLoadingSkeleton() {
 }
 
 export function MemoryEmbeddingsTab({ memoryId }: MemoryEmbeddingsTabProps) {
+  const { features } = useInstance();
   const [data, setData] = useState<MemoryEmbeddingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [reembedding, setReembedding] = useState(false);
@@ -306,7 +310,9 @@ export function MemoryEmbeddingsTab({ memoryId }: MemoryEmbeddingsTabProps) {
 
       {/* Embedding Cards */}
       <div className="grid gap-4 md:grid-cols-2">
-        {data.embeddings.map((embedding) => (
+        {data.embeddings
+          .filter((embedding) => features.localEmbeddings || !LOCAL_MODEL_IDS.has(embedding.model))
+          .map((embedding) => (
           <EmbeddingCard key={embedding.model} embedding={embedding} />
         ))}
       </div>
