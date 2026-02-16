@@ -33,9 +33,14 @@ export function InstanceProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [setupChecked, setSetupChecked] = useState(false);
 
-  // Check if setup is needed and redirect
+  // Check if setup is needed and redirect (self-hosted only)
   useEffect(() => {
-    if (setupChecked || pathname === "/setup") return;
+    if (setupChecked || isLoading || pathname === "/setup") return;
+    // Cloud deployments never need the setup wizard
+    if (info.mode === "cloud") {
+      setSetupChecked(true);
+      return;
+    }
 
     fetch(`${API_BASE}/v1/auth/setup-status`)
       .then((res) => res.json())
@@ -48,7 +53,7 @@ export function InstanceProvider({ children }: { children: React.ReactNode }) {
         // API unreachable — don't redirect
       })
       .finally(() => setSetupChecked(true));
-  }, [pathname, router, setupChecked]);
+  }, [pathname, router, setupChecked, isLoading, info.mode]);
 
   const refreshInstance = React.useCallback(async () => {
     await refresh();

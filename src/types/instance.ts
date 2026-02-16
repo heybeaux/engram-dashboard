@@ -16,13 +16,14 @@ export interface InstanceInfo {
   cloudLinked: boolean;
 }
 
-/** Default instance info when API is unreachable — assume self-hosted with all features */
+/** Default instance info while loading — safe defaults that hide all optional features
+ *  until the API confirms the actual mode. Prevents self-hosted features leaking on cloud. */
 export const DEFAULT_INSTANCE_INFO: InstanceInfo = {
-  mode: "self-hosted",
+  mode: "cloud",
   features: {
-    localEmbeddings: true,
+    localEmbeddings: false,
     cloudEnsemble: false,
-    codeSearch: true,
+    codeSearch: false,
     cloudBackup: false,
     crossDeviceSync: false,
     billing: false,

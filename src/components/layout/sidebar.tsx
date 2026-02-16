@@ -59,7 +59,7 @@ const navigation: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { features, mode, cloudLinked } = useInstance();
+  const { features, mode, cloudLinked, isLoading } = useInstance();
   const isAdmin = mode === "self-hosted";
 
   return (
