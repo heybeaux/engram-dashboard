@@ -49,6 +49,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { engram, Memory, MemoryWithScore, MemoryLayer } from "@/lib/engram-client";
+import type { ImportanceHint } from "@/lib/types";
 
 const LAYER_OPTIONS: MemoryLayer[] = ["IDENTITY", "PROJECT", "SESSION", "TASK"];
 const PAGE_SIZE = 25;
@@ -142,6 +143,14 @@ export default function MemoriesPage() {
   const [memoryToDelete, setMemoryToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [newMemory, setNewMemory] = useState({
+    raw: "",
+    layer: "SESSION" as MemoryLayer,
+    importanceHint: "" as string,
+  });
 
   // Fetch users for the filter dropdown
   useEffect(() => {
@@ -294,33 +303,15 @@ export default function MemoriesPage() {
         <h1 className="text-2xl md:text-3xl font-bold">Memories</h1>
         <Button
           className="h-11 w-full sm:w-auto"
-          disabled={creating}
-          onClick={async () => {
-            setCreating(true);
-            try {
-              await engram.createMemory({
-                  raw: "Test memory created from dashboard at " + new Date().toISOString(),
-                  layer: "SESSION",
-                });
-              fetchMemories();
-            } catch (err) {
-              console.error("Failed to create test memory:", err);
-            } finally {
-              setCreating(false);
-            }
+          onClick={() => {
+            setCreateError(null);
+            setNewMemory({ raw: "", layer: "SESSION", importanceHint: "" });
+            setShowAdvanced(false);
+            setCreateDialogOpen(true);
           }}
         >
-          {creating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
-            </>
-          ) : (
-            <>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Test Memory
-            </>
-          )}
+          <Plus className="mr-2 h-4 w-4" />
+          Create Memory
         </Button>
       </div>
 
@@ -545,6 +536,119 @@ export default function MemoriesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Create Memory Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Memory</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!newMemory.raw.trim()) return;
+              setCreating(true);
+              setCreateError(null);
+              try {
+                await engram.createMemory({
+                  raw: newMemory.raw,
+                  layer: newMemory.layer,
+                  ...(newMemory.importanceHint ? { importanceHint: newMemory.importanceHint as ImportanceHint } : {}),
+                });
+                setCreateDialogOpen(false);
+                fetchMemories();
+              } catch (err) {
+                setCreateError(err instanceof Error ? err.message : "Failed to create memory");
+              } finally {
+                setCreating(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Content <span className="text-destructive">*</span></label>
+              <textarea
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                placeholder="What do you want to remember?"
+                value={newMemory.raw}
+                onChange={(e) => setNewMemory((s) => ({ ...s, raw: e.target.value }))}
+                required
+              />
+            </div>
+
+            <button
+              type="button"
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowAdvanced((v) => !v)}
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+              Advanced options
+            </button>
+
+            {showAdvanced && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Layer</label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={newMemory.layer}
+                    onChange={(e) => setNewMemory((s) => ({ ...s, layer: e.target.value as MemoryLayer }))}
+                  >
+                    <option value="SESSION">Session</option>
+                    <option value="IDENTITY">Identity</option>
+                    <option value="PROJECT">Project</option>
+                    <option value="TASK">Task</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Importance</label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={newMemory.importanceHint}
+                    onChange={(e) => setNewMemory((s) => ({ ...s, importanceHint: e.target.value }))}
+                  >
+                    <option value="">Default</option>
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="CRITICAL">Critical</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {createError && (
+              <p className="text-sm text-destructive">{createError}</p>
+            )}
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+                disabled={creating}
+                className="h-11 w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={creating || !newMemory.raw.trim()}
+                className="h-11 w-full sm:w-auto"
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
