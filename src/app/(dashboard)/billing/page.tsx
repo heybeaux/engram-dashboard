@@ -32,7 +32,6 @@ interface PlanDef {
   priceNote?: string;
   features: string[];
   limits: { memories: number; apiCalls: number; agents: number };
-  highlighted?: boolean;
 }
 
 const PLANS: PlanDef[] = [
@@ -68,7 +67,6 @@ const PLANS: PlanDef[] = [
     name: "Pro",
     price: "$39",
     priceNote: "/month",
-    highlighted: true,
     features: [
       "100,000 memories",
       "10,000 API calls/day",
@@ -372,10 +370,10 @@ export default function BillingPage() {
                 <div
                   key={plan.id}
                   className={`rounded-lg border p-4 flex flex-col ${
-                    plan.highlighted
-                      ? "border-primary ring-1 ring-primary"
+                    isCurrent
+                      ? "border-primary ring-1 ring-primary bg-muted/50"
                       : ""
-                  } ${isCurrent ? "bg-muted/50" : ""}`}
+                  }`}
                 >
                   <div className="mb-3">
                     <div className="flex items-center gap-2">
@@ -420,7 +418,7 @@ export default function BillingPage() {
                     </Button>
                   ) : (
                     <Button
-                      variant={plan.highlighted ? "default" : "outline"}
+                      variant="outline"
                       onClick={() => handleUpgrade(plan.id)}
                       disabled={checkoutLoading === plan.id}
                       className="h-10 w-full"
