@@ -6,6 +6,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { resetPostHog } from '@/lib/posthog';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
+const EDITION = process.env.NEXT_PUBLIC_EDITION || 'cloud';
 
 interface User {
   id: string;
@@ -60,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(JSON.parse(storedUser));
       // Verify token is still valid
       fetch(`${API_BASE}/v1/account`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
+        headers: { Authorization: `Bearer ${storedToken}`, 'X-AM-User-ID': USER_ID },
       })
         .then((res) => {
           if (!res.ok) {
@@ -79,8 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Auto-redirect unauthenticated users away from /dashboard
+  // Auto-redirect unauthenticated users away from /dashboard (cloud only)
   useEffect(() => {
+    if (EDITION === 'local') return; // Local edition uses LAN bypass, no JWT needed
     if (!isLoading && !token && pathname?.startsWith('/dashboard')) {
       router.replace('/login');
     }
@@ -90,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
@@ -118,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
         body: JSON.stringify({ email, password, name, plan, accessCode }),
       });
       if (!res.ok) {

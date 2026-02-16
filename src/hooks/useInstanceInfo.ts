@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { InstanceInfo, DEFAULT_INSTANCE_INFO } from "@/types/instance";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
+const defaultHeaders: Record<string, string> = { "X-AM-User-ID": USER_ID };
 
 let cachedInfo: InstanceInfo | null = null;
 
@@ -19,7 +21,7 @@ export function useInstanceInfo() {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/v1/instance/info`);
+      const res = await fetch(`${API_BASE}/v1/instance/info`, { headers: defaultHeaders });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: InstanceInfo = await res.json();
       cachedInfo = data;
@@ -35,7 +37,7 @@ export function useInstanceInfo() {
     if (cachedInfo || fetched.current) return;
     fetched.current = true;
 
-    fetch(`${API_BASE}/v1/instance/info`)
+    fetch(`${API_BASE}/v1/instance/info`, { headers: defaultHeaders })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();

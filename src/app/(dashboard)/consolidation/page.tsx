@@ -28,6 +28,7 @@ interface DreamCycleReport {
 
 const API_URL = process.env.NEXT_PUBLIC_ENGRAM_API_URL || "https://api.openengram.ai";
 const API_KEY = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -68,10 +69,10 @@ export default function ConsolidationPage() {
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        "X-AM-User-ID": USER_ID,
       };
       if (API_KEY) {
         headers["X-AM-API-Key"] = API_KEY;
-        headers["Authorization"] = `Bearer ${API_KEY}`;
       }
       const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle/reports`, {
         headers,
@@ -110,10 +111,10 @@ export default function ConsolidationPage() {
               try {
                 const dreamHeaders: Record<string, string> = {
                   "Content-Type": "application/json",
+                  "X-AM-User-ID": USER_ID,
                 };
                 if (API_KEY) {
                   dreamHeaders["X-AM-API-Key"] = API_KEY;
-                  dreamHeaders["Authorization"] = `Bearer ${API_KEY}`;
                 }
                 const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle`, {
                   method: "POST",

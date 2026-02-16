@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/lib/posthog';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 const NPS_DISMISS_KEY = 'engram_nps_dismissed';
 const NPS_LOGIN_COUNT_KEY = 'engram_login_count';
 const NPS_FIRST_SEEN_KEY = 'engram_first_seen';
@@ -65,6 +66,7 @@ export function NpsSurvey() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-AM-User-ID': USER_ID,
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ rating: score, text, category: 'nps', page: pathname }),

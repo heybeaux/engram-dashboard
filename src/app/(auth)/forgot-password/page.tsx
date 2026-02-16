@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { AlertCircle, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -23,7 +24,7 @@ export default function ForgotPasswordPage() {
     try {
       const res = await fetch(`${API_URL}/v1/auth/forgot-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
         body: JSON.stringify({ email }),
       });
 

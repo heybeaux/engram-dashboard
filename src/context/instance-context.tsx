@@ -6,6 +6,7 @@ import { useInstanceInfo } from "@/hooks/useInstanceInfo";
 import { InstanceFeatures, InstanceMode, Edition, DEFAULT_INSTANCE_INFO, EDITION, isCloud, isLocal } from "@/types/instance";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 
 interface InstanceContextType {
   mode: InstanceMode;
@@ -48,7 +49,7 @@ export function InstanceProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    fetch(`${API_BASE}/v1/auth/setup-status`)
+    fetch(`${API_BASE}/v1/auth/setup-status`, { headers: { "X-AM-User-ID": USER_ID } })
       .then((res) => res.json())
       .then((data) => {
         if (data.needsSetup) {

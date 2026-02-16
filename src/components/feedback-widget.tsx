@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/lib/posthog';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 const CATEGORIES = [
   { value: 'general', label: 'General' },
@@ -36,6 +37,7 @@ export function FeedbackWidget() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-AM-User-ID': USER_ID,
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ rating, text, category, page: pathname }),

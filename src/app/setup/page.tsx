@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 type DeploymentChoice = 'local' | 'cloud' | null;
 
@@ -81,7 +82,7 @@ function SetupPageContent() {
       return;
     }
 
-    fetch(`${API_BASE}/v1/auth/setup-status`)
+    fetch(`${API_BASE}/v1/auth/setup-status`, { headers: { 'X-AM-User-ID': USER_ID } })
       .then((res) => res.json())
       .then((data) => {
         if (!data.needsSetup) {
@@ -110,7 +111,7 @@ function SetupPageContent() {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
         body: JSON.stringify({ email, password, name: displayName }),
       });
       const data = await res.json();
@@ -150,6 +151,7 @@ function SetupPageContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-AM-User-ID': USER_ID,
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({ apiKey: cloudApiKey.trim() }),

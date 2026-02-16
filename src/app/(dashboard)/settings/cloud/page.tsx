@@ -58,9 +58,18 @@ interface SyncResult {
 function getAuthHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("engram_token") : null;
-  return token
-    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-    : { "Content-Type": "application/json" };
+  if (token) {
+    return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  }
+  // For local/self-hosted: use the same auth approach as engram-client
+  const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
+  const userId = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "Beaux";
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (apiKey) {
+    headers["X-AM-API-Key"] = apiKey;
+  }
+  headers["X-AM-User-ID"] = userId;
+  return headers;
 }
 
 export default function CloudSettingsPage() {

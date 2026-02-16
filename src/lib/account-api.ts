@@ -6,6 +6,7 @@
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.openengram.ai';
+const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -16,6 +17,7 @@ async function authFetch<T>(endpoint: string, options?: RequestInit): Promise<T>
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-AM-User-ID': USER_ID,
     ...(options?.headers as Record<string, string>),
   };
   if (token) {
@@ -145,6 +147,33 @@ export async function createApiKey(name: string) {
 export function deleteApiKey(id: string) {
   // TODO: DELETE /v1/account/api-keys/:id endpoint may not exist yet
   return authFetch<void>(`/v1/account/api-keys/${id}`, { method: 'DELETE' });
+}
+
+// ── Instance API Keys ────────────────────────────────────────────────────────
+
+export interface InstanceKeyInfo {
+  id: string;
+  name: string;
+  keyHint: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export async function getInstanceKeys(): Promise<InstanceKeyInfo[]> {
+  return authFetch<InstanceKeyInfo[]>('/v1/account/instance-keys');
+}
+
+export async function createInstanceKey(name: string, scopes?: string[]) {
+  return authFetch<{ key: string; id: string; name: string; keyHint: string; scopes: string[]; createdAt: string }>(
+    '/v1/account/instance-keys',
+    { method: 'POST', body: JSON.stringify({ name, scopes }) },
+  );
+}
+
+export function deleteInstanceKey(id: string) {
+  return authFetch<void>(`/v1/account/instance-keys/${id}`, { method: 'DELETE' });
 }
 
 // ── Billing ──────────────────────────────────────────────────────────────────
