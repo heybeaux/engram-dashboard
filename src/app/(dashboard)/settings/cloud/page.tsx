@@ -118,7 +118,7 @@ export default function CloudSettingsPage() {
 }
 
 function CloudSettingsPageContent() {
-  const { mode, features, refreshInstance } = useInstance();
+  const { mode, refreshInstance } = useInstance();
   const [status, setStatus] = useState<CloudStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
