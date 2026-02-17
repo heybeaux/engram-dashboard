@@ -140,6 +140,8 @@ function CloudSettingsPageContent() {
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [togglingAutoSync, setTogglingAutoSync] = useState(false);
   const [syncHistory, setSyncHistory] = useState<SyncEvent[]>([]);
+  const [pulling, setPulling] = useState(false);
+  const [pullResult, setPullResult] = useState<any>(null);
 
   // Cloud instances (for cloud edition)
   const [instances, setInstances] = useState<CloudInstance[]>([]);
@@ -267,6 +269,30 @@ function CloudSettingsPageContent() {
       setError(err instanceof Error ? err.message : "Failed to toggle auto-sync");
     } finally {
       setTogglingAutoSync(false);
+    }
+  };
+
+  const handlePull = async () => {
+    setPulling(true);
+    setPullResult(null);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/v1/cloud/sync/pull`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Pull failed");
+        return;
+      }
+      setPullResult(data);
+      await fetchSyncStatus();
+      await fetchSyncHistory();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pull failed");
+    } finally {
+      setPulling(false);
     }
   };
 
@@ -577,6 +603,25 @@ function CloudSettingsPageContent() {
                   </div>
                 )}
 
+                {pullResult && (
+                  <div className="rounded-md bg-muted p-3 text-sm space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+                      <span className="font-medium">
+                        Pulled from cloud
+                        {pullResult.durationMs && (
+                          <span className="text-muted-foreground font-normal">
+                            {" "}in {(pullResult.durationMs / 1000).toFixed(1)}s
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6">
+                      {pullResult.newCount} new, {pullResult.updatedCount} updated, {pullResult.skippedCount} unchanged, {pullResult.deletedCount} deleted
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap items-center gap-4 pt-2">
                   <Button onClick={handleSync} disabled={syncing || syncStatus.pendingCount === 0}>
                     {syncing ? (
@@ -584,7 +629,16 @@ function CloudSettingsPageContent() {
                     ) : (
                       <Upload className="mr-2 h-4 w-4" />
                     )}
-                    {syncing ? "Syncing..." : "Sync Now"}
+                    {syncing ? "Syncing..." : "Push to Cloud"}
+                  </Button>
+
+                  <Button variant="outline" onClick={handlePull} disabled={pulling || syncing}>
+                    {pulling ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowLeftRight className="mr-2 h-4 w-4" />
+                    )}
+                    {pulling ? "Pulling..." : "Pull from Cloud"}
                   </Button>
 
                   <div className="flex items-center gap-2">
