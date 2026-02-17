@@ -133,7 +133,7 @@ export default function MemoriesPage() {
   const [layerFilter, setLayerFilter] = useState<MemoryLayer | null>(null);
   const [userFilter, setUserFilter] = useState<string | null>(null);
   const [memories, setMemories] = useState<(Memory | MemoryWithScore)[]>([]);
-  const [users, setUsers] = useState<string[]>([]);
+  const [users, setUsers] = useState<{ id: string; externalId?: string; displayName?: string }[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -155,9 +155,13 @@ export default function MemoriesPage() {
   // Fetch users for the filter dropdown
   useEffect(() => {
     engram.getUsers().then(({ users }) => {
-      setUsers(users.map((u) => u.id));
+      setUsers(users);
     }).catch(console.error);
   }, []);
+
+  // Build userId → display name lookup
+  const userNameMap = new Map(users.map((u) => [u.id, u.displayName || u.externalId || u.id]));
+  const getUserName = (userId: string) => userNameMap.get(userId) ?? userId;
 
   // Fetch memories
   const fetchMemories = useCallback(async () => {
@@ -248,7 +252,10 @@ export default function MemoriesPage() {
             {memory.layer}
           </Badge>
           <span className="text-xs text-muted-foreground">
-            {memory.userId}
+            {getUserName(memory.userId)}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Agent: {((memory as unknown as Record<string, unknown>).agentId as string) ?? "—"}
           </span>
         </div>
 
@@ -336,7 +343,7 @@ export default function MemoriesPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex-1 sm:flex-none h-11 justify-between">
-                    <span className="truncate">{userFilter || "All Users"}</span>
+                    <span className="truncate">{userFilter ? getUserName(userFilter) : "All Users"}</span>
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -344,13 +351,13 @@ export default function MemoriesPage() {
                   <DropdownMenuItem onClick={() => setUserFilter(null)} className="py-3">
                     All Users
                   </DropdownMenuItem>
-                  {users.map((userId) => (
+                  {users.map((u) => (
                     <DropdownMenuItem
-                      key={userId}
-                      onClick={() => setUserFilter(userId)}
+                      key={u.id}
+                      onClick={() => setUserFilter(u.id)}
                       className="py-3"
                     >
-                      {userId}
+                      {u.displayName || u.externalId || u.id}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -397,6 +404,7 @@ export default function MemoriesPage() {
               <TableRow>
                 <TableHead>Memory</TableHead>
                 <TableHead>User</TableHead>
+                <TableHead>Agent</TableHead>
                 <TableHead>Layer</TableHead>
                 <TableHead>{isSemanticSearch ? "Similarity" : "Importance"}</TableHead>
                 <TableHead>Created</TableHead>
@@ -409,7 +417,7 @@ export default function MemoriesPage() {
                 <TableSkeleton />
               ) : memories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {search ? "No memories found matching your search" : "No memories yet"}
                   </TableCell>
                 </TableRow>
@@ -423,7 +431,10 @@ export default function MemoriesPage() {
                         <p className="text-xs text-muted-foreground">{memory.id}</p>
                       </TableCell>
                       <TableCell>
-                        <code className="text-xs">{memory.userId}</code>
+                        <code className="text-xs">{getUserName(memory.userId)}</code>
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-xs">{((memory as unknown as Record<string, unknown>).agentId as string) ?? "—"}</code>
                       </TableCell>
                       <TableCell>
                         <Badge
