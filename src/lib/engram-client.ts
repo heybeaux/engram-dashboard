@@ -89,7 +89,10 @@ export class EngramClient {
     options?: RequestInit & { userId?: string }
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    const userId = options?.userId ?? this.defaultUserId;
+    // When userId is explicitly empty string, skip the header entirely
+    // (allows account-wide queries scoped only by API key).
+    // Only fall back to defaultUserId when userId is not provided at all.
+    const userId = options?.userId !== undefined ? options.userId : this.defaultUserId;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

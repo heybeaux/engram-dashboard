@@ -171,7 +171,7 @@ export default function MemoriesPage() {
         const result = await engram.searchMemories(
           search,
           { limit: PAGE_SIZE, layers },
-          userFilter || undefined
+          userFilter ?? ''
         );
         setMemories(result.memories ?? []);
         setTotal(result.memories.length);
@@ -181,7 +181,7 @@ export default function MemoriesPage() {
         setIsSemanticSearch(false);
         const result = await engram.getMemories({
           layer: layerFilter || undefined,
-          userId: userFilter || undefined,
+          userId: userFilter ?? '',
           limit: PAGE_SIZE,
           offset: page * PAGE_SIZE,
         });

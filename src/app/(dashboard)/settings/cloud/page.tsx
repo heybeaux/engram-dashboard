@@ -141,6 +141,7 @@ function CloudSettingsPageContent() {
   const [togglingAutoSync, setTogglingAutoSync] = useState(false);
   const [syncHistory, setSyncHistory] = useState<SyncEvent[]>([]);
   const [pulling, setPulling] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pullResult, setPullResult] = useState<any>(null);
 
   // Cloud instances (for cloud edition)
