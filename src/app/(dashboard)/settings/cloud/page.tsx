@@ -29,6 +29,8 @@ import {
   HardDrive,
   ArrowLeftRight,
   Upload,
+  Clock,
+  Monitor,
 } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
 
@@ -47,12 +49,43 @@ interface SyncStatus {
   syncedCount: number;
   pendingCount: number;
   autoSync: boolean;
+  syncing: boolean;
+  progress?: { synced: number; total: number };
 }
 
 interface SyncResult {
   syncedCount: number;
+  newCount: number;
+  updatedCount: number;
+  skippedCount: number;
   errorCount: number;
   lastSyncedAt: string | null;
+  durationMs: number;
+}
+
+interface SyncEvent {
+  id: string;
+  direction: string;
+  status: string;
+  totalCount: number;
+  newCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  error: string | null;
+  durationMs: number | null;
+  createdAt: string;
+}
+
+interface CloudInstance {
+  id: string;
+  instanceId: string;
+  instanceName: string | null;
+  lastSyncAt: string | null;
+  memoryCount: number;
+  lastPushCount: number;
+  status: string;
+  createdAt: string;
 }
 
 function getAuthHeaders(): Record<string, string> {
@@ -61,15 +94,23 @@ function getAuthHeaders(): Record<string, string> {
   if (token) {
     return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   }
-  // For local/self-hosted: use the same auth approach as engram-client
   const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
   const userId = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "Beaux";
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (apiKey) {
-    headers["X-AM-API-Key"] = apiKey;
-  }
+  if (apiKey) headers["X-AM-API-Key"] = apiKey;
   headers["X-AM-User-ID"] = userId;
   return headers;
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 export default function CloudSettingsPage() {
@@ -98,6 +139,10 @@ function CloudSettingsPageContent() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [togglingAutoSync, setTogglingAutoSync] = useState(false);
+  const [syncHistory, setSyncHistory] = useState<SyncEvent[]>([]);
+
+  // Cloud instances (for cloud edition)
+  const [instances, setInstances] = useState<CloudInstance[]>([]);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -125,7 +170,33 @@ function CloudSettingsPageContent() {
       const data = await res.json();
       setSyncStatus(data);
     } catch {
-      // Silent — sync status is supplementary
+      // Silent
+    }
+  }, []);
+
+  const fetchSyncHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/cloud/sync/history`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSyncHistory(data);
+    } catch {
+      // Silent
+    }
+  }, []);
+
+  const fetchInstances = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/sync/instances`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setInstances(data);
+    } catch {
+      // Silent
     }
   }, []);
 
@@ -134,10 +205,25 @@ function CloudSettingsPageContent() {
   }, [fetchStatus]);
 
   useEffect(() => {
-    if (status?.linked && features.cloudBackup) {
+    if (status?.linked) {
       fetchSyncStatus();
+      fetchSyncHistory();
     }
-  }, [status?.linked, features.cloudBackup, fetchSyncStatus]);
+  }, [status?.linked, fetchSyncStatus, fetchSyncHistory]);
+
+  // For cloud edition, fetch connected instances
+  useEffect(() => {
+    if (mode === "cloud") {
+      fetchInstances();
+    }
+  }, [mode, fetchInstances]);
+
+  // Poll sync status while syncing
+  useEffect(() => {
+    if (!syncing) return;
+    const interval = setInterval(fetchSyncStatus, 2000);
+    return () => clearInterval(interval);
+  }, [syncing, fetchSyncStatus]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -155,6 +241,7 @@ function CloudSettingsPageContent() {
       }
       setSyncResult(data);
       await fetchSyncStatus();
+      await fetchSyncHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync failed");
     } finally {
@@ -253,22 +340,81 @@ function CloudSettingsPageContent() {
     }
   };
 
-  if (mode !== "self-hosted") {
+  // ── Cloud Edition: Show connected instances ──
+  if (mode === "cloud") {
     return (
       <div className="space-y-4 md:space-y-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Cloud Link</h1>
-        <Card>
-          <CardContent className="py-8 text-center">
-            <Cloud className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">
-              You&apos;re already running on OpenEngram Cloud. No linking needed.
-            </p>
-          </CardContent>
-        </Card>
+        <h1 className="text-2xl md:text-3xl font-bold">Connected Instances</h1>
+
+        {instances.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <Monitor className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">
+                No local instances have synced to this cloud account yet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Link a self-hosted Engram instance to see it here.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {instances.map((inst) => {
+              const isStale = inst.lastSyncAt && 
+                Date.now() - new Date(inst.lastSyncAt).getTime() > 3 * 24 * 60 * 60 * 1000;
+              return (
+                <Card key={inst.id}>
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Monitor className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">
+                            {inst.instanceName || "Unnamed Instance"}
+                          </p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            {inst.instanceId.slice(0, 12)}...
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={isStale ? "secondary" : "outline"} className={
+                          isStale 
+                            ? "text-yellow-600" 
+                            : "text-green-600 border-green-600/30"
+                        }>
+                          {isStale ? "Stale" : "Active"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 mt-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground text-xs">Memories</p>
+                        <p className="font-medium">{inst.memoryCount.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Last Push</p>
+                        <p className="font-medium">{inst.lastPushCount} new</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Last Sync</p>
+                        <p className="font-medium">
+                          {inst.lastSyncAt ? timeAgo(inst.lastSyncAt) : "Never"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
 
+  // ── Self-Hosted Edition ──
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -295,8 +441,8 @@ function CloudSettingsPageContent() {
           </CardContent>
         </Card>
       ) : status?.linked ? (
-        /* ── Linked State ───────────────────────────────────────────── */
         <>
+          {/* ── Connection Details ── */}
           <Card>
             <CardHeader className="pb-2 md:pb-4">
               <CardTitle className="text-base md:text-lg flex items-center gap-2">
@@ -308,32 +454,26 @@ function CloudSettingsPageContent() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {status.email && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
+                    <p className="text-sm font-medium text-muted-foreground">Account</p>
                     <p className="text-sm">{status.email}</p>
                   </div>
                 )}
                 {status.plan && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Plan</p>
-                    <p className="text-sm capitalize">{status.plan}</p>
+                    <Badge variant="outline" className="capitalize">{status.plan}</Badge>
                   </div>
                 )}
                 {status.lastVerified && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Last Verified</p>
-                    <p className="text-sm">
-                      {new Date(status.lastVerified).toLocaleString()}
-                    </p>
+                    <p className="text-sm">{timeAgo(status.lastVerified)}</p>
                   </div>
                 )}
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                >
+                <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
                   {refreshing ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -359,20 +499,11 @@ function CloudSettingsPageContent() {
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowDisconnect(false)}
-                      >
+                      <Button variant="outline" onClick={() => setShowDisconnect(false)}>
                         Cancel
                       </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={handleDisconnect}
-                        disabled={disconnecting}
-                      >
-                        {disconnecting && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
+                      <Button variant="destructive" onClick={handleDisconnect} disabled={disconnecting}>
+                        {disconnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Disconnect
                       </Button>
                     </DialogFooter>
@@ -382,63 +513,72 @@ function CloudSettingsPageContent() {
             </CardContent>
           </Card>
 
-          {/* ── Cloud Backup Sync ─────────────────────────────────── */}
-          {features.cloudBackup && syncStatus && (
+          {/* ── Cloud Sync ── */}
+          {syncStatus && (
             <Card>
               <CardHeader className="pb-2 md:pb-4">
                 <CardTitle className="text-base md:text-lg flex items-center gap-2">
                   <Upload className="h-4 w-4 text-primary" />
-                  Cloud Backup
+                  Cloud Sync
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Sync progress */}
+                {/* Progress bar */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {syncStatus.syncedCount} of {syncStatus.totalMemories} memories synced
+                      {syncing && syncStatus.progress 
+                        ? `Syncing... ${syncStatus.progress.synced} of ${syncStatus.progress.total}`
+                        : `${syncStatus.syncedCount.toLocaleString()} of ${syncStatus.totalMemories.toLocaleString()} memories synced`
+                      }
                     </span>
-                    {syncStatus.pendingCount > 0 && (
-                      <span className="text-muted-foreground">
-                        {syncStatus.pendingCount} pending
+                    {syncStatus.pendingCount > 0 && !syncing && (
+                      <span className="text-muted-foreground text-xs">
+                        {syncStatus.pendingCount.toLocaleString()} pending
                       </span>
                     )}
                   </div>
                   <Progress
                     value={
-                      syncStatus.totalMemories > 0
+                      syncing && syncStatus.progress && syncStatus.progress.total > 0
+                        ? (syncStatus.progress.synced / syncStatus.progress.total) * 100
+                        : syncStatus.totalMemories > 0
                         ? (syncStatus.syncedCount / syncStatus.totalMemories) * 100
                         : 0
                     }
                   />
                   {syncStatus.lastSyncedAt && (
                     <p className="text-xs text-muted-foreground">
-                      Last synced: {new Date(syncStatus.lastSyncedAt).toLocaleString()}
+                      Last synced: {timeAgo(syncStatus.lastSyncedAt)}
                     </p>
                   )}
                 </div>
 
                 {/* Sync result */}
                 {syncResult && (
-                  <div className="flex items-center gap-2 rounded-md bg-muted p-3 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-                    <span>
-                      Synced {syncResult.syncedCount} memories
+                  <div className="rounded-md bg-muted p-3 text-sm space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                      <span className="font-medium">
+                        Synced {syncResult.syncedCount.toLocaleString()} memories
+                        {syncResult.durationMs && (
+                          <span className="text-muted-foreground font-normal">
+                            {" "}in {(syncResult.durationMs / 1000).toFixed(1)}s
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6">
+                      {syncResult.newCount} new, {syncResult.updatedCount} updated, {syncResult.skippedCount} unchanged
                       {syncResult.errorCount > 0 && (
-                        <span className="text-destructive">
-                          {" "}({syncResult.errorCount} errors)
-                        </span>
+                        <span className="text-destructive"> · {syncResult.errorCount} failed</span>
                       )}
-                    </span>
+                    </p>
                   </div>
                 )}
 
                 <div className="flex flex-wrap items-center gap-4 pt-2">
-                  {/* Sync Now button */}
-                  <Button
-                    onClick={handleSync}
-                    disabled={syncing || syncStatus.pendingCount === 0}
-                  >
+                  <Button onClick={handleSync} disabled={syncing || syncStatus.pendingCount === 0}>
                     {syncing ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
@@ -447,99 +587,142 @@ function CloudSettingsPageContent() {
                     {syncing ? "Syncing..." : "Sync Now"}
                   </Button>
 
-                  {/* Auto-sync toggle */}
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={syncStatus.autoSync}
                       onCheckedChange={handleToggleAutoSync}
                       disabled={togglingAutoSync}
                     />
-                    <span className="text-sm">Auto-sync new memories</span>
+                    <span className="text-sm">Auto-sync</span>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Sync History ── */}
+          {syncHistory.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 md:pb-4">
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  Sync History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {syncHistory.slice(0, 5).map((event) => (
+                    <div key={event.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        {event.status === "completed" ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                        )}
+                        <span>
+                          {event.status === "completed" 
+                            ? `${event.totalCount} synced`
+                            : "Failed"
+                          }
+                        </span>
+                        {event.status === "completed" && (
+                          <span className="text-xs text-muted-foreground">
+                            ({event.newCount} new, {event.updatedCount} updated, {event.skippedCount} unchanged
+                            {event.failedCount > 0 && `, ${event.failedCount} failed`})
+                          </span>
+                        )}
+                        {event.error && (
+                          <span className="text-xs text-destructive">{event.error}</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                        {timeAgo(event.createdAt)}
+                        {event.durationMs && ` · ${(event.durationMs / 1000).toFixed(1)}s`}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           )}
         </>
       ) : (
-        /* ── Not Linked State ───────────────────────────────────────── */
-        <>
-          <Card>
-            <CardHeader className="pb-2 md:pb-4">
-              <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                <CloudOff className="h-4 w-4 text-muted-foreground" />
-                Connect to OpenEngram Cloud
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-sm text-muted-foreground">
-                Link your self-hosted instance to OpenEngram Cloud to unlock additional features.
+        /* ── Not Linked State ── */
+        <Card>
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <CloudOff className="h-4 w-4 text-muted-foreground" />
+              Connect to OpenEngram Cloud
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Link your self-hosted instance to OpenEngram Cloud to unlock additional features.
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="flex items-start gap-3 rounded-lg border p-3">
+                <Layers className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Ensemble Models</p>
+                  <p className="text-xs text-muted-foreground">
+                    Access cloud-hosted embedding &amp; ranking models
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border p-3">
+                <HardDrive className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Cloud Backup</p>
+                  <p className="text-xs text-muted-foreground">
+                    Automatic encrypted backups of your memory store
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border p-3">
+                <ArrowLeftRight className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Cross-Device Sync</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sync memories across multiple Engram instances
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium">OpenEngram Cloud API Key</label>
+              <div className="flex gap-2 max-w-full md:max-w-lg">
+                <Input
+                  type="password"
+                  placeholder="eng_cloud_..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLink()}
+                />
+                <Button onClick={handleLink} disabled={linking || !apiKey.trim()}>
+                  {linking ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plug className="mr-2 h-4 w-4" />
+                  )}
+                  Connect
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Get your API key from{" "}
+                <a
+                  href="https://app.openengram.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground"
+                >
+                  app.openengram.ai
+                </a>
               </p>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-start gap-3 rounded-lg border p-3">
-                  <Layers className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Ensemble Models</p>
-                    <p className="text-xs text-muted-foreground">
-                      Access cloud-hosted embedding &amp; ranking models
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 rounded-lg border p-3">
-                  <HardDrive className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Cloud Backup</p>
-                    <p className="text-xs text-muted-foreground">
-                      Automatic encrypted backups of your memory store
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 rounded-lg border p-3">
-                  <ArrowLeftRight className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Cross-Device Sync</p>
-                    <p className="text-xs text-muted-foreground">
-                      Sync memories across multiple Engram instances
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-sm font-medium">OpenEngram Cloud API Key</label>
-                <div className="flex gap-2 max-w-full md:max-w-lg">
-                  <Input
-                    type="password"
-                    placeholder="eng_cloud_..."
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleLink()}
-                  />
-                  <Button onClick={handleLink} disabled={linking || !apiKey.trim()}>
-                    {linking ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plug className="mr-2 h-4 w-4" />
-                    )}
-                    Connect
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Get your API key from{" "}
-                  <a
-                    href="https://app.openengram.ai"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:text-foreground"
-                  >
-                    app.openengram.ai
-                  </a>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
