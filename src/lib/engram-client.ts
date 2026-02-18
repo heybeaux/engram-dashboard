@@ -315,50 +315,42 @@ export class EngramClient {
 
   /**
    * Get memory graph data for visualization
-   * Composes data from /v1/graph/entities and /v1/graph/relationships
-   * @endpoint GET /v1/graph/entities + GET /v1/graph/relationships
+   * Fetches graph data from the memory graph endpoint which uses
+   * existing Entity/MemoryEntity associations (always populated).
+   * @endpoint GET /v1/memories/graph
    */
   async getGraphData(params?: { limit?: number }): Promise<GraphData> {
-    const limit = params?.limit ?? 200;
+    const limit = params?.limit ?? 500;
 
-    // Omit userId query param and pass userId: '' to skip X-AM-User-ID header
-    // so the backend resolves all users under the account (account-wide access)
-    const [entitiesRaw, relationshipsRaw] = await Promise.all([
-      this.fetch<{ entities?: Array<Record<string, unknown>>; data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>>(
-        `/v1/graph/entities?limit=${limit}`,
-        { userId: '' }
-      ).catch(() => []),
-      this.fetch<{ relationships?: Array<Record<string, unknown>>; data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>>(
-        `/v1/graph/relationships?limit=${limit}`,
-        { userId: '' }
-      ).catch(() => []),
-    ]);
+    // Use the memory graph endpoint which queries memories + entity associations directly.
+    // This works even without GRAPH_ENABLED since entities are extracted during normal ingestion.
+    const qs = new URLSearchParams({ limit: String(limit), includeAgent: 'true' });
 
-    // Normalize arrays
-    const entities: Array<Record<string, unknown>> = Array.isArray(entitiesRaw)
-      ? entitiesRaw
-      : (entitiesRaw as Record<string, unknown>)?.entities as Array<Record<string, unknown>>
-        ?? (entitiesRaw as Record<string, unknown>)?.data as Array<Record<string, unknown>>
-        ?? [];
-
-    const relationships: Array<Record<string, unknown>> = Array.isArray(relationshipsRaw)
-      ? relationshipsRaw
-      : (relationshipsRaw as Record<string, unknown>)?.relationships as Array<Record<string, unknown>>
-        ?? (relationshipsRaw as Record<string, unknown>)?.data as Array<Record<string, unknown>>
-        ?? [];
-
-    // Transform to GraphData format
+    const raw = await this.fetch<{
+      nodes: Array<Record<string, unknown>>;
+      edges: Array<Record<string, unknown>>;
+      entities: Array<Record<string, unknown>>;
+      stats?: { human: number; agent: number };
+    }>(`/v1/memories/graph?${qs.toString()}`);
     return {
-      nodes: [], // Memory nodes aren't directly available from graph API
-      edges: relationships.map((r) => ({
-        id: String(r.id ?? ''),
-        source: String(r.sourceEntityId ?? r.source ?? ''),
-        target: String(r.targetEntityId ?? r.target ?? ''),
-        linkType: String(r.type ?? r.linkType ?? 'RELATED') as import('./types').ChainLinkType,
-        confidence: Number(r.confidence ?? r.weight ?? 1.0),
-        createdAt: String(r.createdAt ?? new Date().toISOString()),
+      nodes: (raw.nodes ?? []).map((n) => ({
+        id: String(n.id ?? ''),
+        raw: String(n.raw ?? ''),
+        layer: String(n.layer ?? 'WORKING'),
+        importanceScore: Number(n.importanceScore ?? 0.5),
+        extraction: n.extraction as Record<string, unknown> | undefined,
+        createdAt: String(n.createdAt ?? new Date().toISOString()),
+        source: n.source as string | undefined,
       })),
-      entities: entities.map((e) => ({
+      edges: (raw.edges ?? []).map((e) => ({
+        id: String(e.id ?? ''),
+        source: String(e.sourceId ?? e.source ?? ''),
+        target: String(e.targetId ?? e.target ?? ''),
+        linkType: String(e.linkType ?? 'RELATED') as import('./types').ChainLinkType,
+        confidence: Number(e.confidence ?? e.weight ?? 1.0),
+        createdAt: String(e.createdAt ?? new Date().toISOString()),
+      })),
+      entities: (raw.entities ?? []).map((e) => ({
         id: String(e.id ?? ''),
         name: String(e.name ?? ''),
         normalizedName: String(e.normalizedName ?? e.name ?? ''),
