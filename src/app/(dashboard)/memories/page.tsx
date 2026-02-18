@@ -51,7 +51,7 @@ import {
 import { engram, Memory, MemoryWithScore, MemoryLayer } from "@/lib/engram-client";
 import type { ImportanceHint } from "@/lib/types";
 
-const LAYER_OPTIONS: MemoryLayer[] = ["IDENTITY", "PROJECT", "SESSION", "TASK"];
+const LAYER_OPTIONS: MemoryLayer[] = ["IDENTITY", "PROJECT", "SESSION", "TASK", "INSIGHT"];
 const PAGE_SIZE = 25;
 
 const layerColors: Record<string, string> = {
@@ -59,6 +59,7 @@ const layerColors: Record<string, string> = {
   PROJECT: "bg-green-500/10 text-green-500 border-green-500/20",
   SESSION: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   TASK: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  INSIGHT: "bg-amber-500/10 text-amber-500 border-amber-500/20",
 };
 
 function formatDate(dateString: string): string {

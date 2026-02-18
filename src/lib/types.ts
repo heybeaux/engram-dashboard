@@ -7,7 +7,7 @@
 // ENUMS
 // ============================================================================
 
-export type MemoryLayer = 'IDENTITY' | 'PROJECT' | 'SESSION' | 'TASK';
+export type MemoryLayer = 'IDENTITY' | 'PROJECT' | 'SESSION' | 'TASK' | 'INSIGHT';
 
 export type MemorySource =
   | 'EXPLICIT_STATEMENT'

@@ -337,6 +337,7 @@ The peanut allergy is NEVER forgotten.`}
   PROJECT    // Long-term — current work context
   SESSION    // Medium-term — recent conversations
   TASK       // Short-term — ephemeral action items
+  INSIGHT    // System-generated — patterns detected by Awareness
 }
 
 model Memory {

@@ -789,6 +789,7 @@ export class EngramClient {
         { layer: 'PROJECT', count: 0, percentage: 0 },
         { layer: 'SESSION', count: 0, percentage: 0 },
         { layer: 'TASK', count: 0, percentage: 0 },
+        { layer: 'INSIGHT', count: 0, percentage: 0 },
       ],
       recentActivity: [],
       apiRequests: [],
