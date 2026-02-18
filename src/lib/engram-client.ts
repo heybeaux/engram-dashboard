@@ -322,13 +322,16 @@ export class EngramClient {
     const userId = this.defaultUserId || '';
     const limit = params?.limit ?? 200;
 
+    // Build query string — omit userId for account-wide access on cloud
+    const userParam = userId ? `userId=${encodeURIComponent(userId)}&` : '';
+
     // Fetch entities and relationships in parallel
     const [entitiesRaw, relationshipsRaw] = await Promise.all([
       this.fetch<{ entities?: Array<Record<string, unknown>>; data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>>(
-        `/v1/graph/entities?userId=${encodeURIComponent(userId)}&limit=${limit}`
+        `/v1/graph/entities?${userParam}limit=${limit}`
       ).catch(() => []),
       this.fetch<{ relationships?: Array<Record<string, unknown>>; data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>>(
-        `/v1/graph/relationships?userId=${encodeURIComponent(userId)}&limit=${limit}`
+        `/v1/graph/relationships?${userParam}limit=${limit}`
       ).catch(() => []),
     ]);
 
