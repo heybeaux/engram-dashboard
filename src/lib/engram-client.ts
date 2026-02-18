@@ -178,7 +178,7 @@ export class EngramClient {
    * @endpoint GET /v1/memories/:id
    */
   async getMemory(id: string): Promise<Memory | null> {
-    return this.fetch<Memory | null>(`/v1/memories/${id}`);
+    return this.fetch<Memory | null>(`/v1/memories/${id}`, { userId: '' });
   }
 
   /**
