@@ -290,6 +290,8 @@ export interface ListMemoriesResponse {
   total: number;
   limit: number;
   offset: number;
+  /** Maps userId → display name for all users referenced in this page */
+  userMap?: Record<string, string>;
 }
 
 /**

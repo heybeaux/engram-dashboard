@@ -142,6 +142,7 @@ export default function MemoriesPage() {
   const [isSemanticSearch, setIsSemanticSearch] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memoryToDelete, setMemoryToDelete] = useState<string | null>(null);
+  const [apiUserMap, setApiUserMap] = useState<Record<string, string>>({});
   const [deleting, setDeleting] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -162,7 +163,13 @@ export default function MemoriesPage() {
 
   // Build userId → display name lookup
   const userNameMap = new Map(users.map((u) => [u.id, u.displayName || u.externalId || u.id]));
-  const getUserName = (userId: string) => userNameMap.get(userId) ?? userId;
+  const getUserName = (userId: string) => {
+    const name = userNameMap.get(userId) || apiUserMap[userId];
+    if (name) return name;
+    // Legacy CUID fallback — show truncated ID instead of raw 25-char string
+    if (userId.length > 16) return `User (…${userId.slice(-6)})`;
+    return userId;
+  };
 
   // Fetch memories
   const fetchMemories = useCallback(async () => {
@@ -192,6 +199,9 @@ export default function MemoriesPage() {
         });
         setMemories(result.memories ?? []);
         setTotal(result.total ?? 0);
+        if (result.userMap) {
+          setApiUserMap((prev) => ({ ...prev, ...result.userMap }));
+        }
       }
     } catch (error) {
       console.error("Failed to fetch memories:", error);
