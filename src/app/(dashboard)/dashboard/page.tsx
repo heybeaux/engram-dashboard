@@ -16,6 +16,7 @@ const LAYER_COLORS: Record<string, string> = {
   PROJECT: "bg-green-500",
   SESSION: "bg-yellow-500",
   TASK: "bg-purple-500",
+  INSIGHT: "bg-amber-500",
 };
 
 // Format relative time from ISO timestamp

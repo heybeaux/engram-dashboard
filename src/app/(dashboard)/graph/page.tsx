@@ -27,6 +27,7 @@ const LAYER_COLORS: Record<string, string> = {
   EPISODIC: '#22c55e',
   WORKING: '#f59e0b',
   PROCEDURAL: '#8b5cf6',
+  INSIGHT: '#f59e0b',
 };
 
 const DEFAULT_NODE_COLOR = '#6b7280';

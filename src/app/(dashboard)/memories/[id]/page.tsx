@@ -27,6 +27,7 @@ const layerColors: Record<string, string> = {
   PROJECT: "bg-green-500/10 text-green-500 border-green-500/20",
   SESSION: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   TASK: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  INSIGHT: "bg-amber-500/10 text-amber-500 border-amber-500/20",
 };
 
 function formatDate(dateString: string): string {
