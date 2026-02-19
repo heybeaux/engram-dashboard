@@ -331,7 +331,7 @@ export class EngramClient {
       edges: Array<Record<string, unknown>>;
       entities: Array<Record<string, unknown>>;
       stats?: { human: number; agent: number };
-    }>(`/v1/memories/graph?${qs.toString()}`);
+    }>(`/v1/memories/graph?${qs.toString()}`, { userId: '' });
     return {
       nodes: (raw.nodes ?? []).map((n) => ({
         id: String(n.id ?? ''),
