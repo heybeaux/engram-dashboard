@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
+const API_BASE = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 
 interface CloudStatus {
   linked: boolean;

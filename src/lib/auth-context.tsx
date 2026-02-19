@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 
 import { resetPostHog } from '@/lib/posthog';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const API_BASE = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 const EDITION = process.env.NEXT_PUBLIC_EDITION || 'cloud';
 

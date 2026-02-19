@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const API_URL = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 export default function ForgotPasswordPage() {

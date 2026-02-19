@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Search, RefreshCw, Loader2, ShieldAlert } from "lucide-react";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
+  process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
