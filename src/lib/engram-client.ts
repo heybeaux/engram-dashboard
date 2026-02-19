@@ -38,6 +38,7 @@ import {
   ObserveRequest,
   DashboardStats,
   GraphData,
+  GraphNode,
   ListMemoriesResponse,
   ListUsersResponse,
   UserDetailResponse,
@@ -336,11 +337,18 @@ export class EngramClient {
       nodes: (raw.nodes ?? []).map((n) => ({
         id: String(n.id ?? ''),
         raw: String(n.raw ?? ''),
-        layer: String(n.layer ?? 'WORKING'),
+        layer: String(n.layer ?? 'WORKING') as import('./types').MemoryLayer,
+        source: (n.source ?? 'AGENT_OBSERVATION') as import('./types').MemorySource,
         importanceScore: Number(n.importanceScore ?? 0.5),
-        extraction: n.extraction as Record<string, unknown> | undefined,
+        confidence: Number(n.confidence ?? 1.0),
         createdAt: String(n.createdAt ?? new Date().toISOString()),
-        source: n.source as string | undefined,
+        extraction: n.extraction as GraphNode['extraction'] ?? null,
+        entities: Array.isArray(n.entities) ? (n.entities as Array<Record<string, unknown>>).map((e) => ({
+          id: String(e.id ?? ''),
+          name: String(e.name ?? ''),
+          type: String(e.type ?? 'UNKNOWN'),
+        })) : [],
+        primaryEntityType: String(n.primaryEntityType ?? 'UNKNOWN'),
       })),
       edges: (raw.edges ?? []).map((e) => ({
         id: String(e.id ?? ''),
@@ -355,7 +363,6 @@ export class EngramClient {
         name: String(e.name ?? ''),
         normalizedName: String(e.normalizedName ?? e.name ?? ''),
         type: String(e.type ?? 'UNKNOWN'),
-        mentionCount: Number(e.mentionCount ?? 0),
       })),
     };
   }
