@@ -122,6 +122,10 @@ export default function ApiKeysPage() {
         <span className="font-medium">{key.name}</span>
       </DataListHeader>
 
+      <DataListRow label="Agent">
+        {key.agentName || key.name || "—"}
+      </DataListRow>
+
       <DataListRow label="Key">
         <code className="text-muted-foreground">{key.apiKeyHint}</code>
       </DataListRow>
@@ -274,6 +278,7 @@ export default function ApiKeysPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Agent</TableHead>
                   <TableHead>Key</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -283,7 +288,7 @@ export default function ApiKeysPage() {
                 {keys.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="text-center text-muted-foreground py-8"
                     >
                       No API keys yet. Create one to get started.
@@ -293,6 +298,9 @@ export default function ApiKeysPage() {
                   keys.map((key) => (
                     <TableRow key={key.id}>
                       <TableCell className="font-medium">{key.name}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {key.agentName || key.name || "—"}
+                      </TableCell>
                       <TableCell>
                         <code className="text-muted-foreground">
                           {key.apiKeyHint}

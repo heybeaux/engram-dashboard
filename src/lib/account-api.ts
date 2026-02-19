@@ -122,6 +122,7 @@ export function deleteAccount() {
 export interface ApiKeyInfo {
   id: string;
   name: string;
+  agentName?: string;
   apiKeyHint: string;
   createdAt: string;
   lastUsedAt: string | null;
