@@ -156,8 +156,6 @@ export default function GraphPage() {
           <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
           <Badge variant="outline">Loading...</Badge>
         </div>
-        {/* Loading skeleton */}
-        <div className="flex flex-wrap gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full bg-muted animate-pulse" />
@@ -169,7 +167,6 @@ export default function GraphPage() {
           <CardContent className="p-0">
             <div className="flex flex-col items-center justify-center" style={{ height: Math.max(500, 600) }}>
               <div className="relative w-64 h-64">
-                {/* Skeleton graph nodes */}
                 {Array.from({ length: 8 }).map((_, i) => {
                   const angle = (i / 8) * Math.PI * 2;
                   const r = 80 + (i % 3) * 20;
