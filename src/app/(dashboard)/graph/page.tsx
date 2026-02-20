@@ -156,6 +156,7 @@ export default function GraphPage() {
           <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
           <Badge variant="outline">Loading...</Badge>
         </div>
+        <div className="flex flex-wrap gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full bg-muted animate-pulse" />
