@@ -342,6 +342,66 @@ VECTOR_PROVIDER="pgvector"`}
 
           {/* ───── Environment Reference ───── */}
 
+          <h2>Identity Module Configuration (v2)</h2>
+
+          <p>
+            Engram v2 adds agent identity, delegation, trust, awareness, and cloud sync.
+            These features require additional configuration:
+          </p>
+
+          <h3>JWT Secret (Required for v2)</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Generate a secure secret (at least 32 characters)
+JWT_SECRET="$(openssl rand -base64 48)"
+
+# Add to .env
+JWT_SECRET="your-generated-secret-here"`}
+          </pre>
+          <p>
+            The <code>JWT_SECRET</code> is used for sync token signing and inter-agent
+            authentication. <strong>This is required</strong> — the server will not start
+            without it in v2.
+          </p>
+
+          <h3>Awareness</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Enable background memory intelligence
+AWARENESS_ENABLED=true
+AWARENESS_INTERVAL_MS=900000        # 15 min (default)
+AWARENESS_EVENT_THRESHOLD=10        # Wake after N new memories
+AWARENESS_INSIGHT_MODEL=gpt-4o-mini # Model for insight generation`}
+          </pre>
+
+          <h3>Cloud Sync</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Enable sync to Engram Cloud or another instance
+SYNC_ENABLED=true
+SYNC_CLOUD_URL=https://api.openengram.ai
+SYNC_TOKEN=est_xxxxxxxxxxxx
+SYNC_INTERVAL_MS=300000             # 5 min (default)
+SYNC_BATCH_SIZE=100`}
+          </pre>
+
+          <h3>Identity Backfill</h3>
+          <p>
+            After upgrading to v2, run the identity backfill to create identity records for
+            existing agents:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`pnpm ts-node scripts/backfill-identity.ts`}
+          </pre>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 not-prose text-sm text-gray-300">
+            <p className="font-medium text-purple-400 mb-2">📋 v2 Checklist</p>
+            <ul className="list-disc list-inside space-y-1 mt-2">
+              <li>Set <code className="text-purple-300">JWT_SECRET</code> (required)</li>
+              <li>Run <code className="text-purple-300">pnpm prisma migrate deploy</code> for new tables</li>
+              <li>Run <code className="text-purple-300">backfill-identity.ts</code> for existing agents</li>
+              <li>Optionally enable Awareness and Sync when ready</li>
+              <li>See the <a href="/docs/operations/migration" className="text-purple-400 hover:text-purple-300">Migration Guide</a> for full details</li>
+            </ul>
+          </div>
+
           <h2>Environment Variable Reference</h2>
 
           <div className="overflow-x-auto not-prose">

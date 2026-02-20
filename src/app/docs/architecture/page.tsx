@@ -355,6 +355,109 @@ Sync modes: push-only | pull-only | bidirectional
 Conflict resolution: local-wins | cloud-wins | newest-wins | manual`}
           </pre>
 
+          <h2>Identity Module</h2>
+
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`┌─────────────────────────────────────────────────────────────────────┐
+│                       Identity Module                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐ │
+│  │  Identity       │  │  Trust          │  │  Delegation         │ │
+│  │  Service        │  │  Service        │  │  Service            │ │
+│  │                 │  │                 │  │                     │ │
+│  │  • Agent CRUD   │  │  • Score calc   │  │  • Task lifecycle   │ │
+│  │  • Capability   │  │  • Signal       │  │  • Contract mgmt   │ │
+│  │    tracking     │  │    processing   │  │  • Template engine  │ │
+│  │  • Preference   │  │  • Time decay   │  │  • Outcome tracking │ │
+│  │    evolution    │  │  • Challenge    │  │  • Trust feedback   │ │
+│  │  • Maturity     │  │    protocol    │  │                     │ │
+│  │    scoring      │  │                 │  │                     │ │
+│  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘ │
+│           │                    │                       │            │
+│           └────────────────────┴───────────────────────┘            │
+│                                │                                    │
+│                    ┌───────────┴───────────┐                       │
+│                    │   Awareness Service   │                       │
+│                    │                       │                       │
+│                    │  • Waking Cycle       │                       │
+│                    │  • Signal collection  │                       │
+│                    │  • Insight generation │                       │
+│                    │  • Notifications      │                       │
+│                    └───────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘`}
+          </pre>
+
+          <h2>Delegation Flow</h2>
+
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`Delegation Request Flow:
+
+POST /v1/delegations
+     │
+     ▼
+┌─────────────────────────────────────────────────────────┐
+│ 1. Validate delegation contract                         │
+│    - Check delegator permissions                        │
+│    - Validate acceptance criteria                       │
+│    - Apply template (if templateId provided)            │
+├─────────────────────────────────────────────────────────┤
+│ 2. Check delegate trust & capability                    │
+│    - Load delegate's AgentIdentity                      │
+│    - Verify capability confidence for task type         │
+│    - Check trust score meets priority threshold         │
+│    - Reject if below minimum trust for priority level   │
+├─────────────────────────────────────────────────────────┤
+│ 3. Create delegation record (status: PROPOSED)          │
+│    - Store contract with criteria and deadline          │
+│    - Link context memories                              │
+│    - Notify delegate agent                              │
+├─────────────────────────────────────────────────────────┤
+│ 4. Await acceptance                                     │
+│    - Delegate reviews and accepts/rejects               │
+│    - On accept: status → ACTIVE                         │
+│    - On reject: route to next best agent                │
+├─────────────────────────────────────────────────────────┤
+│ 5. Completion & trust feedback                          │
+│    - Delegate submits results                           │
+│    - Verify acceptance criteria                         │
+│    - Compute trust delta                                │
+│    - Update TrustScore for the relationship             │
+│    - Store delegation memory in identity layer          │
+└─────────────────────────────────────────────────────────┘`}
+          </pre>
+
+          <h2>Sync Architecture</h2>
+
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`┌───────────────────┐         ┌───────────────────┐
+│   Local Instance   │         │   Cloud / Hub     │
+│                   │         │                   │
+│  ┌─────────────┐  │  HTTPS  │  ┌─────────────┐  │
+│  │  SyncService │◀─┼────────┼─▶│  SyncService │  │
+│  │             │  │  JWT    │  │             │  │
+│  │  • Push     │  │  Auth   │  │  • Receive   │  │
+│  │  • Pull     │  │         │  │  • Store     │  │
+│  │  • Reconcile│  │         │  │  • Broadcast │  │
+│  └──────┬──────┘  │         │  └──────┬──────┘  │
+│         │         │         │         │         │
+│  ┌──────┴──────┐  │         │  ┌──────┴──────┐  │
+│  │  SyncState  │  │         │  │  SyncState  │  │
+│  │  • cursors  │  │         │  │  • cursors  │  │
+│  │  • mode     │  │         │  │  • clients  │  │
+│  └─────────────┘  │         │  └─────────────┘  │
+│                   │         │                   │
+│  ┌─────────────┐  │         │  ┌─────────────┐  │
+│  │  Identity   │  │         │  │  Identity   │  │
+│  │  Mapping    │  │         │  │  Mapping    │  │
+│  └─────────────┘  │         │  └─────────────┘  │
+└───────────────────┘         └───────────────────┘
+
+Reconciliation on conflict:
+  Safety > Pin > Newer > Higher Score > Cloud Wins`}
+          </pre>
+
           <h2>Vector Storage</h2>
           <p>Two options for embedding storage:</p>
 

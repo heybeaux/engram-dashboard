@@ -206,6 +206,45 @@ curl -X POST http://localhost:3001/v1/memories \\
 }`}
           </pre>
 
+          <h2>9. Set Up Agent Identity (v2)</h2>
+          <p>
+            Engram v2 introduces agent identity — persistent profiles that evolve through
+            interactions. Seed your agent&apos;s identity to get started:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Seed identity for your agent
+curl -X POST http://localhost:3001/v1/agents/agent_abc123/identity \\
+  -H "Content-Type: application/json" \\
+  -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
+  -d '{
+    "displayName": "MyAgent",
+    "capabilities": {
+      "general_assistant": { "confidence": 0.5 }
+    },
+    "preferences": {
+      "communicationStyle": "concise"
+    }
+  }'
+
+# Response:
+{
+  "id": "ident_abc123",
+  "agentId": "agent_abc123",
+  "displayName": "MyAgent",
+  "maturityScore": 0.0,
+  "capabilities": { "general_assistant": { "confidence": 0.5 } },
+  "preferences": { "communicationStyle": "concise" }
+}`}
+          </pre>
+          <p>
+            The identity will mature automatically as the agent interacts — capabilities gain
+            confidence, preferences refine, and trust relationships form. See the{' '}
+            <Link href="/docs/concepts/identity" className="text-purple-400 hover:text-purple-300">
+              Identity Framework
+            </Link>{' '}
+            docs for the full picture.
+          </p>
+
           <h2>Next Steps</h2>
           <div className="grid md:grid-cols-2 gap-4 mt-6 not-prose">
             <Link 
