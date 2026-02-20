@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-export default function TrustModelPage() {
+export default function TrustModelConceptPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <div className="max-w-4xl mx-auto px-6 py-16">
@@ -16,312 +16,306 @@ export default function TrustModelPage() {
           <h1>Trust Model</h1>
 
           <p className="text-xl text-gray-300">
-            Trust in Engram is a living, time-decayed score that agents earn through demonstrated
-            reliability. It&apos;s not a permission system — it&apos;s a memory of how well
-            an agent has performed, and it fades without reinforcement.
+            Trust in Engram is a living memory — not a static permission level. It&apos;s
+            earned through successful interactions, decays without reinforcement, and can
+            be challenged when confidence drops below thresholds.
           </p>
 
           <div className="bg-purple-900/30 border border-purple-700 rounded-lg p-6 my-8">
             <h3 className="text-purple-400 mt-0">Core Principle</h3>
             <p className="mb-0">
-              <strong>Trust is earned, domain-specific, and perishable.</strong> An agent
-              trusted for code review isn&apos;t automatically trusted for deployments. And
-              trust earned six months ago counts for less than trust earned yesterday.
+              <strong>Trust is earned, not granted.</strong> Every agent starts at a baseline.
+              Successful delegation outcomes increase trust. Failures decrease it. Time erodes
+              it. This mirrors how human trust actually works.
             </p>
           </div>
 
           <h2>Trust Signals</h2>
 
           <p>
-            Trust scores are built from <strong>signals</strong> — discrete events that provide
-            evidence about an agent&apos;s reliability in a specific domain.
+            Trust scores are built from discrete <strong>signals</strong> — observable events
+            that indicate reliability, competence, or risk.
           </p>
 
-          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`interface TrustSignal {
-  agentId:    string;
-  domain:     string;      // e.g. "coding", "devops", "research"
-  type:       'positive' | 'negative' | 'neutral';
-  weight:     number;      // 0.0–1.0 (task complexity)
-  source:     'delegation' | 'challenge' | 'manual' | 'observation';
-  evidence:   string;      // What happened
-  timestamp:  Date;
-}`}
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`Signal Types:
+
+DELEGATION_COMPLETE   — Task finished successfully         (+0.05 to +0.15)
+DELEGATION_EXCEEDED   — Results exceeded expectations      (+0.10 bonus)
+DELEGATION_ON_TIME    — Delivered before deadline           (+0.03 bonus)
+DELEGATION_FAILED     — Task could not be completed        (-0.10 to -0.20)
+DELEGATION_MISSED     — Deadline passed with no response   (-0.15)
+QUALITY_HIGH          — Output quality rated excellent     (+0.05)
+QUALITY_LOW           — Output quality rated poor          (-0.08)
+CHALLENGE_PASSED      — Agent passed a trust challenge     (+0.10)
+CHALLENGE_FAILED      — Agent failed a trust challenge     (-0.20)
+INTERACTION_POSITIVE  — General positive interaction       (+0.02)
+INTERACTION_NEGATIVE  — General negative interaction       (-0.05)`}
           </pre>
 
-          <h3>Signal Sources</h3>
-
-          <div className="bg-green-900/20 border border-green-800 rounded-lg p-6 my-6">
-            <h3 className="text-green-400 mt-0">Delegation Outcomes (Primary)</h3>
-            <p>
-              The most impactful trust signals come from{' '}
-              <Link href="/docs/concepts/delegation" className="text-green-400 hover:text-green-300">
-                delegation
-              </Link>{' '}
-              results. A completed task with all acceptance criteria met is a strong positive
-              signal. A failed task is a negative one.
-            </p>
-            <ul>
-              <li><strong>COMPLETED</strong> → positive signal, weight based on complexity</li>
-              <li><strong>REJECTED</strong> → negative signal, weight × 1.5 (failed after attempting)</li>
-              <li><strong>FAILED</strong> → negative signal, weight × 1.0</li>
-              <li><strong>DECLINED</strong> → neutral (no impact — agent opted out honestly)</li>
-            </ul>
-          </div>
-
-          <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-6 my-6">
-            <h3 className="text-yellow-400 mt-0">Challenge Protocol</h3>
-            <p>
-              Periodic spot-checks where an agent&apos;s work is independently verified. The
-              system randomly selects completed tasks for re-evaluation, comparing the
-              agent&apos;s output against an independent assessment.
-            </p>
-            <ul>
-              <li><strong>Passed</strong> → positive signal, weight × 0.5 (lower than delegation)</li>
-              <li><strong>Failed</strong> → negative signal, weight × 2.0 (inflated — caught a miss)</li>
-            </ul>
-          </div>
-
-          <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-6 my-6">
-            <h3 className="text-blue-400 mt-0">Observation</h3>
-            <p>
-              Passive signals from watching agent behavior over time. These are lower-weight
-              but continuous — they accumulate to form a baseline impression.
-            </p>
-            <ul>
-              <li>Response time consistency</li>
-              <li>Self-correction behavior (catching own mistakes)</li>
-              <li>Appropriate escalation (knowing when to ask for help)</li>
-            </ul>
-          </div>
+          <p>
+            Signals are <strong>asymmetric by design</strong> — negative events have a larger
+            impact than positive ones. This reflects the reality that trust is hard to build
+            and easy to break.
+          </p>
 
           <h2>Time-Decayed Scoring</h2>
 
           <p>
-            Trust scores use exponential decay — recent signals matter more than old ones.
-            This mirrors how human trust works: a colleague who was great a year ago but
-            hasn&apos;t delivered recently gets a &quot;what have you done lately?&quot; discount.
+            Trust scores decay over time using the same half-life mechanism as memory layers.
+            An agent that was trustworthy six months ago but hasn&apos;t been heard from since
+            shouldn&apos;t retain full trust.
           </p>
 
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`function computeTrustScore(signals: TrustSignal[], domain: string): TrustScore {
-  const HALF_LIFE_DAYS = 30;  // Signal influence halves every 30 days
-  const now = Date.now();
+{`Trust Score Computation:
+
+  effectiveTrust = baseline + Σ(signal.delta × decayFactor(signal.age))
+
+  Where:
+    baseline = 0.5 (neutral starting point)
+    decayFactor = 0.5^(age_days / halfLife)
+    halfLife = 90 days (trust decays slower than session memories)
+
+  Bounds: [0.0, 1.0]
+
+Example:
+  Agent completed 5 tasks successfully over 3 months:
   
-  let weightedSum = 0;
-  let totalWeight = 0;
+  Signal 1 (90 days ago): +0.10 × 0.50 = +0.050
+  Signal 2 (60 days ago): +0.08 × 0.63 = +0.050
+  Signal 3 (30 days ago): +0.12 × 0.79 = +0.095
+  Signal 4 (14 days ago): +0.10 × 0.90 = +0.090
+  Signal 5 (2 days ago):  +0.15 × 0.98 = +0.147
   
-  for (const signal of signals.filter(s => s.domain === domain)) {
-    const ageDays = (now - signal.timestamp.getTime()) / (1000 * 60 * 60 * 24);
-    const decay = Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
-    
-    const value = signal.type === 'positive' ? 1.0
-                : signal.type === 'negative' ? 0.0
-                : 0.5;  // neutral
-    
-    const effectiveWeight = signal.weight * decay;
-    weightedSum += value * effectiveWeight;
-    totalWeight += effectiveWeight;
-  }
-  
-  // Bayesian prior: assume 0.5 with weight of 2 "virtual" signals
-  const PRIOR = 0.5;
-  const PRIOR_WEIGHT = 2.0;
-  
-  const score = (weightedSum + PRIOR * PRIOR_WEIGHT) / (totalWeight + PRIOR_WEIGHT);
-  
-  return {
-    domain,
-    score: Math.round(score * 100) / 100,
-    evidence: signals.length,
-    trend: computeTrend(signals, domain),
-  };
-}`}
+  effectiveTrust = 0.5 + 0.432 = 0.932`}
           </pre>
 
-          <h3>Decay Visualization</h3>
-
-          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`Signal influence over time (half-life = 30 days):
-
-Day   | Signal Weight
-------+---------------
-  0   | 1.000  ████████████████████
-  7   | 0.851  █████████████████
- 14   | 0.724  ██████████████
- 30   | 0.500  ██████████
- 60   | 0.250  █████
- 90   | 0.125  ██
-120   | 0.063  █
-
-A signal from 90 days ago has 12.5% of its original influence.
-After ~6 months, signals are effectively forgotten.`}
-          </pre>
+          <h3>Why Time Decay?</h3>
+          <p>
+            Without decay, a previously excellent agent could coast on past performance
+            indefinitely. Time decay ensures trust reflects <em>current</em> reliability:
+          </p>
+          <ul>
+            <li>Recent successes matter more than old ones</li>
+            <li>Inactive agents gradually return to baseline</li>
+            <li>A single catastrophic failure doesn&apos;t permanently blacklist an agent</li>
+            <li>Recovery is always possible through consistent good performance</li>
+          </ul>
 
           <h2>Trust as Living Memory</h2>
 
           <p>
-            Trust signals are stored as memories in Engram. This means trust is not an
-            opaque number — it&apos;s a queryable history. You can ask &quot;why does this
-            agent have low trust for deployments?&quot; and get specific memories as evidence.
+            Trust scores are stored as memories in the IDENTITY layer, not in a separate
+            permission database. This means trust participates in the same retrieval, decay,
+            and reinforcement systems as any other memory.
           </p>
 
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`// Query the trust history for an agent
-const trustMemories = await engram.recall({
-  query: "deployment trust signals",
-  agentId: "agent_abc123",
-  layer: "PROJECT",
-  filter: { topics: ["trust", "delegation-outcome"] },
-});
-
-// Returns memories like:
-// "Delegation del_789: FAILED — deployment script missed env var (2 days ago)"
-// "Delegation del_456: COMPLETED — clean staging deploy (15 days ago)"
-// "Challenge ch_012: FAILED — deployment had undetected downtime (30 days ago)"`}
+{`// Trust is a memory, stored in the identity layer
+{
+  "raw": "agent_code_reviewer has trust score 0.87 based on 12 delegations",
+  "layer": "IDENTITY",
+  "memoryType": "FACT",
+  "metadata": {
+    "trustType": "delegation",
+    "targetAgentId": "agent_code_reviewer",
+    "score": 0.87,
+    "signalCount": 12,
+    "lastSignal": "2026-02-18T14:30:00Z"
+  }
+}`}
           </pre>
 
-          <h2>Challenge Protocol</h2>
+          <p>Benefits of trust-as-memory:</p>
+          <ul>
+            <li>
+              <strong>Portable.</strong> Trust travels with the agent via cloud sync. An agent
+              that moves between environments retains its trust relationships.
+            </li>
+            <li>
+              <strong>Queryable.</strong> &quot;Who do I trust most for code reviews?&quot;
+              is a semantic search, not a database join.
+            </li>
+            <li>
+              <strong>Evolvable.</strong> Trust memories participate in consolidation — the
+              system can merge redundant trust signals into summary memories.
+            </li>
+          </ul>
 
-          <p>
-            The challenge protocol is Engram&apos;s trust verification system. It prevents
-            trust scores from becoming stale or inaccurate by periodically re-evaluating
-            completed work.
-          </p>
-
-          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
-{`┌─────────────────────────────────────────────────────────────┐
-│                    CHALLENGE PROTOCOL                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  1. SELECT — Pick a completed delegation at random           │
-│     • Probability increases for high-trust agents            │
-│     • Recent completions preferred                           │
-│                                                              │
-│  2. EVALUATE — Independent assessment of the output          │
-│     • Different agent or LLM re-evaluates the work           │
-│     • Compared against original acceptance criteria          │
-│                                                              │
-│  3. COMPARE — Check alignment                                │
-│     • Did the original evaluation match the challenge?       │
-│     • Score discrepancies flagged                            │
-│                                                              │
-│  4. RECORD — Store the result as a trust signal              │
-│     • Passed: mild positive signal                           │
-│     • Failed: strong negative signal (2× weight)            │
-│     • Feeds back into trust score computation                │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘`}
-          </pre>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 not-prose text-sm text-gray-300">
-            <p className="font-medium text-purple-400 mb-2">🔍 Why challenge high-trust agents more?</p>
-            <p>
-              Counterintuitive but important: agents with high trust are challenged more
-              frequently because they handle more critical tasks. A trust score of 0.95 that
-              hasn&apos;t been challenged in months is less reliable than a 0.80 that was
-              verified last week.
-            </p>
-          </div>
-
-          <h2>Trust Thresholds</h2>
+          <h2>Trust Levels</h2>
 
           <table>
             <thead>
               <tr>
-                <th>Score Range</th>
+                <th>Range</th>
                 <th>Level</th>
-                <th>Typical Permissions</th>
+                <th>Permissions</th>
+                <th>Description</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><code>0.0 – 0.3</code></td>
-                <td>Untrusted</td>
-                <td>Read-only tasks, no autonomous action</td>
+                <td><code>0.0 – 0.2</code></td>
+                <td><strong>Untrusted</strong></td>
+                <td>No delegation</td>
+                <td>Agent has failed too many tasks or is unknown</td>
               </tr>
               <tr>
-                <td><code>0.3 – 0.5</code></td>
-                <td>Provisional</td>
-                <td>Simple tasks with mandatory review</td>
+                <td><code>0.2 – 0.4</code></td>
+                <td><strong>Probation</strong></td>
+                <td>Low-priority only</td>
+                <td>New agent or recovering from failures</td>
               </tr>
               <tr>
-                <td><code>0.5 – 0.7</code></td>
-                <td>Trusted</td>
-                <td>Standard tasks, optional review</td>
+                <td><code>0.4 – 0.6</code></td>
+                <td><strong>Baseline</strong></td>
+                <td>Medium-priority</td>
+                <td>Default starting point, limited track record</td>
               </tr>
               <tr>
-                <td><code>0.7 – 0.9</code></td>
-                <td>Highly Trusted</td>
-                <td>Complex tasks, autonomous execution</td>
+                <td><code>0.6 – 0.8</code></td>
+                <td><strong>Trusted</strong></td>
+                <td>High-priority</td>
+                <td>Proven track record of reliable work</td>
               </tr>
               <tr>
-                <td><code>0.9 – 1.0</code></td>
-                <td>Exemplary</td>
-                <td>Critical tasks, can delegate to others</td>
+                <td><code>0.8 – 1.0</code></td>
+                <td><strong>Highly Trusted</strong></td>
+                <td>Critical tasks</td>
+                <td>Extensive history of excellent performance</td>
               </tr>
             </tbody>
           </table>
 
-          <h2>Schema</h2>
+          <h2>Challenge Protocol</h2>
+
+          <p>
+            When an agent&apos;s trust score drops near a threshold boundary, or when a
+            high-stakes task requires extra confidence, the system can issue a{' '}
+            <strong>trust challenge</strong>.
+          </p>
+
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`Challenge Protocol Flow:
+
+1. TRIGGER
+   ├─ Trust score near boundary (e.g., 0.58 → approaching "Trusted")
+   ├─ High-priority task with marginal trust
+   └─ Periodic audit (configurable interval)
+
+2. CHALLENGE ISSUED
+   ├─ System selects a verifiable task
+   ├─ Task has known-correct answer or measurable outcome
+   └─ Agent is notified of the challenge
+
+3. EXECUTION
+   ├─ Agent performs the task normally
+   ├─ No special treatment — it shouldn't know it's a test
+   └─ Results are compared against ground truth
+
+4. EVALUATION
+   ├─ PASSED: Trust score boosted (+0.10)
+   ├─ FAILED: Trust score penalized (-0.20)
+   └─ Result stored as a trust signal memory
+
+5. OUTCOME
+   ├─ Agent promoted to higher trust level (if passed + above threshold)
+   └─ Agent demoted or flagged for review (if failed)`}
+          </pre>
+
+          <p>
+            Challenges serve two purposes: they verify that high-trust agents are still
+            performing well, and they give lower-trust agents an opportunity to prove themselves
+            on verifiable tasks.
+          </p>
+
+          <h2>Trust Visualization</h2>
 
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`model TrustSignal {
-  id          String   @id @default(cuid())
-  agentId     String
-  domain      String
-  type        String   // positive | negative | neutral
-  weight      Float
-  source      String   // delegation | challenge | manual | observation
-  evidence    String
-  delegationId String?
+{`Trust score over time for an agent:
+
+1.0 ┤
+    │                                    ╭───── consistent delivery
+0.8 ┤                              ╭────╯
+    │                        ╭────╯
+0.6 ┤──────────────────╭────╯
+    │   baseline       │
+0.4 ┤                  │ ← failed task, trust dip
+    │            ╭────╯
+0.2 ┤      ╭────╯
+    │╭────╯ growing trust
+0.0 ┤
+    └────┬────┬────┬────┬────┬────┬────┬────
+    Day  0   15   30   45   60   75   90  105`}
+          </pre>
+
+          <h2>Schema</h2>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`model TrustScore {
+  id            String   @id
+  agentId       String               // The agent whose trust is tracked
+  targetAgentId String               // The agent being trusted
   
-  createdAt   DateTime @default(now())
+  score         Float    @default(0.5)
+  signalCount   Int      @default(0)
+  lastSignalAt  DateTime?
   
-  agent       Agent    @relation(fields: [agentId], references: [id])
+  // Relationship
+  agent         AgentIdentity @relation(fields: [agentId], references: [id])
 }
 
-model TrustScore {
-  id          String   @id @default(cuid())
-  agentId     String
-  domain      String
-  score       Float    // 0.0–1.0
-  evidence    Int      // Signal count
-  trend       String   // rising | stable | declining
+model TrustSignal {
+  id            String   @id
+  trustScoreId  String
   
-  computedAt  DateTime @default(now())
+  type          TrustSignalType
+  delta         Float               // Score change
+  reason        String?             // Human-readable explanation
+  delegationId  String?             // If from a delegation
   
-  agent       Agent    @relation(fields: [agentId], references: [id])
-  
-  @@unique([agentId, domain])
+  createdAt     DateTime @default(now())
+}
+
+enum TrustSignalType {
+  DELEGATION_COMPLETE
+  DELEGATION_EXCEEDED
+  DELEGATION_ON_TIME
+  DELEGATION_FAILED
+  DELEGATION_MISSED
+  QUALITY_HIGH
+  QUALITY_LOW
+  CHALLENGE_PASSED
+  CHALLENGE_FAILED
+  INTERACTION_POSITIVE
+  INTERACTION_NEGATIVE
 }`}
           </pre>
 
           <h2>Best Practices</h2>
           <ul>
             <li>
-              <strong>Trust is domain-specific.</strong> Don&apos;t use a single trust score
-              for everything. An agent that&apos;s great at writing might be terrible at math.
-              Always scope trust to a domain.
+              <strong>Start agents at baseline (0.5).</strong> Don&apos;t pre-trust agents.
+              Let them earn it through successful work.
             </li>
             <li>
-              <strong>Start with baseline trust (0.5).</strong> New agents aren&apos;t untrusted —
-              they&apos;re unknown. The Bayesian prior of 0.5 gives them a fair starting point
-              that adjusts quickly with evidence.
+              <strong>Use challenges sparingly.</strong> Challenges are useful for boundary
+              cases and audits, not for every interaction. Over-challenging wastes resources.
             </li>
             <li>
-              <strong>Don&apos;t manually inflate trust.</strong> It&apos;s tempting to set
-              trust to 1.0 for a known-good agent. Don&apos;t. Let the system earn trust
-              through real outcomes so the score remains meaningful.
+              <strong>Monitor trust trends, not snapshots.</strong> A trust score of 0.65 means
+              different things depending on whether it&apos;s rising or falling. The dashboard
+              shows trust trajectories.
             </li>
             <li>
-              <strong>Monitor declining trends.</strong> A trust score trending downward means
-              something changed. Investigate before it drops below your threshold.
+              <strong>Don&apos;t manually inflate trust.</strong> If an agent consistently fails
+              tasks, the correct response is to improve the agent — not to override its trust
+              score.
             </li>
             <li>
-              <strong>Use the challenge protocol.</strong> Enable periodic challenges for
-              production agents. It&apos;s the difference between &quot;we think it works&quot;
-              and &quot;we verified it works.&quot;
+              <strong>Review the asymmetry.</strong> Negative signals are intentionally stronger
+              than positive ones. One major failure should outweigh several routine successes.
+              If this feels wrong for your use case, adjust the signal weights.
             </li>
           </ul>
         </article>

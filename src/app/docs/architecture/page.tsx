@@ -260,6 +260,101 @@ export default function ArchitecturePage() {
             </tbody>
           </table>
 
+          <h2>Identity Module</h2>
+
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`┌─────────────────────────────────────────────────────────────────────┐
+│                      IDENTITY MODULE                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌───────────────┐ │
+│  │  Identity       │     │  Trust           │     │  Delegation   │ │
+│  │  Service        │     │  Service         │     │  Service      │ │
+│  │                 │     │                  │     │               │ │
+│  │  • assemble()   │←────│  • getScores()   │←────│  • create()   │ │
+│  │  • refresh()    │     │  • record()      │     │  • assign()   │ │
+│  │  • getProfile() │     │  • challenge()   │     │  • complete() │ │
+│  │  • maturity()   │     │  • decay()       │     │  • escalate() │ │
+│  └────────┬────────┘     └────────┬────────┘     └───────┬───────┘ │
+│           │                       │                       │         │
+│           └───────────┬───────────┴───────────┬───────────┘         │
+│                       │                       │                     │
+│                       ▼                       ▼                     │
+│              ┌─────────────────┐     ┌─────────────────┐           │
+│              │  Memory         │     │  Awareness       │           │
+│              │  Service        │     │  Service         │           │
+│              │                 │     │                  │           │
+│              │  Stores trust   │     │  Monitors trust  │           │
+│              │  signals and    │     │  changes and     │           │
+│              │  identity data  │     │  generates       │           │
+│              │  as memories    │     │  insights        │           │
+│              └─────────────────┘     └─────────────────┘           │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘`}
+          </pre>
+
+          <h2>Delegation Flow</h2>
+
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`Delegator Agent                  Engram                    Delegate Agent
+      │                            │                            │
+      │  POST /v1/delegations      │                            │
+      │  {task, criteria, domain}  │                            │
+      ├───────────────────────────→│                            │
+      │                            │  1. Validate contract      │
+      │                            │  2. Query agent identities │
+      │                            │  3. Match: trust ≥ min     │
+      │                            │     + capability fit       │
+      │                            │  4. Select best delegate   │
+      │                            │                            │
+      │                            │  ASSIGN                    │
+      │                            ├───────────────────────────→│
+      │                            │                            │
+      │                            │         IN_PROGRESS        │
+      │                            │←───────────────────────────┤
+      │                            │                            │
+      │                            │         REVIEW             │
+      │                            │←───────────────────────────┤
+      │                            │                            │
+      │                            │  5. Check acceptance       │
+      │                            │     criteria               │
+      │                            │  6. Record outcome         │
+      │                            │  7. Update trust score     │
+      │                            │  8. Refresh identity       │
+      │                            │                            │
+      │      COMPLETED             │                            │
+      │←───────────────────────────┤                            │
+      │                            │                            │`}
+          </pre>
+
+          <h2>Sync Architecture</h2>
+
+          <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
+{`┌─────────────────────────┐              ┌─────────────────────────┐
+│   LOCAL INSTANCE        │              │   CLOUD SERVICE         │
+│                         │              │                         │
+│  ┌───────────────────┐  │   PUSH       │  ┌───────────────────┐  │
+│  │ Memory Service    │──┼──────────────┼─→│ Cloud Memory Store │  │
+│  └───────────────────┘  │              │  └───────────────────┘  │
+│                         │              │                         │
+│  ┌───────────────────┐  │   PULL       │  ┌───────────────────┐  │
+│  │ Sync Service      │←─┼──────────────┼──│ Sync Service      │  │
+│  │                   │  │              │  │                   │  │
+│  │ • Cursor tracking │  │              │  │ • Cursor tracking │  │
+│  │ • Conflict detect │  │  RECONCILE   │  │ • Conflict detect │  │
+│  │ • Identity mapping│──┼──────────────┼──│ • Identity mapping│  │
+│  └───────────────────┘  │              │  └───────────────────┘  │
+│                         │              │                         │
+│  ┌───────────────────┐  │              │  ┌───────────────────┐  │
+│  │ Identity Map      │  │              │  │ Identity Map      │  │
+│  │ local_id ↔ cloud  │  │              │  │ cloud_id ↔ local  │  │
+│  └───────────────────┘  │              │  └───────────────────┘  │
+└─────────────────────────┘              └─────────────────────────┘
+
+Sync modes: push-only | pull-only | bidirectional
+Conflict resolution: local-wins | cloud-wins | newest-wins | manual`}
+          </pre>
+
           <h2>Vector Storage</h2>
           <p>Two options for embedding storage:</p>
 

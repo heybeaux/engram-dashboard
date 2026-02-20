@@ -13,243 +13,215 @@ export default function MigrationGuidePage() {
         </nav>
 
         <article className="prose prose-invert prose-purple max-w-none">
-          <h1>Migration Guide: v1 → v2</h1>
+          <h1>Migration Guide — v1 to v2</h1>
 
           <p className="text-xl text-gray-300">
             Engram v2 introduces agent identity, delegation, trust, awareness, and cloud sync.
-            This guide covers what&apos;s new, what breaks, and how to migrate.
+            This guide walks you through upgrading from v1 with minimal downtime.
           </p>
 
           <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 my-8">
             <h3 className="text-red-400 mt-0">⚠️ Breaking Changes</h3>
             <p className="mb-0">
-              v2 includes database schema changes that require migration. <strong>Back up
-              your database before upgrading.</strong> The migration is forward-only —
-              there is no automatic rollback to v1.
+              v2 includes database schema changes and new required environment variables.
+              <strong> Back up your database before migrating.</strong> The migration is
+              forward-only — there is no automated rollback.
             </p>
           </div>
 
           <h2>What&apos;s New in v2</h2>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Feature</th>
-                <th>Description</th>
-                <th>Docs</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Agent Identity</strong></td>
-                <td>Emergent identity from memories — capabilities, preferences, trust, work style</td>
-                <td><Link href="/docs/concepts/identity" className="text-purple-400">Identity →</Link></td>
-              </tr>
-              <tr>
-                <td><strong>Delegation</strong></td>
-                <td>Contract-based task assignment between agents with lifecycle tracking</td>
-                <td><Link href="/docs/concepts/delegation" className="text-purple-400">Delegation →</Link></td>
-              </tr>
-              <tr>
-                <td><strong>Trust Model</strong></td>
-                <td>Time-decayed, domain-specific trust scoring from delegation outcomes</td>
-                <td><Link href="/docs/concepts/trust" className="text-purple-400">Trust →</Link></td>
-              </tr>
-              <tr>
-                <td><strong>Awareness</strong></td>
-                <td>Proactive intelligence — contradiction detection, pattern recognition, insights</td>
-                <td><Link href="/docs/concepts/awareness" className="text-purple-400">Awareness →</Link></td>
-              </tr>
-              <tr>
-                <td><strong>Cloud Sync</strong></td>
-                <td>Bidirectional sync between self-hosted and cloud instances</td>
-                <td><Link href="/docs/operations/sync" className="text-purple-400">Sync →</Link></td>
-              </tr>
-            </tbody>
-          </table>
+          <ul>
+            <li>
+              <strong>Agent Identity</strong> — Agents develop persistent identities with
+              capabilities, preferences, trust relationships, and work styles. See{' '}
+              <Link href="/docs/concepts/identity" className="text-purple-400 hover:text-purple-300">
+                Identity Framework
+              </Link>.
+            </li>
+            <li>
+              <strong>Delegation System</strong> — Structured task assignment between agents
+              with contracts, templates, and lifecycle tracking. See{' '}
+              <Link href="/docs/concepts/delegation" className="text-purple-400 hover:text-purple-300">
+                Delegation System
+              </Link>.
+            </li>
+            <li>
+              <strong>Trust Model</strong> — Time-decayed trust scoring based on delegation
+              outcomes and interaction quality. See{' '}
+              <Link href="/docs/concepts/trust" className="text-purple-400 hover:text-purple-300">
+                Trust Model
+              </Link>.
+            </li>
+            <li>
+              <strong>Awareness</strong> — Background intelligence that detects patterns,
+              contradictions, and generates insights. See{' '}
+              <Link href="/docs/concepts/awareness" className="text-purple-400 hover:text-purple-300">
+                Awareness
+              </Link>.
+            </li>
+            <li>
+              <strong>Cloud Sync</strong> — Sync memories between instances with conflict
+              reconciliation. See{' '}
+              <Link href="/docs/operations/sync" className="text-purple-400 hover:text-purple-300">
+                Cloud Sync
+              </Link>.
+            </li>
+          </ul>
 
           <h2>Breaking Changes</h2>
 
-          <h3>1. New Required Environment Variable</h3>
-          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# v2 requires JWT_SECRET for agent identity tokens
-JWT_SECRET="your-secret-key-at-least-32-chars"
-
-# Generate one:
-openssl rand -base64 32`}
-          </pre>
-
-          <h3>2. Database Schema Changes</h3>
-          <p>v2 adds several new tables and modifies existing ones:</p>
+          <h3>Database Schema</h3>
           <ul>
-            <li><strong>New tables:</strong> <code>agent_identities</code>, <code>delegations</code>, <code>trust_signals</code>, <code>trust_scores</code>, <code>insights</code>, <code>sync_state</code>, <code>sync_identity_map</code>, <code>sync_conflicts</code></li>
-            <li><strong>Modified:</strong> <code>agents</code> table gains identity-related columns</li>
-            <li><strong>Modified:</strong> <code>memories</code> table gains <code>agentId</code> foreign key for agent-owned memories</li>
+            <li>New tables: <code>agent_identities</code>, <code>delegations</code>, <code>trust_scores</code>, <code>trust_signals</code>, <code>awareness_insights</code>, <code>sync_state</code>, <code>sync_conflicts</code>, <code>identity_mappings</code></li>
+            <li>New columns on <code>memories</code>: <code>syncExcluded</code>, <code>versionVector</code></li>
+            <li>New columns on <code>agents</code>: <code>identityId</code></li>
+            <li>New enum values: <code>MemoryLayer.INSIGHT</code></li>
           </ul>
 
-          <h3>3. API Changes</h3>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Change</th>
-                <th>v1</th>
-                <th>v2</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Agent creation response</td>
-                <td>Returns <code>id</code> and <code>apiKey</code></td>
-                <td>Returns <code>id</code>, <code>apiKey</code>, and <code>identityToken</code></td>
-              </tr>
-              <tr>
-                <td>Memory creation</td>
-                <td>Optional <code>agentId</code></td>
-                <td><code>agentId</code> inferred from API key (still optional for user memories)</td>
-              </tr>
-              <tr>
-                <td>Context loading</td>
-                <td>Returns flat memory list</td>
-                <td>Returns memories grouped by layer + agent identity context</td>
-              </tr>
-              <tr>
-                <td>Health endpoint</td>
-                <td><code>/v1/health</code></td>
-                <td><code>/v1/health</code> now includes awareness and sync status</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>4. Removed/Deprecated</h3>
+          <h3>Environment Variables</h3>
           <ul>
-            <li><code>POST /v1/agents</code> now requires <code>JWT_SECRET</code> to be set</li>
-            <li>The <code>flat</code> context format is deprecated — use <code>grouped</code> (now default)</li>
+            <li><code>JWT_SECRET</code> — <strong>Required.</strong> Used for sync token signing and inter-agent auth. Must be at least 32 characters.</li>
+            <li><code>AWARENESS_ENABLED</code> — Defaults to <code>false</code>. Set to <code>true</code> to enable the Awareness system.</li>
+            <li><code>SYNC_ENABLED</code> — Defaults to <code>false</code>. Set to <code>true</code> to enable cloud sync.</li>
+          </ul>
+
+          <h3>API Changes</h3>
+          <ul>
+            <li><code>POST /v1/context</code> response now includes an <code>insights</code> array</li>
+            <li><code>GET /v1/health</code> response includes new <code>awareness</code> and <code>sync</code> sections</li>
+            <li>Agent creation (<code>POST /v1/agents</code>) now accepts optional <code>identity</code> seed object</li>
+            <li>Memory responses include new fields: <code>syncExcluded</code>, <code>versionVector</code></li>
+          </ul>
+
+          <h3>Removed / Changed</h3>
+          <ul>
+            <li><code>GET /v1/agents/:id/stats</code> replaced by <code>GET /v1/agents/:id/identity</code></li>
+            <li>The <code>agentMetadata</code> JSON field on agents is deprecated — use the structured <code>AgentIdentity</code> model instead</li>
           </ul>
 
           <h2>Migration Steps</h2>
 
-          <h3>Step 1: Back Up Everything</h3>
+          <h3>1. Back Up Everything</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# Database backup
+{`# Full database backup
 pg_dump -Fc engram > engram-v1-backup-$(date +%Y%m%d).dump
 
-# Environment backup
-cp .env .env.v1.bak`}
+# Verify the backup
+pg_restore --list engram-v1-backup-*.dump | head -20`}
           </pre>
 
-          <h3>Step 2: Update the Code</h3>
+          <h3>2. Update the Code</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`git fetch origin
-git checkout main
-git pull origin main
-
-# Install new dependencies
+{`cd engram
+git fetch origin
+git checkout v2.0.0   # or 'main' if tracking latest
 pnpm install`}
           </pre>
 
-          <h3>Step 3: Update Environment</h3>
+          <h3>3. Add New Environment Variables</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# Add to .env:
-JWT_SECRET="$(openssl rand -base64 32)"
+{`# Add to .env
 
-# Optional — new v2 features (all disabled by default):
-AWARENESS_ENABLED=false
-SYNC_ENABLED=false`}
+# Required — generate a secure random string
+JWT_SECRET="$(openssl rand -base64 48)"
+
+# Optional — enable new features
+AWARENESS_ENABLED=false          # Enable when ready
+AWARENESS_INTERVAL_MS=900000
+SYNC_ENABLED=false               # Enable when ready
+SYNC_CLOUD_URL=https://api.openengram.ai`}
           </pre>
 
-          <h3>Step 4: Run Database Migrations</h3>
+          <h3>4. Run Database Migrations</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# Apply new schema
+{`# Apply new migrations
 pnpm prisma migrate deploy
 
-# Regenerate client
+# Regenerate Prisma client
 pnpm prisma generate`}
           </pre>
 
-          <h3>Step 5: Run the Identity Backfill</h3>
+          <h3>5. Run the Identity Backfill</h3>
           <p>
-            Existing agents need identity records generated from their memory history.
-            The backfill script creates initial identity profiles.
+            v2 creates <code>AgentIdentity</code> records for each existing agent. The backfill
+            script initializes them with baseline values:
           </p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# Generate identity profiles for existing agents
-pnpm ts-node scripts/backfill-identities.ts
+{`pnpm ts-node scripts/backfill-identity.ts
 
 # Output:
 # Processing 3 agents...
-# agent_abc123: Generated identity (47 memories, phase: ESTABLISHED)
-# agent_def456: Generated identity (12 memories, phase: LEARNING)
-# agent_ghi789: Generated identity (3 memories, phase: BOOTSTRAP)
-# Done. 3 identities created.`}
+# ✓ agent_main — identity created (maturity: 0.0)
+# ✓ agent_reviewer — identity created (maturity: 0.0)
+# ✓ agent_deployer — identity created (maturity: 0.0)
+# Backfill complete. Identities will mature through usage.`}
           </pre>
 
-          <h3>Step 6: Verify and Start</h3>
+          <h3>6. Start the Server</h3>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# Run tests
-pnpm test
-
-# Start the server
-pnpm start:prod
-
-# Verify health
-curl http://localhost:3000/v1/health`}
+{`pnpm build
+pnpm start:prod`}
           </pre>
 
-          <h2>Gradual Feature Adoption</h2>
+          <h3>7. Verify</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Check health
+curl http://localhost:3000/v1/health
 
-          <p>
-            v2 features are opt-in. You don&apos;t have to use everything at once:
-          </p>
+# Expected new sections in response:
+{
+  "status": "healthy",
+  "awareness": {
+    "enabled": false,
+    "lastCycle": null
+  },
+  "sync": {
+    "enabled": false,
+    "linked": false
+  }
+}`}
+          </pre>
 
-          <ol>
-            <li>
-              <strong>Week 1:</strong> Migrate schema, add <code>JWT_SECRET</code>. Everything
-              works as before with identity records being passively built.
-            </li>
-            <li>
-              <strong>Week 2:</strong> Enable Awareness (<code>AWARENESS_ENABLED=true</code>).
-              Review generated insights in the dashboard.
-            </li>
-            <li>
-              <strong>Week 3:</strong> Start using delegation for inter-agent tasks. Trust
-              scores will accumulate naturally.
-            </li>
-            <li>
-              <strong>Week 4:</strong> Enable cloud sync if desired (<code>SYNC_ENABLED=true</code>).
-              Start with push-only mode.
-            </li>
-          </ol>
+          <h3>8. Enable New Features (When Ready)</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Enable Awareness
+AWARENESS_ENABLED=true
+
+# Enable Cloud Sync (after setting up identity mappings)
+SYNC_ENABLED=true
+SYNC_TOKEN=est_xxxxxxxxxxxx`}
+          </pre>
 
           <h2>Rollback Plan</h2>
 
-          <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-6 my-6">
-            <h3 className="text-yellow-400 mt-0">If Something Goes Wrong</h3>
-            <ol>
-              <li>Stop the v2 server</li>
-              <li>Restore your database: <code>pg_restore -d engram engram-v1-backup.dump</code></li>
-              <li>Restore your environment: <code>cp .env.v1.bak .env</code></li>
-              <li>Check out the v1 tag: <code>git checkout v1.x.x</code></li>
-              <li>Restart: <code>pnpm start:prod</code></li>
-            </ol>
-            <p className="mb-0">
-              The v1 backup contains everything you need. New v2 tables are ignored by v1 code,
-              but the schema changes to existing tables require the full restore.
-            </p>
-          </div>
+          <p>
+            If something goes wrong, restore from your backup:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Stop the server
+pm2 stop engram
 
-          <h2>Need Help?</h2>
-          <ul>
-            <li>
-              <strong>GitHub Issues:</strong>{' '}
-              <a href="https://github.com/heybeaux/engram/issues" className="text-purple-400 hover:text-purple-300">
-                github.com/heybeaux/engram/issues
-              </a>
-            </li>
-            <li>
-              <strong>Discord:</strong> Join the Engram community for real-time help
-            </li>
-          </ul>
+# Restore database
+pg_restore -c -d engram engram-v1-backup-*.dump
+
+# Switch back to v1 code
+git checkout v1.x.x
+pnpm install
+pnpm build
+pm2 restart engram`}
+          </pre>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 not-prose text-sm text-gray-300">
+            <p className="font-medium text-purple-400 mb-2">💡 Migration Tips</p>
+            <ul className="list-disc list-inside space-y-1 mt-2">
+              <li>Run migrations on a staging database first</li>
+              <li>The backfill script is idempotent — safe to run multiple times</li>
+              <li>New features (Awareness, Sync) default to disabled — no behavior change until you opt in</li>
+              <li>Existing API endpoints are fully backward-compatible (new fields are additive)</li>
+              <li>Allow 1–2 weeks for agent identities to mature through natural usage</li>
+            </ul>
+          </div>
         </article>
       </div>
     </div>

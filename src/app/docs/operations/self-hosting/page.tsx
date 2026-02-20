@@ -89,7 +89,10 @@ VECTOR_PROVIDER="pgvector"
 
 # Server
 PORT=3000
-NODE_ENV=production`}
+NODE_ENV=production
+
+# Identity module (v2)
+JWT_SECRET="your-secret-key-at-least-32-chars"  # Required for agent identity tokens`}
           </pre>
 
           <h3>4. Run Migrations</h3>
@@ -406,10 +409,40 @@ VECTOR_PROVIDER="pgvector"`}
                   <td className="py-2 pr-4">No</td>
                   <td className="py-2">Server port (default: 3000)</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-800/50">
                   <td className="py-2 pr-4 font-mono text-purple-300">NODE_ENV</td>
                   <td className="py-2 pr-4">No</td>
                   <td className="py-2">development | production | test</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">JWT_SECRET</td>
+                  <td className="py-2 pr-4">Yes (v2)</td>
+                  <td className="py-2">Secret key for agent identity tokens (min 32 chars)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">AWARENESS_ENABLED</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">Enable proactive awareness system (default: false)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">AWARENESS_INTERVAL_MS</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">Awareness cycle interval in ms (default: 900000)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">SYNC_ENABLED</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">Enable cloud sync (default: false)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">SYNC_CLOUD_TOKEN</td>
+                  <td className="py-2 pr-4">If sync</td>
+                  <td className="py-2">Cloud API token for sync</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-mono text-purple-300">SYNC_MODE</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">push-only | pull-only | bidirectional (default: push-only)</td>
                 </tr>
               </tbody>
             </table>

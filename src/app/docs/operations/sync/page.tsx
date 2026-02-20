@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-export default function CloudSyncPage() {
+export default function CloudSyncConceptPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <div className="max-w-4xl mx-auto px-6 py-16">
@@ -16,286 +16,263 @@ export default function CloudSyncPage() {
           <h1>Cloud Sync</h1>
 
           <p className="text-xl text-gray-300">
-            Cloud sync lets you link a self-hosted Engram instance to the cloud service,
-            keeping memories synchronized across environments. Your local instance stays
-            authoritative — the cloud is a mirror and collaboration layer.
+            Cloud sync lets Engram instances share memories across environments — from local
+            development to production, or between multiple deployment regions. Memories stay
+            consistent without manual exports.
           </p>
 
           <div className="bg-purple-900/30 border border-purple-700 rounded-lg p-6 my-8">
             <h3 className="text-purple-400 mt-0">Core Principle</h3>
             <p className="mb-0">
-              <strong>Local-first, cloud-enhanced.</strong> Your self-hosted instance is the
-              source of truth. Cloud sync adds backup, cross-device access, and multi-agent
-              collaboration — but you can always operate fully offline.
+              <strong>Sync is opt-in and conflict-aware.</strong> Nothing leaves your instance
+              until you explicitly link it. When conflicts arise, Engram uses deterministic
+              reconciliation rules — not silent overwrites.
             </p>
           </div>
 
           <h2>Cloud Linking</h2>
 
           <p>
-            Linking connects your local Engram instance to your cloud account. Once linked,
-            memories flow bidirectionally based on your sync configuration.
+            To enable sync, you link your local Engram instance to the Engram Cloud (or
+            another Engram instance acting as a sync hub).
           </p>
 
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# Link your instance to the cloud
-curl -X POST http://localhost:3000/v1/sync/link \\
-  -H "Content-Type: application/json" \\
-  -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
-  -d '{
-    "cloudToken": "oc_cloud_xxxxxxxxxxxx",
-    "syncMode": "bidirectional",
-    "conflictResolution": "local-wins"
-  }'
+{`# Link to Engram Cloud
+engram sync link --cloud-url https://api.openengram.ai --token <your-token>
 
-# Response:
+# Link to a self-hosted hub
+engram sync link --cloud-url https://engram.internal.company.com --token <token>
+
+# Check link status
+engram sync status
+
+# Output:
 {
   "linked": true,
-  "instanceId": "inst_abc123",
-  "cloudEndpoint": "https://api.openengram.ai",
-  "lastSync": null,
-  "status": "ready"
+  "cloudUrl": "https://api.openengram.ai",
+  "lastSync": "2026-02-20T10:30:00Z",
+  "pendingPush": 12,
+  "pendingPull": 3,
+  "syncMode": "bidirectional"
 }`}
           </pre>
 
           <h3>Sync Modes</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Mode</th>
-                <th>Direction</th>
-                <th>Use Case</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>push-only</code></td>
-                <td>Local → Cloud</td>
-                <td>Backup only — cloud is a read-only mirror</td>
-              </tr>
-              <tr>
-                <td><code>pull-only</code></td>
-                <td>Cloud → Local</td>
-                <td>Restore or seed a new instance from cloud</td>
-              </tr>
-              <tr>
-                <td><code>bidirectional</code></td>
-                <td>Both</td>
-                <td>Full sync — memories flow both ways</td>
-              </tr>
-            </tbody>
-          </table>
+          <ul>
+            <li><strong>Bidirectional</strong> (default) — Push local changes up, pull remote changes down</li>
+            <li><strong>Push-only</strong> — Local changes go to cloud; remote changes are ignored</li>
+            <li><strong>Pull-only</strong> — Cloud changes come down; local changes stay local</li>
+          </ul>
 
-          <h2>Push and Pull</h2>
+          <h2>Push / Pull</h2>
 
           <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
-{`┌──────────────┐                          ┌──────────────┐
-│  LOCAL       │                          │  CLOUD       │
-│  INSTANCE    │                          │  SERVICE     │
-│              │                          │              │
-│  Memories ───┼── PUSH (new/updated) ──→ ┼── Memories   │
-│              │                          │              │
-│  Memories ←──┼── PULL (new/updated) ──← ┼── Memories   │
-│              │                          │              │
-│  Sync Log ───┼── Cursor tracking ─────→ ┼── Sync Log   │
-└──────────────┘                          └──────────────┘
+{`┌───────────────┐                    ┌───────────────┐
+│  Local Engram  │                    │  Cloud / Hub  │
+│               │                    │               │
+│  New memories  │───── PUSH ───────▶│  Receives &   │
+│  Edits         │                    │  stores       │
+│  Deletions     │                    │               │
+│               │◀──── PULL ─────────│  New memories  │
+│  Receives &   │                    │  from other    │
+│  merges       │                    │  instances     │
+└───────────────┘                    └───────────────┘
 
-Sync uses cursor-based pagination:
-  • Each side tracks a "lastSyncCursor" (timestamp + ID)
-  • Push: send all local changes since last push cursor
-  • Pull: fetch all cloud changes since last pull cursor
-  • Cursors advance on successful sync`}
+Sync is delta-based:
+  • Only changed memories since last sync are transferred
+  • Each memory has a version vector for conflict detection
+  • Soft-deleted memories sync as tombstones`}
           </pre>
 
-          <h3>What Syncs</h3>
-          <ul>
-            <li><strong>Memories</strong> — raw content, extractions, scores, metadata</li>
-            <li><strong>Entities</strong> — people, places, projects referenced in memories</li>
-            <li><strong>Agent identities</strong> — capability profiles, trust scores</li>
-            <li><strong>Trust signals</strong> — delegation outcomes and challenge results</li>
-            <li><strong>Insights</strong> — Awareness-generated observations</li>
-          </ul>
+          <h3>Automatic Sync</h3>
+          <p>
+            When enabled, sync runs automatically on a configurable interval:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Environment variables
+SYNC_ENABLED=true
+SYNC_INTERVAL_MS=300000     # 5 minutes
+SYNC_BATCH_SIZE=100         # Memories per sync batch
+SYNC_CLOUD_URL=https://api.openengram.ai
+SYNC_TOKEN=est_xxxxxxxxxxxx`}
+          </pre>
 
-          <h3>What Doesn&apos;t Sync</h3>
-          <ul>
-            <li><strong>API keys</strong> — never leave the instance</li>
-            <li><strong>Embeddings</strong> — regenerated locally (model-dependent)</li>
-            <li><strong>Logs</strong> — instance-specific operational data</li>
-          </ul>
+          <h3>Manual Sync</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Push local changes
+engram sync push
+
+# Pull remote changes
+engram sync pull
+
+# Full bidirectional sync
+engram sync now`}
+          </pre>
 
           <h2>Reconciliation</h2>
 
           <p>
-            When the same memory is modified on both sides between syncs, a conflict occurs.
-            Engram uses a configurable reconciliation strategy to resolve conflicts.
+            When the same memory is modified on both sides between syncs, Engram must
+            reconcile the conflict. The rules are deterministic and predictable:
           </p>
 
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`interface ConflictResolution {
-  strategy:   'local-wins' | 'cloud-wins' | 'newest-wins' | 'manual';
-  
-  // For 'manual' strategy:
-  onConflict: (local: Memory, cloud: Memory) => Promise<Memory>;
-}
+{`Reconciliation Rules (in order):
 
-// Default: local-wins
-// Your self-hosted instance is authoritative.
-// Cloud changes are accepted only if the local version hasn't changed.
+1. SAFETY WINS
+   If either version is safetyCritical, keep the safety-critical one.
 
-// Conflict detection uses version vectors:
-interface SyncMetadata {
-  memoryId:       string;
-  localVersion:   number;    // Increments on local change
-  cloudVersion:   number;    // Increments on cloud change
-  lastSyncedAt:   DateTime;
-  conflictStatus: 'none' | 'detected' | 'resolved';
-}`}
+2. PIN WINS
+   If one version is userPinned, keep the pinned one.
+
+3. NEWER WINS
+   Compare updatedAt timestamps — most recent edit wins.
+
+4. HIGHER SCORE WINS
+   If timestamps are identical, keep the version with
+   higher effectiveScore.
+
+5. TIE-BREAK
+   If all else is equal, the version from the cloud wins
+   (convention: cloud is source of truth for ties).`}
           </pre>
 
-          <h3>Conflict Resolution Strategies</h3>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Strategy</th>
-                <th>Behavior</th>
-                <th>Best For</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>local-wins</code></td>
-                <td>Local version always takes priority</td>
-                <td>Single-user, self-hosted primary</td>
-              </tr>
-              <tr>
-                <td><code>cloud-wins</code></td>
-                <td>Cloud version always takes priority</td>
-                <td>Cloud-primary deployments</td>
-              </tr>
-              <tr>
-                <td><code>newest-wins</code></td>
-                <td>Most recently updated version wins</td>
-                <td>Multi-device with one active user</td>
-              </tr>
-              <tr>
-                <td><code>manual</code></td>
-                <td>Conflicts queued for human resolution</td>
-                <td>Multi-agent environments</td>
-              </tr>
-            </tbody>
-          </table>
+          <h3>Conflict Log</h3>
+          <p>
+            Every reconciliation decision is logged for auditability:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`{
+  "conflictId": "conf_abc123",
+  "memoryId": "mem_xyz789",
+  "localVersion": { "updatedAt": "2026-02-20T10:00:00Z", "raw": "..." },
+  "remoteVersion": { "updatedAt": "2026-02-20T10:05:00Z", "raw": "..." },
+  "resolution": "REMOTE_WINS",
+  "rule": "NEWER_WINS",
+  "resolvedAt": "2026-02-20T10:30:00Z"
+}`}
+          </pre>
 
           <h2>Identity Mapping</h2>
 
           <p>
-            When syncing between instances, user and agent IDs may differ. Identity mapping
-            ensures memories are attributed to the correct entities across environments.
+            When syncing between instances, user and agent IDs may differ. Engram uses
+            <strong> identity mapping</strong> to link local entities to their cloud
+            counterparts.
           </p>
 
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`// Identity mapping configuration
 {
-  "userMappings": [
-    { "localId": "user_abc", "cloudId": "cloud_user_xyz" },
-    { "localId": "user_def", "cloudId": "cloud_user_uvw" }
-  ],
-  "agentMappings": [
-    { "localId": "agent_local1", "cloudId": "cloud_agent_1" }
-  ],
-  "autoMap": true  // Auto-create mappings for new entities
+  "identityMappings": {
+    "users": {
+      "local_user_123": "cloud_user_abc",
+      "local_user_456": "cloud_user_def"
+    },
+    "agents": {
+      "local_agent_reviewer": "cloud_agent_reviewer_prod"
+    }
+  }
 }
 
-// With autoMap enabled:
-//   1. New local user pushes to cloud → cloud ID auto-generated
-//   2. New cloud user pulls to local → local ID auto-generated
-//   3. Mapping stored in sync_identity_map table
-//   4. Subsequent syncs use the established mapping`}
+// Or use automatic mapping via email/external ID
+{
+  "identityMappingStrategy": "email",  // "email" | "externalId" | "manual"
+  "autoCreateMappings": true
+}`}
           </pre>
 
-          <h2>Configuration</h2>
+          <p>
+            When <code>autoCreateMappings</code> is enabled, Engram automatically maps
+            identities based on matching email addresses or external IDs. New users
+            encountered during sync are created locally with a mapping to their cloud ID.
+          </p>
 
-          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
-{`# .env — Cloud sync settings
-SYNC_ENABLED=true
-SYNC_CLOUD_ENDPOINT=https://api.openengram.ai
-SYNC_CLOUD_TOKEN=oc_cloud_xxxxxxxxxxxx
-SYNC_MODE=bidirectional              # push-only | pull-only | bidirectional
-SYNC_CONFLICT_RESOLUTION=local-wins  # local-wins | cloud-wins | newest-wins | manual
-SYNC_INTERVAL_MS=300000              # 5 minutes
-SYNC_BATCH_SIZE=100                  # Memories per sync batch
-SYNC_RETRY_ATTEMPTS=3
-SYNC_RETRY_DELAY_MS=5000`}
-          </pre>
+          <h2>Security</h2>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 not-prose text-sm text-gray-300">
+            <p className="font-medium text-purple-400 mb-2">🔒 Sync Security</p>
+            <ul className="list-disc list-inside space-y-1 mt-2">
+              <li>All sync traffic is encrypted via TLS</li>
+              <li>Sync tokens are scoped to specific instances</li>
+              <li>Memory content is encrypted at rest on the cloud</li>
+              <li>Sync logs are retained for 90 days for audit</li>
+              <li>Sensitive memories can be excluded from sync via <code className="text-purple-300">syncExcluded</code> flag</li>
+            </ul>
+          </div>
 
           <h2>Schema</h2>
-
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`model SyncState {
-  id              String   @id @default(cuid())
+  id              String   @id
   instanceId      String   @unique
-  cloudEndpoint   String
-  syncMode        String
-  
-  lastPushCursor  String?
-  lastPullCursor  String?
+  cloudUrl        String
   lastSyncAt      DateTime?
+  lastPushAt      DateTime?
+  lastPullAt      DateTime?
+  syncMode        SyncMode @default(BIDIRECTIONAL)
   
-  status          String   @default("ready")  // ready | syncing | error
-  errorMessage    String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model SyncIdentityMap {
-  id          String   @id @default(cuid())
-  entityType  String   // user | agent
-  localId     String
-  cloudId     String
-  
-  createdAt   DateTime @default(now())
-  
-  @@unique([entityType, localId])
-  @@unique([entityType, cloudId])
+  // Cursor tracking
+  localCursor     String?  // Last local change synced
+  remoteCursor    String?  // Last remote change pulled
 }
 
 model SyncConflict {
-  id          String   @id @default(cuid())
-  memoryId    String
-  localData   Json
-  cloudData   Json
-  strategy    String
-  resolution  String?  // local | cloud | merged
-  resolvedAt  DateTime?
+  id              String   @id
+  memoryId        String
+  localVersion    Json
+  remoteVersion   Json
+  resolution      ConflictResolution
+  rule            String
+  resolvedAt      DateTime @default(now())
+}
+
+model IdentityMapping {
+  id              String   @id
+  localId         String
+  remoteId        String
+  entityType      String   // "user" | "agent"
   
-  createdAt   DateTime @default(now())
+  @@unique([localId, entityType])
+}
+
+enum SyncMode {
+  BIDIRECTIONAL
+  PUSH_ONLY
+  PULL_ONLY
+}
+
+enum ConflictResolution {
+  LOCAL_WINS
+  REMOTE_WINS
+  MERGED
 }`}
           </pre>
 
           <h2>Best Practices</h2>
           <ul>
             <li>
-              <strong>Start with push-only.</strong> Until you&apos;re confident in your
-              sync setup, push-only gives you cloud backup without risk of cloud data
-              overwriting local changes.
+              <strong>Start with pull-only.</strong> When first linking, use pull-only mode
+              to see what comes down before pushing your local data up.
             </li>
             <li>
-              <strong>Use local-wins for single-user setups.</strong> If you&apos;re the only
-              one using the instance, local-wins is the safest conflict strategy.
+              <strong>Set up identity mappings before syncing.</strong> Unmapped identities
+              create orphaned memories that need manual cleanup.
             </li>
             <li>
-              <strong>Monitor sync status.</strong> Check <code>/v1/sync/status</code>
-              periodically. Failed syncs can silently accumulate if not monitored.
+              <strong>Monitor the conflict log.</strong> Frequent conflicts indicate that
+              multiple instances are modifying the same memories — consider whether your
+              sync architecture needs adjustment.
             </li>
             <li>
-              <strong>Set up identity mappings early.</strong> Before your first bidirectional
-              sync, configure user and agent mappings to prevent duplicate entities.
+              <strong>Exclude sensitive memories.</strong> Use the <code>syncExcluded</code>{' '}
+              flag for memories that should never leave the local instance (API keys,
+              credentials, personal health data).
             </li>
             <li>
-              <strong>Keep sync intervals reasonable.</strong> 5 minutes is a good default.
-              Shorter intervals increase API costs without meaningful benefit for most
-              use cases.
+              <strong>Use webhooks for sync events.</strong> Configure webhook notifications
+              for sync failures so you catch issues before data drifts.
             </li>
           </ul>
         </article>
