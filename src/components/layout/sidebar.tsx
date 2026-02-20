@@ -47,6 +47,7 @@ const navigation: NavItem[] = [
   { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
   { name: "Search", href: "/code", icon: Search },
   { name: "Consolidation", href: "/consolidation", icon: Moon },
+  { name: "Sources", href: "/sources", icon: Cloud },
   { name: "Pools", href: "/pools", icon: Database },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Settings", href: "/settings", icon: Settings },
