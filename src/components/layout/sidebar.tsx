@@ -26,6 +26,12 @@ import {
   Search,
   Link2,
   Gauge,
+  Bot,
+  ListTodo,
+  UsersRound,
+  Lightbulb,
+  Swords,
+  RefreshCw,
 } from "lucide-react";
 import type { Edition } from "@/types/instance";
 
@@ -48,8 +54,16 @@ const navigation: NavItem[] = [
   { name: "Search", href: "/code", icon: Search },
   { name: "Consolidation", href: "/consolidation", icon: Moon },
   { name: "Pools", href: "/pools", icon: Database },
+  { name: "Agents", href: "/agents", icon: Bot },
+  { name: "Delegation", href: "/delegation", icon: ListTodo },
+  { name: "Teams", href: "/teams", icon: UsersRound },
+  { name: "Insights", href: "/insights", icon: Lightbulb },
+  { name: "Challenges", href: "/challenges", icon: Swords },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Settings", href: "/settings", icon: Settings },
+
+  // === Local only: Sync ===
+  { name: "Sync", href: "/settings/cloud", icon: RefreshCw, editions: ["local"] },
 
   // === Cloud only ===
   { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
