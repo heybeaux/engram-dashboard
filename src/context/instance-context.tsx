@@ -4,8 +4,9 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useInstanceInfo } from "@/hooks/useInstanceInfo";
 import { InstanceFeatures, InstanceMode, Edition, DEFAULT_INSTANCE_INFO, EDITION, isCloud, isLocal } from "@/types/instance";
+import { getApiBaseUrl } from '@/lib/api-config';
 
-const API_BASE = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const API_BASE = getApiBaseUrl();
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 
 interface InstanceContextType {

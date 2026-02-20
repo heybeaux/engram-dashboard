@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Moon, RefreshCw, Clock, CheckCircle2, AlertCircle, Loader2, Brain, Trash2, BarChart3, Archive } from "lucide-react";
+import { getApiBaseUrl } from '@/lib/api-config';
 
 interface DreamCycleReport {
   id: string;
@@ -26,7 +27,7 @@ interface DreamCycleReport {
   errors: string[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_ENGRAM_API_URL || "https://api.openengram.ai";
+const API_URL = getApiBaseUrl();
 const API_KEY = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 

@@ -4,12 +4,13 @@ import { Suspense, useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useRateLimit } from '@/hooks/use-rate-limit';
 import { createCheckout } from '@/lib/account-api';
 import { trackEvent, identifyUser } from '@/lib/posthog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { AlertCircle, Loader2, ChevronDown, ChevronUp, Check, ShieldAlert } from 'lucide-react';
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
   let score = 0;
@@ -47,9 +48,11 @@ function SignupForm() {
   const [accessCode, setAccessCode] = useState('');
   const [showAccessCode, setShowAccessCode] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [honeyField, setHoneyField] = useState(''); // honeypot for bots
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
+  const { isLocked, secondsLeft, recordFailure, recordSuccess } = useRateLimit();
   const router = useRouter();
   const searchParams = useSearchParams();
 

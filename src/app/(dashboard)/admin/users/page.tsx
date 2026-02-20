@@ -16,9 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, RefreshCw, Loader2, ShieldAlert } from "lucide-react";
+import { getApiBaseUrl } from '@/lib/api-config';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const API_BASE = getApiBaseUrl();
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];

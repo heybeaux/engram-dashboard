@@ -4,8 +4,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useRouter, usePathname } from 'next/navigation';
 
 import { resetPostHog } from '@/lib/posthog';
+import { getApiBaseUrl } from './api-config';
 
-const API_BASE = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const API_BASE = getApiBaseUrl();
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 const EDITION = process.env.NEXT_PUBLIC_EDITION || 'cloud';
 
@@ -59,8 +60,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem(TOKEN_KEY);
     const storedUser = localStorage.getItem(USER_KEY);
     if (storedToken && storedUser) {
+      let parsedUser: User | null = null;
+      try {
+        parsedUser = JSON.parse(storedUser);
+      } catch {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setIsLoading(false);
+        return;
+      }
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      setUser(parsedUser);
       // Verify token is still valid
       fetch(`${API_BASE}/v1/account`, {
         headers: { Authorization: `Bearer ${storedToken}`, 'X-AM-User-ID': USER_ID },
