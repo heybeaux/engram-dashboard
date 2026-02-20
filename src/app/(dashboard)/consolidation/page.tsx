@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 import { Moon, RefreshCw, Clock, CheckCircle2, AlertCircle, Loader2, Brain, Trash2, BarChart3, Archive } from "lucide-react";
-import { getApiBaseUrl } from '@/lib/api-config';
+import { getBrowserToken } from '@/lib/api-config';
 import { useAuth } from '@/lib/auth-context';
 
 interface DreamCycleReport {
@@ -29,8 +29,8 @@ interface DreamCycleReport {
   errors: string[];
 }
 
-const API_URL = getApiBaseUrl();
-const API_KEY = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
+// HEY-199: Route through Next.js API proxy to keep credentials server-side.
+const PROXY_URL = '/api/engram';
 // HEY-214: Use authenticated user's ID (see useAuth hook inside component)
 
 function formatDate(dateString: string): string {
@@ -75,10 +75,11 @@ export default function ConsolidationPage() {
         "Content-Type": "application/json",
         "X-AM-User-ID": userId,
       };
-      if (API_KEY) {
-        headers["X-AM-API-Key"] = API_KEY;
+      const token = getBrowserToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
       }
-      const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle/reports`, {
+      const res = await fetch(`${PROXY_URL}/v1/consolidation/dream-cycle/reports`, {
         headers,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -117,10 +118,11 @@ export default function ConsolidationPage() {
                   "Content-Type": "application/json",
                   "X-AM-User-ID": userId,
                 };
-                if (API_KEY) {
-                  dreamHeaders["X-AM-API-Key"] = API_KEY;
+                const dreamToken = getBrowserToken();
+                if (dreamToken) {
+                  dreamHeaders["Authorization"] = `Bearer ${dreamToken}`;
                 }
-                const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle`, {
+                const res = await fetch(`${PROXY_URL}/v1/consolidation/dream-cycle`, {
                   method: "POST",
                   headers: dreamHeaders,
                   body: JSON.stringify({ dryRun: false }),
