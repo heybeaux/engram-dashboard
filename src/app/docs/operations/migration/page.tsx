@@ -143,6 +143,10 @@ pnpm prisma generate`}
           </pre>
 
           <h3>5. Run the Identity Backfill</h3>
+          <p>
+            v2 creates <code>AgentIdentity</code> records for each existing agent. The backfill
+            script initializes them with baseline values:
+          </p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`pnpm ts-node scripts/backfill-identity.ts
 
@@ -191,6 +195,9 @@ SYNC_TOKEN=est_xxxxxxxxxxxx`}
 
           <h2>Rollback Plan</h2>
 
+          <p>
+            If something goes wrong, restore from your backup:
+          </p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`# Stop the server
 pm2 stop engram

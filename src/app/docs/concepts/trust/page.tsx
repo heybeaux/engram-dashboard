@@ -92,6 +92,10 @@ Example:
           </pre>
 
           <h3>Why Time Decay?</h3>
+          <p>
+            Without decay, a previously excellent agent could coast on past performance
+            indefinitely. Time decay ensures trust reflects <em>current</em> reliability:
+          </p>
           <ul>
             <li>Recent successes matter more than old ones</li>
             <li>Inactive agents gradually return to baseline</li>
@@ -219,6 +223,12 @@ Example:
    ├─ Agent promoted to higher trust level (if passed + above threshold)
    └─ Agent demoted or flagged for review (if failed)`}
           </pre>
+
+          <p>
+            Challenges serve two purposes: they verify that high-trust agents are still
+            performing well, and they give lower-trust agents an opportunity to prove themselves
+            on verifiable tasks.
+          </p>
 
           <h2>Trust Visualization</h2>
 

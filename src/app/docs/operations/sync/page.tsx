@@ -32,6 +32,11 @@ export default function CloudSyncConceptPage() {
 
           <h2>Cloud Linking</h2>
 
+          <p>
+            To enable sync, you link your local Engram instance to the Engram Cloud (or
+            another Engram instance acting as a sync hub).
+          </p>
+
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`# Link to Engram Cloud
 engram sync link --cloud-url https://api.openengram.ai --token <your-token>
@@ -81,6 +86,9 @@ Sync is delta-based:
           </pre>
 
           <h3>Automatic Sync</h3>
+          <p>
+            When enabled, sync runs automatically on a configurable interval:
+          </p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`# Environment variables
 SYNC_ENABLED=true
@@ -131,6 +139,9 @@ engram sync now`}
           </pre>
 
           <h3>Conflict Log</h3>
+          <p>
+            Every reconciliation decision is logged for auditability:
+          </p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
 {`{
   "conflictId": "conf_abc123",
@@ -172,6 +183,12 @@ engram sync now`}
 }`}
           </pre>
 
+          <p>
+            When <code>autoCreateMappings</code> is enabled, Engram automatically maps
+            identities based on matching email addresses or external IDs. New users
+            encountered during sync are created locally with a mapping to their cloud ID.
+          </p>
+
           <h2>Security</h2>
 
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 not-prose text-sm text-gray-300">
@@ -181,7 +198,7 @@ engram sync now`}
               <li>Sync tokens are scoped to specific instances</li>
               <li>Memory content is encrypted at rest on the cloud</li>
               <li>Sync logs are retained for 90 days for audit</li>
-              <li>Sensitive memories can be excluded via <code className="text-purple-300">syncExcluded</code> flag</li>
+              <li>Sensitive memories can be excluded from sync via <code className="text-purple-300">syncExcluded</code> flag</li>
             </ul>
           </div>
 
@@ -195,8 +212,10 @@ engram sync now`}
   lastPushAt      DateTime?
   lastPullAt      DateTime?
   syncMode        SyncMode @default(BIDIRECTIONAL)
-  localCursor     String?
-  remoteCursor    String?
+  
+  // Cursor tracking
+  localCursor     String?  // Last local change synced
+  remoteCursor    String?  // Last remote change pulled
 }
 
 model SyncConflict {
@@ -243,11 +262,13 @@ enum ConflictResolution {
             </li>
             <li>
               <strong>Monitor the conflict log.</strong> Frequent conflicts indicate that
-              multiple instances are modifying the same memories.
+              multiple instances are modifying the same memories — consider whether your
+              sync architecture needs adjustment.
             </li>
             <li>
               <strong>Exclude sensitive memories.</strong> Use the <code>syncExcluded</code>{' '}
-              flag for memories that should never leave the local instance.
+              flag for memories that should never leave the local instance (API keys,
+              credentials, personal health data).
             </li>
             <li>
               <strong>Use webhooks for sync events.</strong> Configure webhook notifications

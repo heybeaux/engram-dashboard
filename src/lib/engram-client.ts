@@ -733,6 +733,42 @@ export class EngramClient {
   async getFogIndexHistory(limit = 30): Promise<import('./types').FogIndexHistory[]> {
     return this.fetch(`/v1/fog-index/history?limit=${limit}`);
   }
+
+  // ==========================================================================
+  // AGENT IDENTITY (Phase 2)
+  // ==========================================================================
+
+  async getAgents(): Promise<{ agents: import('./types').AgentSummary[] }> {
+    return this.fetch('/v1/agents');
+  }
+
+  async getAgentIdentity(agentId: string): Promise<import('./types').AgentIdentity> {
+    return this.fetch(`/v1/agents/${agentId}/identity`);
+  }
+
+  async getAgentTrustNarrative(agentId: string): Promise<import('./types').AgentTrustNarrative> {
+    return this.fetch(`/v1/agents/${agentId}/trust/narrative`);
+  }
+
+  async exportAgentIdentity(agentId: string): Promise<Blob> {
+    const url = `${this.baseUrl}/v1/agents/${agentId}/export`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.apiKey) headers['X-AM-API-Key'] = this.apiKey;
+    else if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('engram_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+    return res.blob();
+  }
+
+  async importAgentIdentity(agentId: string, data: unknown): Promise<{ success: boolean; message?: string }> {
+    return this.fetch(`/v1/agents/${agentId}/import`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 // ============================================================================

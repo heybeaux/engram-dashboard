@@ -160,6 +160,11 @@ migration'. Trust network stable — all agents above 0.6."`}
 
           <h2>Feedback Loop</h2>
 
+          <p>
+            Insights aren&apos;t just stored — they feed back into the system to improve
+            future behavior.
+          </p>
+
           <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm">
 {`┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   Memories   │────▶│  Awareness   │────▶│   Insights   │
@@ -180,6 +185,11 @@ Feedback effects:
 
           <h2>Notifications</h2>
 
+          <p>
+            When Awareness generates insights, it can notify relevant parties through
+            configurable channels:
+          </p>
+
           <ul>
             <li>
               <strong>Dashboard.</strong> All insights appear in the Engram dashboard with
@@ -191,7 +201,8 @@ Feedback effects:
             </li>
             <li>
               <strong>Agent context.</strong> High-priority insights are injected into agent
-              context during the next interaction.
+              context during the next interaction, ensuring the agent is aware of recent
+              discoveries.
             </li>
             <li>
               <strong>API polling.</strong> Clients can poll <code>GET /v1/awareness/insights</code>{' '}
@@ -234,14 +245,14 @@ AWARENESS_SUMMARY_CRON="0 9 * * 1" # Weekly summary on Mondays at 9am`}
   id            String        @id
   agentId       String
   
-  type          InsightType
-  severity      InsightSeverity
+  type          InsightType   // PATTERN, CONTRADICTION, RECOMMENDATION, ALERT, SUMMARY
+  severity      InsightSeverity // LOW, MEDIUM, HIGH, CRITICAL
   title         String
   description   String
   
   // Source tracking
-  sourceSignals Json
-  sourceMemories String[]
+  sourceSignals Json          // Signal IDs that triggered this insight
+  sourceMemories String[]     // Memory IDs referenced
   
   // Action
   actionTaken   Boolean       @default(false)
@@ -281,7 +292,8 @@ enum InsightSeverity {
             </li>
             <li>
               <strong>Act on contradictions.</strong> CONTRADICTION insights are the most
-              actionable — they indicate stale or incorrect data. Resolve them promptly.
+              actionable — they indicate stale or incorrect data. Resolve them promptly to keep
+              the memory system accurate.
             </li>
             <li>
               <strong>Use summaries for monitoring.</strong> Weekly summaries are an excellent

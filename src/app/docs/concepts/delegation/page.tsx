@@ -196,6 +196,11 @@ const templates = {
 };`}
           </pre>
 
+          <p>
+            Templates can be customized per team and evolve over time as agents learn which
+            acceptance criteria are most useful.
+          </p>
+
           <h2>How Delegation Feeds Trust</h2>
 
           <p>
