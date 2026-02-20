@@ -92,7 +92,6 @@ export async function getAccount(): Promise<Account> {
 }
 
 export function updateAccount(data: { name?: string }) {
-  // TODO: PATCH /v1/account endpoint may not exist yet
   return authFetch<Account>('/v1/account', {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -100,7 +99,6 @@ export function updateAccount(data: { name?: string }) {
 }
 
 export function changePassword(data: { currentPassword: string; newPassword: string }) {
-  // TODO: POST /v1/account/password endpoint may not exist yet
   return authFetch<void>('/v1/account/change-password', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -108,7 +106,6 @@ export function changePassword(data: { currentPassword: string; newPassword: str
 }
 
 export function deleteAccount() {
-  // TODO: DELETE /v1/account endpoint may not exist yet
   return authFetch<void>('/v1/account', { method: 'DELETE' });
 }
 
@@ -141,7 +138,6 @@ export async function createApiKey(name: string) {
 }
 
 export function deleteApiKey(id: string) {
-  // TODO: DELETE /v1/account/api-keys/:id endpoint may not exist yet
   return authFetch<void>(`/v1/account/api-keys/${id}`, { method: 'DELETE' });
 }
 

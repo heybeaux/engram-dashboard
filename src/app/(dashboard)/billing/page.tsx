@@ -23,6 +23,7 @@ import {
 } from "@/lib/account-api";
 import { trackEvent } from "@/lib/posthog";
 import { useInstance } from "@/context/instance-context";
+import { toast } from "sonner";
 
 // ── Plan definitions ──────────────────────────────────────────────────────────
 
@@ -183,8 +184,8 @@ function BillingPageContent() {
     try {
       const { url } = await createCheckout(planId.toUpperCase());
       window.location.href = url;
-    } catch {
-      // TODO: error toast
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start checkout");
     } finally {
       setCheckoutLoading(null);
     }
@@ -195,8 +196,8 @@ function BillingPageContent() {
     try {
       const { url } = await getBillingPortal();
       window.location.href = url;
-    } catch {
-      // TODO: error toast
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to open billing portal");
     } finally {
       setPortalLoading(false);
     }

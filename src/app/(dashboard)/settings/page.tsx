@@ -38,6 +38,7 @@ import {
   type ApiKeyInfo,
 } from "@/lib/account-api";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   // ── Profile state ──────────────────────────────────────────────────────
@@ -90,8 +91,8 @@ export default function SettingsPage() {
       setKeysLoading(true);
       const data = await getApiKeys();
       setApiKeys(data.keys ?? []);
-    } catch {
-      // keys may not be available yet
+    } catch (err) {
+      console.warn("Failed to load API keys:", err);
     } finally {
       setKeysLoading(false);
     }
@@ -109,8 +110,8 @@ export default function SettingsPage() {
       await updateAccount({ name });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      // TODO: show error toast
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
       setSaving(false);
     }
@@ -128,7 +129,6 @@ export default function SettingsPage() {
     }
     setPwSaving(true);
     try {
-      // TODO: POST /v1/account/password endpoint may not exist yet
       await changePassword({ currentPassword, newPassword });
       setPwSuccess(true);
       setCurrentPassword("");
@@ -149,8 +149,8 @@ export default function SettingsPage() {
       const result = await createApiKey(newKeyName.trim());
       setNewKeyValue(result.key);
       loadKeys();
-    } catch {
-      // TODO: show error
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create API key");
     } finally {
       setCreatingKey(false);
     }
@@ -165,11 +165,11 @@ export default function SettingsPage() {
   const handleDeleteKey = async (id: string) => {
     setDeletingKeyId(id);
     try {
-      // TODO: DELETE /v1/account/api-keys/:id may not exist yet
       await deleteApiKey(id);
       setApiKeys((prev) => prev.filter((k) => k.id !== id));
-    } catch {
-      // TODO: show error
+      toast.success("API key deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete API key");
     } finally {
       setDeletingKeyId(null);
     }
@@ -506,7 +506,8 @@ export default function SettingsPage() {
                         await deleteAccountApi();
                         localStorage.removeItem("engram_token");
                         router.push("/login");
-                      } catch {
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : "Failed to delete account");
                         setDeleting(false);
                       }
                     }}
