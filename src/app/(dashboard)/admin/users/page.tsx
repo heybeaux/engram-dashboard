@@ -19,7 +19,7 @@ import { Search, RefreshCw, Loader2, ShieldAlert } from "lucide-react";
 import { getApiBaseUrl } from '@/lib/api-config';
 
 const API_BASE = getApiBaseUrl();
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
+// HEY-214: Use authenticated user's ID instead of hardcoded env var
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
 
@@ -69,7 +69,7 @@ export default function AdminUsersPage() {
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/v1/admin/accounts`, {
-        headers: { Authorization: `Bearer ${token}`, "X-AM-User-ID": USER_ID },
+        headers: { Authorization: `Bearer ${token}`, "X-AM-User-ID": user?.id || "default" },
       });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const data = await res.json();

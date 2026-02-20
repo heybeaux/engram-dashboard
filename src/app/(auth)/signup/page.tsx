@@ -104,8 +104,8 @@ function SignupForm() {
 
     if (result.success) {
       recordSuccess();
-      identifyUser(email, { name });
-      trackEvent('user_signed_up', { email, name, plan: result.selectedPlan, accessCode: !!accessCode });
+      identifyUser(email);
+      trackEvent('user_signed_up', { plan: result.selectedPlan, hasAccessCode: !!accessCode });
       if (result.apiKey) {
         sessionStorage.setItem('engram_onboarding_apikey', result.apiKey);
       }
@@ -288,7 +288,7 @@ function SignupForm() {
             />
             <span className="text-sm text-muted-foreground">
               I agree to the{' '}
-              <Link href="/terms" className="text-primary hover:underline" target="_blank">
+              <Link href="/terms" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                 Terms of Service
               </Link>
             </span>

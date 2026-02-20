@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
 import { getApiBaseUrl } from '@/lib/api-config';
+import { useAuth } from '@/lib/auth-context';
 
 const API_BASE = getApiBaseUrl();
 
@@ -96,7 +97,8 @@ function getAuthHeaders(): Record<string, string> {
     return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   }
   const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
-  const userId = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "Beaux";
+  const { user } = useAuth();
+  const userId = user?.id || "default";
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (apiKey) headers["X-AM-API-Key"] = apiKey;
   headers["X-AM-User-ID"] = userId;
@@ -143,7 +145,15 @@ function CloudSettingsPageContent() {
   const [syncHistory, setSyncHistory] = useState<SyncEvent[]>([]);
   const [pulling, setPulling] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pullResult, setPullResult] = useState<any>(null);
+  const [pullResult, setPullResult] = useState<{
+    pulled?: number;
+    message?: string;
+    durationMs?: number;
+    newCount?: number;
+    updatedCount?: number;
+    skippedCount?: number;
+    deletedCount?: number;
+  } | null>(null);
 
   // Cloud instances (for cloud edition)
   const [instances, setInstances] = useState<CloudInstance[]>([]);

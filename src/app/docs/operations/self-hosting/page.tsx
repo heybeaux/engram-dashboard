@@ -213,7 +213,7 @@ pm2 monit`}
           <h3>SSL / TLS</h3>
           <p>
             Always use HTTPS in production. The easiest approach is{' '}
-            <a href="https://certbot.eff.org/" className="text-purple-400 hover:text-purple-300">Certbot</a>{' '}
+            <a href="https://certbot.eff.org/" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">Certbot</a>{' '}
             with Let&apos;s Encrypt:
           </p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Edition, EDITION } from "@/types/instance";

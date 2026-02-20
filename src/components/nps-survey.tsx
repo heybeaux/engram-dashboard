@@ -9,7 +9,6 @@ import { trackEvent } from '@/lib/posthog';
 import { getApiBaseUrl } from '@/lib/api-config';
 
 const API_BASE = getApiBaseUrl();
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 const NPS_DISMISS_KEY = 'engram_nps_dismissed';
 const NPS_LOGIN_COUNT_KEY = 'engram_login_count';
 const NPS_FIRST_SEEN_KEY = 'engram_first_seen';
@@ -38,7 +37,7 @@ export function incrementLoginCount() {
 }
 
 export function NpsSurvey() {
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [score, setScore] = useState<number | null>(null);
@@ -67,7 +66,7 @@ export function NpsSurvey() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-AM-User-ID': USER_ID,
+          'X-AM-User-ID': user?.id || 'default',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ rating: score, text, category: 'nps', page: pathname }),
