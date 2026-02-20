@@ -617,6 +617,21 @@ export class EngramClient {
     });
   }
 
+  /**
+   * Get dream cycle reports
+   * @endpoint GET /v1/consolidation/dream-cycle/reports
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getDreamCycleReports(userId?: string, limit: number = 10): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (userId) params.set('userId', userId);
+    params.set('limit', String(limit));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.fetch<any>(`/v1/consolidation/dream-cycle/reports?${params}`);
+    return Array.isArray(data) ? data : data.reports || [];
+  }
+
   // ==========================================================================
   // MULTI-AGENT (v0.7)
   // ==========================================================================

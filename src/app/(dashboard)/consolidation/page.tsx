@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Moon, RefreshCw, Clock, CheckCircle2, AlertCircle, Loader2, Brain, Trash2, BarChart3, Archive } from "lucide-react";
-import { getApiBaseUrl } from '@/lib/api-config';
+import { engram } from '@/lib/engram-client';
 
 interface DreamCycleReport {
   id: string;
@@ -26,10 +26,6 @@ interface DreamCycleReport {
   stageDetails: Record<string, any>;
   errors: string[];
 }
-
-const API_URL = getApiBaseUrl();
-const API_KEY = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -68,20 +64,8 @@ export default function ConsolidationPage() {
     setLoading(true);
     setError(null);
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        "X-AM-User-ID": USER_ID,
-      };
-      if (API_KEY) {
-        headers["X-AM-API-Key"] = API_KEY;
-      }
-      const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle/reports`, {
-        headers,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      // API returns array directly, but handle wrapped format too
-      setReports(Array.isArray(data) ? data : data.reports || []);
+      const data = await engram.getDreamCycleReports();
+      setReports(data);
     } catch (err) {
       console.error("Failed to fetch dream cycle reports:", err);
       setError("Could not load consolidation reports. The consolidation service may not be running.");
@@ -110,19 +94,7 @@ export default function ConsolidationPage() {
               setRunningCycle(true);
               setCycleResult(null);
               try {
-                const dreamHeaders: Record<string, string> = {
-                  "Content-Type": "application/json",
-                  "X-AM-User-ID": USER_ID,
-                };
-                if (API_KEY) {
-                  dreamHeaders["X-AM-API-Key"] = API_KEY;
-                }
-                const res = await fetch(`${API_URL}/v1/consolidation/dream-cycle`, {
-                  method: "POST",
-                  headers: dreamHeaders,
-                  body: JSON.stringify({ dryRun: false }),
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                await engram.runDreamCycle(false);
                 setCycleResult("Dream cycle started successfully!");
                 // Refresh reports after a delay to let it complete
                 setTimeout(fetchReports, 3000);
