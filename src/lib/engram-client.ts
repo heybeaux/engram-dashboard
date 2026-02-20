@@ -51,12 +51,16 @@ import {
 // CONFIGURATION
 // ============================================================================
 
+const isBrowser = typeof window !== 'undefined';
+
 const getConfig = () => ({
-  baseUrl: process.env.NEXT_PUBLIC_ENGRAM_API_URL ||
-           process.env.ENGRAM_API_URL ||
-           'https://api.openengram.ai',
-  apiKey: process.env.NEXT_PUBLIC_ENGRAM_API_KEY ||
-          process.env.ENGRAM_API_KEY || '',
+  // In the browser, route through Next.js API proxy to keep API key server-side (HEY-203).
+  baseUrl: isBrowser
+    ? '/api/engram'
+    : (process.env.ENGRAM_API_URL ||
+       process.env.NEXT_PUBLIC_ENGRAM_API_URL ||
+       'https://api.openengram.ai'),
+  apiKey: isBrowser ? '' : (process.env.ENGRAM_API_KEY || ''),
   defaultUserId: process.env.NEXT_PUBLIC_ENGRAM_USER_ID ||
                  process.env.ENGRAM_USER_ID || '',
 });

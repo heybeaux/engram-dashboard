@@ -39,7 +39,8 @@ const TOKEN_KEY = 'engram_token';
 const USER_KEY = 'engram_user';
 
 function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? ';Secure' : '';
+  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax${secure}`;
 }
 
 function deleteCookie(name: string) {
