@@ -494,33 +494,23 @@ export class EngramClient {
   }
 
   // ==========================================================================
-  // API KEYS (NOT YET IMPLEMENTED IN ENGRAM)
+  // API KEYS (via /v1/account/api-keys)
   // ==========================================================================
 
   /**
    * Get all API keys
-   * @endpoint GET /v1/api-keys
-   * @status NOT IMPLEMENTED
+   * @endpoint GET /v1/account/api-keys
    */
   async getApiKeys(): Promise<{ keys: ApiKey[] }> {
-    try {
-      return await this.fetch<{ keys: ApiKey[] }>('/v1/api-keys');
-    } catch (error) {
-      if (error instanceof EngramApiError && error.statusCode === 404) {
-        console.warn('GET /v1/api-keys not implemented.');
-        return { keys: [] };
-      }
-      throw error;
-    }
+    return this.fetch<{ keys: ApiKey[] }>('/v1/account/api-keys');
   }
 
   /**
    * Create a new API key
-   * @endpoint POST /v1/api-keys
-   * @status NOT IMPLEMENTED
+   * @endpoint POST /v1/account/api-keys
    */
   async createApiKey(name: string): Promise<{ key: string; id: string }> {
-    return this.fetch<{ key: string; id: string }>('/v1/api-keys', {
+    return this.fetch<{ key: string; id: string }>('/v1/account/api-keys', {
       method: 'POST',
       body: JSON.stringify({ name }),
     });
@@ -528,11 +518,10 @@ export class EngramClient {
 
   /**
    * Revoke an API key
-   * @endpoint DELETE /v1/api-keys/:id
-   * @status NOT IMPLEMENTED
+   * @endpoint DELETE /v1/account/api-keys/:id
    */
   async revokeApiKey(id: string): Promise<void> {
-    await this.fetch<void>(`/v1/api-keys/${id}`, { method: 'DELETE' });
+    await this.fetch<void>(`/v1/account/api-keys/${id}`, { method: 'DELETE' });
   }
 
   // ==========================================================================
@@ -772,29 +761,6 @@ export class EngramClient {
 
   async getMemoryAttribution(memoryId: string): Promise<import('./types').MemoryAttribution> {
     return this.fetch(`/v1/memories/${memoryId}/attribution`);
-  }
-
-  // ==========================================================================
-  // MOCK DATA (for unimplemented endpoints)
-  // ==========================================================================
-
-  private getMockStats(): DashboardStats {
-    return {
-      totalMemories: 0,
-      memoryTrend: 0,
-      totalUsers: 0,
-      userTrend: 0,
-      healthScore: 100,
-      memoryByLayer: [
-        { layer: 'IDENTITY', count: 0, percentage: 0 },
-        { layer: 'PROJECT', count: 0, percentage: 0 },
-        { layer: 'SESSION', count: 0, percentage: 0 },
-        { layer: 'TASK', count: 0, percentage: 0 },
-        { layer: 'INSIGHT', count: 0, percentage: 0 },
-      ],
-      recentActivity: [],
-      apiRequests: [],
-    };
   }
 
   // ==========================================================================
