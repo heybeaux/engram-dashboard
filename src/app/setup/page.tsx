@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
+const API_BASE = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 type DeploymentChoice = 'local' | 'cloud' | null;

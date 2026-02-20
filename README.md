@@ -65,7 +65,7 @@ pnpm install
 
 # Configure
 cp .env.example .env.local
-# Edit NEXT_PUBLIC_API_URL if needed
+# Edit NEXT_PUBLIC_ENGRAM_API_URL if needed
 
 # Run
 pnpm dev
@@ -105,12 +105,12 @@ ipconfig | findstr "IPv4"
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | Engram API URL |
+| `NEXT_PUBLIC_ENGRAM_API_URL` | `http://localhost:3001` | Engram API URL |
 | `NEXT_PUBLIC_CODE_API_URL` | `http://localhost:3002` | engram-code API URL (optional) |
 
 **For LAN access**, set the API URL to your machine's IP:
 ```env
-NEXT_PUBLIC_API_URL=http://192.168.1.100:3001
+NEXT_PUBLIC_ENGRAM_API_URL=http://192.168.1.100:3001
 ```
 
 ## Architecture

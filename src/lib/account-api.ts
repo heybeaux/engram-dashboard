@@ -5,7 +5,7 @@
  * These are separate from the Engram memory API which uses API keys.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.openengram.ai';
+const API_BASE = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 function getToken(): string | null {
