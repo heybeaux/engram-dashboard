@@ -71,6 +71,8 @@ function SignupForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isLocked) return;
+    if (honeyField) return;
     setError('');
 
     if (password !== confirmPassword) {
@@ -101,6 +103,7 @@ function SignupForm() {
     setLoading(false);
 
     if (result.success) {
+      recordSuccess();
       identifyUser(email, { name });
       trackEvent('user_signed_up', { email, name, plan: result.selectedPlan, accessCode: !!accessCode });
       if (result.apiKey) {
@@ -121,6 +124,7 @@ function SignupForm() {
         router.push(result.apiKey ? '/onboarding' : '/dashboard');
       }
     } else {
+      recordFailure();
       setError(result.error || 'Registration failed');
     }
   }
@@ -132,7 +136,13 @@ function SignupForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {error && (
+          {isLocked && (
+            <div className="flex items-center gap-2 rounded-md bg-orange-500/10 p-3 text-sm text-orange-600 dark:text-orange-400">
+              <ShieldAlert className="h-4 w-4 shrink-0" />
+              Too many attempts. Try again in {secondsLeft} second{secondsLeft !== 1 ? 's' : ''}.
+            </div>
+          )}
+          {error && !isLocked && (
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
@@ -264,6 +274,11 @@ function SignupForm() {
               autoComplete="new-password"
             />
           </div>
+          {/* Honeypot — hidden from humans, traps bots */}
+          <div className="absolute opacity-0 top-0 left-0 h-0 w-0 -z-10 overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" value={honeyField} onChange={(e) => setHoneyField(e.target.value)} />
+          </div>
           <label className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -280,7 +295,7 @@ function SignupForm() {
           </label>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || isLocked}>
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {accessCode ? 'Create account' : `Start with ${PLANS.find(p => p.id === selectedPlan)?.name || 'Starter'}`}
           </Button>

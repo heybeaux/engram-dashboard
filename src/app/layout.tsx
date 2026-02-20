@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { InstanceProvider } from "@/context/instance-context";
 import { PostHogProvider } from "@/components/posthog-provider";
+import { Toaster } from "sonner";
 
 const gaId = process.env.NEXT_PUBLIC_GA_ID;
 const openpanelId = process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID;
@@ -45,6 +46,7 @@ export default function RootLayout({
               <PostHogProvider>
                 <TooltipProvider>
                   {children}
+                  <Toaster richColors position="bottom-right" />
                 </TooltipProvider>
               </PostHogProvider>
             </Suspense>

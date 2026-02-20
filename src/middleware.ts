@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify, decodeJwt } from 'jose';
 
 const PUBLIC_PATHS = ['/login', '/signup', '/register', '/terms', '/privacy', '/setup'];
 const PUBLIC_PREFIXES = ['/docs', '/_next', '/api', '/favicon.ico', '/fonts'];
@@ -11,13 +12,33 @@ const SELF_HOSTED_ONLY_PREFIXES = ['/code'];
 
 const IS_CLOUD = process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === 'cloud';
 
-export function middleware(request: NextRequest) {
+const JWT_SECRET = process.env.JWT_SECRET || '';
+
+async function isValidToken(token: string): Promise<boolean> {
+  try {
+    if (JWT_SECRET) {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      await jwtVerify(token, secret);
+      return true;
+    }
+    const payload = decodeJwt(token);
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Root redirect: authenticated → /dashboard, otherwise → /login
   if (pathname === '/') {
     const token = request.cookies.get('engram_token')?.value;
-    const target = token ? '/dashboard' : '/login';
+    const valid = token ? await isValidToken(token) : false;
+    const target = valid ? '/dashboard' : '/login';
     return NextResponse.redirect(new URL(target, request.url));
   }
 
@@ -37,8 +58,8 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get('engram_token')?.value;
 
-  // Protect ALL other routes — if no token, redirect to login
-  if (!token) {
+  // Protect ALL other routes — validate token, not just existence (HEY-204)
+  if (!token || !(await isValidToken(token))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);
