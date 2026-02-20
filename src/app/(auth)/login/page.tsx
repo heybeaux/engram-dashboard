@@ -32,7 +32,7 @@ export default function LoginPage() {
     if (result.success) {
       recordSuccess();
       identifyUser(email);
-      trackEvent('user_logged_in', { email });
+      trackEvent('user_logged_in');
       router.push(from);
     } else {
       recordFailure();

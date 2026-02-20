@@ -7,7 +7,8 @@ import { resetPostHog } from '@/lib/posthog';
 import { getApiBaseUrl } from './api-config';
 
 const API_BASE = getApiBaseUrl();
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
+/** Fallback user ID for pre-auth requests (login/register). Authenticated requests should use user.id. */
+const FALLBACK_USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 const EDITION = process.env.NEXT_PUBLIC_EDITION || 'cloud';
 
 interface User {
@@ -71,9 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setToken(storedToken);
       setUser(parsedUser);
-      // Verify token is still valid
+      // Verify token is still valid — use stored user's ID, not the env default
       fetch(`${API_BASE}/v1/account`, {
-        headers: { Authorization: `Bearer ${storedToken}`, 'X-AM-User-ID': USER_ID },
+        headers: { Authorization: `Bearer ${storedToken}`, 'X-AM-User-ID': parsedUser?.id || FALLBACK_USER_ID },
       })
         .then((res) => {
           if (!res.ok) {
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': FALLBACK_USER_ID },
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
@@ -132,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': FALLBACK_USER_ID },
         body: JSON.stringify({ email, password, name, plan, accessCode }),
       });
       if (!res.ok) {

@@ -20,14 +20,13 @@ const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ),
 });
 
-// Color map for memory layers
+// Color map for memory layers (matches analytics-colors.ts)
 const LAYER_COLORS: Record<string, string> = {
-  CORE: '#ef4444',
-  SEMANTIC: '#3b82f6',
-  EPISODIC: '#22c55e',
-  WORKING: '#f59e0b',
-  PROCEDURAL: '#8b5cf6',
-  INSIGHT: '#f59e0b',
+  IDENTITY: '#3B82F6',
+  PROJECT: '#22C55E',
+  SESSION: '#EAB308',
+  TASK: '#8B5CF6',
+  INSIGHT: '#F59E0B',
 };
 
 const DEFAULT_NODE_COLOR = '#6b7280';

@@ -9,7 +9,6 @@ import { trackEvent } from '@/lib/posthog';
 import { getApiBaseUrl } from '@/lib/api-config';
 
 const API_BASE = getApiBaseUrl();
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 
 const CATEGORIES = [
   { value: 'general', label: 'General' },
@@ -18,7 +17,7 @@ const CATEGORIES = [
 ];
 
 export function FeedbackWidget() {
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
@@ -38,7 +37,7 @@ export function FeedbackWidget() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-AM-User-ID': USER_ID,
+          'X-AM-User-ID': user?.id || 'default',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ rating, text, category, page: pathname }),

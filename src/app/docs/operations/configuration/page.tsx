@@ -316,7 +316,7 @@ OPENAI_API_KEY="sk-..."`}
           </pre>
           <p className="text-sm text-gray-400">
             Get your key:{' '}
-            <a href="https://platform.openai.com/api-keys" className="text-purple-400 hover:text-purple-300">
+            <a href="https://platform.openai.com/api-keys" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">
               platform.openai.com/api-keys
             </a>
           </p>
@@ -328,7 +328,7 @@ OPENAI_API_KEY="sk-..."`}
           </pre>
           <p className="text-sm text-gray-400">
             Get your key:{' '}
-            <a href="https://console.anthropic.com/" className="text-purple-400 hover:text-purple-300">
+            <a href="https://console.anthropic.com/" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">
               console.anthropic.com
             </a>
           </p>
@@ -408,7 +408,7 @@ ollama pull nomic-embed-text  # For embeddings`}
           </pre>
           <p className="text-sm text-gray-400">
             Get your key:{' '}
-            <a href="https://app.pinecone.io/" className="text-purple-400 hover:text-purple-300">
+            <a href="https://app.pinecone.io/" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">
               app.pinecone.io
             </a>
           </p>

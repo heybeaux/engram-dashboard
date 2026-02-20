@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import type { LucideIcon } from "lucide-react";
 import { Moon, RefreshCw, Clock, CheckCircle2, AlertCircle, Loader2, Brain, Trash2, BarChart3, Archive } from "lucide-react";
 import { getApiBaseUrl } from '@/lib/api-config';
+import { useAuth } from '@/lib/auth-context';
 
 interface DreamCycleReport {
   id: string;
@@ -29,7 +31,7 @@ interface DreamCycleReport {
 
 const API_URL = getApiBaseUrl();
 const API_KEY = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
+// HEY-214: Use authenticated user's ID (see useAuth hook inside component)
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -49,8 +51,7 @@ function formatDuration(ms: number): string {
   return `${(ms / 60000).toFixed(1)}m`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const statusConfig: Record<string, { icon: any; color: string; iconClass: string }> = {
+const statusConfig: Record<string, { icon: LucideIcon; color: string; iconClass: string }> = {
   RUNNING: { icon: Loader2, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", iconClass: "animate-spin" },
   COMPLETED: { icon: CheckCircle2, color: "bg-green-500/10 text-green-500 border-green-500/20", iconClass: "" },
   FAILED: { icon: AlertCircle, color: "bg-red-500/10 text-red-500 border-red-500/20", iconClass: "" },
@@ -58,6 +59,8 @@ const statusConfig: Record<string, { icon: any; color: string; iconClass: string
 };
 
 export default function ConsolidationPage() {
+  const { user } = useAuth();
+  const userId = user?.id || 'default';
   const [reports, setReports] = useState<DreamCycleReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +73,7 @@ export default function ConsolidationPage() {
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        "X-AM-User-ID": USER_ID,
+        "X-AM-User-ID": userId,
       };
       if (API_KEY) {
         headers["X-AM-API-Key"] = API_KEY;
@@ -112,7 +115,7 @@ export default function ConsolidationPage() {
               try {
                 const dreamHeaders: Record<string, string> = {
                   "Content-Type": "application/json",
-                  "X-AM-User-ID": USER_ID,
+                  "X-AM-User-ID": userId,
                 };
                 if (API_KEY) {
                   dreamHeaders["X-AM-API-Key"] = API_KEY;

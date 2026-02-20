@@ -17,6 +17,7 @@ export const LAYER_COLORS: Record<string, string> = {
   PROJECT: "#22C55E",    // Green
   SESSION: "#EAB308",    // Yellow
   TASK: "#8B5CF6",       // Purple
+  INSIGHT: "#F59E0B",    // Amber
 };
 
 // Tailwind classes for layers (for progress bars)
@@ -25,6 +26,7 @@ export const LAYER_CLASSES: Record<string, string> = {
   PROJECT: "bg-green-500",
   SESSION: "bg-yellow-500",
   TASK: "bg-purple-500",
+  INSIGHT: "bg-amber-500",
 };
 
 // Memory type display names
@@ -43,4 +45,5 @@ export const LAYER_LABELS: Record<string, string> = {
   PROJECT: "Project",
   SESSION: "Session",
   TASK: "Task",
+  INSIGHT: "Insight",
 };
