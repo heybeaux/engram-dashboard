@@ -158,6 +158,132 @@ curl http://localhost:3001/v1/health
 }`}
           </pre>
 
+          <h2>10. Set Up Agent Identity</h2>
+          <p>
+            v2 introduces agent identity — a living profile that emerges from memories.
+            After creating an agent, seed its initial identity:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Store capability information
+curl -X POST http://localhost:3001/v1/memories \\
+  -H "Content-Type: application/json" \\
+  -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
+  -H "X-AM-User-ID: system" \\
+  -d '{
+    "raw": "MyAgent has access to TypeScript, web search, and file system tools",
+    "layer": "IDENTITY",
+    "metadata": { "agentId": "agent_abc123", "category": "capability" }
+  }'`}
+          </pre>
+
+          <h2>11. Create Your First Delegation</h2>
+          <p>
+            Delegate a task from one agent to another. The outcome builds trust automatically.
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`curl -X POST http://localhost:3001/v1/delegations \\
+  -H "Content-Type: application/json" \\
+  -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
+  -d '{
+    "task": "Review the README.md for accuracy",
+    "trustDomain": "documentation",
+    "requiredTrust": 0.4,
+    "acceptance": [
+      {
+        "description": "All links are valid",
+        "type": "automated",
+        "required": true
+      }
+    ]
+  }'
+
+# Response:
+{
+  "id": "del_abc123",
+  "status": "CREATED",
+  "delegateId": "agent_def456",
+  "trustDomain": "documentation"
+}`}
+          </pre>
+
+          <h2>9. Set Up Agent Identity (v2)</h2>
+          <p>
+            Engram v2 introduces agent identity — persistent profiles that evolve through
+            interactions. Seed your agent&apos;s identity to get started:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Seed identity for your agent
+curl -X POST http://localhost:3001/v1/agents/agent_abc123/identity \\
+  -H "Content-Type: application/json" \\
+  -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
+  -d '{
+    "displayName": "MyAgent",
+    "capabilities": {
+      "general_assistant": { "confidence": 0.5 }
+    },
+    "preferences": {
+      "communicationStyle": "concise"
+    }
+  }'
+
+# Response:
+{
+  "id": "ident_abc123",
+  "agentId": "agent_abc123",
+  "displayName": "MyAgent",
+  "maturityScore": 0.0,
+  "capabilities": { "general_assistant": { "confidence": 0.5 } },
+  "preferences": { "communicationStyle": "concise" }
+}`}
+          </pre>
+          <p>
+            The identity will mature automatically as the agent interacts — capabilities gain
+            confidence, preferences refine, and trust relationships form. See the{' '}
+            <Link href="/docs/concepts/identity" className="text-purple-400 hover:text-purple-300">
+              Identity Framework
+            </Link>{' '}
+            docs for the full picture.
+          </p>
+
+          <h2>9. Set Up Agent Identity (v2)</h2>
+          <p>
+            Engram v2 introduces agent identity — persistent profiles that evolve through
+            interactions. Seed your agent&apos;s identity to get started:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Seed identity for your agent
+curl -X POST http://localhost:3001/v1/agents/agent_abc123/identity \\
+  -H "Content-Type: application/json" \\
+  -H "X-AM-API-Key: eg_sk_live_xxxxxxxxxxxx" \\
+  -d '{
+    "displayName": "MyAgent",
+    "capabilities": {
+      "general_assistant": { "confidence": 0.5 }
+    },
+    "preferences": {
+      "communicationStyle": "concise"
+    }
+  }'
+
+# Response:
+{
+  "id": "ident_abc123",
+  "agentId": "agent_abc123",
+  "displayName": "MyAgent",
+  "maturityScore": 0.0,
+  "capabilities": { "general_assistant": { "confidence": 0.5 } },
+  "preferences": { "communicationStyle": "concise" }
+}`}
+          </pre>
+          <p>
+            The identity will mature automatically as the agent interacts — capabilities gain
+            confidence, preferences refine, and trust relationships form. See the{' '}
+            <Link href="/docs/concepts/identity" className="text-purple-400 hover:text-purple-300">
+              Identity Framework
+            </Link>{' '}
+            docs for the full picture.
+          </p>
+
           <h2>Next Steps</h2>
           <div className="grid md:grid-cols-2 gap-4 mt-6 not-prose">
             <Link 
@@ -187,6 +313,20 @@ curl http://localhost:3001/v1/health
             >
               <h3 className="text-lg font-medium mb-2">Self Hosting</h3>
               <p className="text-gray-400 text-sm">Production deployment guide</p>
+            </Link>
+            <Link 
+              href="/docs/concepts/identity" 
+              className="block p-6 bg-gray-900 rounded-lg border border-gray-800 hover:border-purple-500 transition-colors"
+            >
+              <h3 className="text-lg font-medium mb-2">Agent Identity</h3>
+              <p className="text-gray-400 text-sm">How identity emerges from memory</p>
+            </Link>
+            <Link 
+              href="/docs/concepts/delegation" 
+              className="block p-6 bg-gray-900 rounded-lg border border-gray-800 hover:border-purple-500 transition-colors"
+            >
+              <h3 className="text-lg font-medium mb-2">Delegation System</h3>
+              <p className="text-gray-400 text-sm">Contract-based task assignment</p>
             </Link>
           </div>
         </article>

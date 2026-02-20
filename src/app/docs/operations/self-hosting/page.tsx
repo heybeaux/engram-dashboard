@@ -89,7 +89,10 @@ VECTOR_PROVIDER="pgvector"
 
 # Server
 PORT=3000
-NODE_ENV=production`}
+NODE_ENV=production
+
+# Identity module (v2)
+JWT_SECRET="your-secret-key-at-least-32-chars"  # Required for agent identity tokens`}
           </pre>
 
           <h3>4. Run Migrations</h3>
@@ -213,7 +216,7 @@ pm2 monit`}
           <h3>SSL / TLS</h3>
           <p>
             Always use HTTPS in production. The easiest approach is{' '}
-            <a href="https://certbot.eff.org/" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">Certbot</a>{' '}
+            <a href="https://certbot.eff.org/" className="text-purple-400 hover:text-purple-300">Certbot</a>{' '}
             with Let&apos;s Encrypt:
           </p>
           <pre className="bg-gray-900 p-4 rounded-lg text-sm">
@@ -339,6 +342,126 @@ VECTOR_PROVIDER="pgvector"`}
 
           {/* ───── Environment Reference ───── */}
 
+          <h2>Identity Module Configuration (v2)</h2>
+
+          <p>
+            Engram v2 adds agent identity, delegation, trust, awareness, and cloud sync.
+            These features require additional configuration:
+          </p>
+
+          <h3>JWT Secret (Required for v2)</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Generate a secure secret (at least 32 characters)
+JWT_SECRET="$(openssl rand -base64 48)"
+
+# Add to .env
+JWT_SECRET="your-generated-secret-here"`}
+          </pre>
+          <p>
+            The <code>JWT_SECRET</code> is used for sync token signing and inter-agent
+            authentication. <strong>This is required</strong> — the server will not start
+            without it in v2.
+          </p>
+
+          <h3>Awareness</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Enable background memory intelligence
+AWARENESS_ENABLED=true
+AWARENESS_INTERVAL_MS=900000        # 15 min (default)
+AWARENESS_EVENT_THRESHOLD=10        # Wake after N new memories
+AWARENESS_INSIGHT_MODEL=gpt-4o-mini # Model for insight generation`}
+          </pre>
+
+          <h3>Cloud Sync</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Enable sync to Engram Cloud or another instance
+SYNC_ENABLED=true
+SYNC_CLOUD_URL=https://api.openengram.ai
+SYNC_TOKEN=est_xxxxxxxxxxxx
+SYNC_INTERVAL_MS=300000             # 5 min (default)
+SYNC_BATCH_SIZE=100`}
+          </pre>
+
+          <h3>Identity Backfill</h3>
+          <p>
+            After upgrading to v2, run the identity backfill to create identity records for
+            existing agents:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`pnpm ts-node scripts/backfill-identity.ts`}
+          </pre>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 not-prose text-sm text-gray-300">
+            <p className="font-medium text-purple-400 mb-2">📋 v2 Checklist</p>
+            <ul className="list-disc list-inside space-y-1 mt-2">
+              <li>Set <code className="text-purple-300">JWT_SECRET</code> (required)</li>
+              <li>Run <code className="text-purple-300">pnpm prisma migrate deploy</code> for new tables</li>
+              <li>Run <code className="text-purple-300">backfill-identity.ts</code> for existing agents</li>
+              <li>Optionally enable Awareness and Sync when ready</li>
+              <li>See the <a href="/docs/operations/migration" className="text-purple-400 hover:text-purple-300">Migration Guide</a> for full details</li>
+            </ul>
+          </div>
+
+          <h2>Identity Module Configuration (v2)</h2>
+
+          <p>
+            Engram v2 adds agent identity, delegation, trust, awareness, and cloud sync.
+            These features require additional configuration:
+          </p>
+
+          <h3>JWT Secret (Required for v2)</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Generate a secure secret (at least 32 characters)
+JWT_SECRET="$(openssl rand -base64 48)"
+
+# Add to .env
+JWT_SECRET="your-generated-secret-here"`}
+          </pre>
+          <p>
+            The <code>JWT_SECRET</code> is used for sync token signing and inter-agent
+            authentication. <strong>This is required</strong> — the server will not start
+            without it in v2.
+          </p>
+
+          <h3>Awareness</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Enable background memory intelligence
+AWARENESS_ENABLED=true
+AWARENESS_INTERVAL_MS=900000        # 15 min (default)
+AWARENESS_EVENT_THRESHOLD=10        # Wake after N new memories
+AWARENESS_INSIGHT_MODEL=gpt-4o-mini # Model for insight generation`}
+          </pre>
+
+          <h3>Cloud Sync</h3>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`# Enable sync to Engram Cloud or another instance
+SYNC_ENABLED=true
+SYNC_CLOUD_URL=https://api.openengram.ai
+SYNC_TOKEN=est_xxxxxxxxxxxx
+SYNC_INTERVAL_MS=300000             # 5 min (default)
+SYNC_BATCH_SIZE=100`}
+          </pre>
+
+          <h3>Identity Backfill</h3>
+          <p>
+            After upgrading to v2, run the identity backfill to create identity records for
+            existing agents:
+          </p>
+          <pre className="bg-gray-900 p-4 rounded-lg text-sm">
+{`pnpm ts-node scripts/backfill-identity.ts`}
+          </pre>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 not-prose text-sm text-gray-300">
+            <p className="font-medium text-purple-400 mb-2">📋 v2 Checklist</p>
+            <ul className="list-disc list-inside space-y-1 mt-2">
+              <li>Set <code className="text-purple-300">JWT_SECRET</code> (required)</li>
+              <li>Run <code className="text-purple-300">pnpm prisma migrate deploy</code> for new tables</li>
+              <li>Run <code className="text-purple-300">backfill-identity.ts</code> for existing agents</li>
+              <li>Optionally enable Awareness and Sync when ready</li>
+              <li>See the <a href="/docs/operations/migration" className="text-purple-400 hover:text-purple-300">Migration Guide</a> for full details</li>
+            </ul>
+          </div>
+
           <h2>Environment Variable Reference</h2>
 
           <div className="overflow-x-auto not-prose">
@@ -406,10 +529,40 @@ VECTOR_PROVIDER="pgvector"`}
                   <td className="py-2 pr-4">No</td>
                   <td className="py-2">Server port (default: 3000)</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-800/50">
                   <td className="py-2 pr-4 font-mono text-purple-300">NODE_ENV</td>
                   <td className="py-2 pr-4">No</td>
                   <td className="py-2">development | production | test</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">JWT_SECRET</td>
+                  <td className="py-2 pr-4">Yes (v2)</td>
+                  <td className="py-2">Secret key for agent identity tokens (min 32 chars)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">AWARENESS_ENABLED</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">Enable proactive awareness system (default: false)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">AWARENESS_INTERVAL_MS</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">Awareness cycle interval in ms (default: 900000)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">SYNC_ENABLED</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">Enable cloud sync (default: false)</td>
+                </tr>
+                <tr className="border-b border-gray-800/50">
+                  <td className="py-2 pr-4 font-mono text-purple-300">SYNC_CLOUD_TOKEN</td>
+                  <td className="py-2 pr-4">If sync</td>
+                  <td className="py-2">Cloud API token for sync</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-mono text-purple-300">SYNC_MODE</td>
+                  <td className="py-2 pr-4">No</td>
+                  <td className="py-2">push-only | pull-only | bidirectional (default: push-only)</td>
                 </tr>
               </tbody>
             </table>
