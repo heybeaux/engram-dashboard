@@ -3,3 +3,7 @@ export { CapabilityChart } from "./CapabilityChart";
 export { StatusBadge } from "./StatusBadge";
 export { EmptyState } from "./EmptyState";
 export { AgentCard } from "./AgentCard";
+export { ConfidenceBadge } from "./confidence-badge";
+export { StatusDot } from "./status-dot";
+export { FeedbackActions } from "./feedback-actions";
+export { InsightTypeBadge } from "./insight-type-badge";

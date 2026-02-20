@@ -37,6 +37,10 @@ import {
   ArrowLeftRight,
   ChevronDown,
   ChevronRight,
+  Bot,
+  ListTodo,
+  Lightbulb,
+  Swords,
 } from "lucide-react";
 import type { Edition } from "@/types/instance";
 
@@ -62,6 +66,7 @@ const navigation: NavItem[] = [
   { name: "Sources", href: "/sources", icon: Cloud },
   { name: "Pools", href: "/pools", icon: Database },
 
+
   // === Identity section ===
   {
     name: "Identity",
@@ -77,10 +82,17 @@ const navigation: NavItem[] = [
     ],
   },
 
+  { name: "Agents", href: "/agents", icon: Bot },
+  { name: "Delegation", href: "/delegation", icon: ListTodo },
+  { name: "Insights", href: "/insights", icon: Lightbulb },
+  { name: "Challenges", href: "/challenges", icon: Swords },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Sync Status", href: "/settings/sync", icon: RefreshCw },
   { name: "Reconcile", href: "/settings/reconcile", icon: ArrowLeftRight },
+
+  // === Local only: Sync ===
+  { name: "Sync", href: "/settings/cloud", icon: RefreshCw, editions: ["local"] },
 
   // === Cloud only ===
   { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
