@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { TrustGauge } from "@/components/trust-gauge";
 import { ConfidenceBadge } from "@/components/confidence-badge";
 import { InsightTypeBadge } from "@/components/insight-type-badge";

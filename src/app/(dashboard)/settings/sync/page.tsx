@@ -18,7 +18,7 @@ import {
 import {
   Cloud,
   CloudOff,
-  Loader2,
+
   CheckCircle2,
   AlertCircle,
   Clock,

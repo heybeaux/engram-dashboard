@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
 import { getApiBaseUrl } from '@/lib/api-config';
-import { useAuth } from '@/lib/auth-context';
 
 const API_BASE = getApiBaseUrl();
 
@@ -97,8 +96,7 @@ function getAuthHeaders(): Record<string, string> {
     return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   }
   const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
-  const { user } = useAuth();
-  const userId = user?.id || "default";
+  const userId = "default";
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (apiKey) headers["X-AM-API-Key"] = apiKey;
   headers["X-AM-User-ID"] = userId;
