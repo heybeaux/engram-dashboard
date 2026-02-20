@@ -5,26 +5,21 @@
  * These are separate from the Engram memory API which uses API keys.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
-
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('engram_token') || localStorage.getItem('token') || localStorage.getItem('jwt') || null;
-}
+import { getApiBaseUrl, getDefaultUserId, getBrowserToken } from './api-config';
 
 async function authFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const token = getToken();
+  const token = getBrowserToken();
+  const userId = getDefaultUserId() || 'default';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-AM-User-ID': USER_ID,
+    'X-AM-User-ID': userId,
     ...(options?.headers as Record<string, string>),
   };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  const res = await fetch(`${getApiBaseUrl()}${endpoint}`, { ...options, headers });
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');

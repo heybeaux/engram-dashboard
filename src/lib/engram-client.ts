@@ -51,14 +51,12 @@ import {
 // CONFIGURATION
 // ============================================================================
 
+import { getApiBaseUrl, getApiKey, getDefaultUserId } from './api-config';
+
 const getConfig = () => ({
-  baseUrl: process.env.NEXT_PUBLIC_ENGRAM_API_URL ||
-           process.env.ENGRAM_API_URL ||
-           'https://api.openengram.ai',
-  apiKey: process.env.NEXT_PUBLIC_ENGRAM_API_KEY ||
-          process.env.ENGRAM_API_KEY || '',
-  defaultUserId: process.env.NEXT_PUBLIC_ENGRAM_USER_ID ||
-                 process.env.ENGRAM_USER_ID || '',
+  baseUrl: getApiBaseUrl(),
+  apiKey: getApiKey(),
+  defaultUserId: getDefaultUserId(),
 });
 
 // ============================================================================

@@ -620,6 +620,7 @@ export default function MemoriesPage() {
                     <option value="IDENTITY">Identity</option>
                     <option value="PROJECT">Project</option>
                     <option value="TASK">Task</option>
+                    <option value="INSIGHT">Insight</option>
                   </select>
                 </div>
                 <div>

@@ -39,7 +39,8 @@ const TOKEN_KEY = 'engram_token';
 const USER_KEY = 'engram_user';
 
 function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? ';Secure' : '';
+  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax${secure}`;
 }
 
 function deleteCookie(name: string) {
@@ -58,8 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem(TOKEN_KEY);
     const storedUser = localStorage.getItem(USER_KEY);
     if (storedToken && storedUser) {
+      let parsedUser: User | null = null;
+      try {
+        parsedUser = JSON.parse(storedUser);
+      } catch {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setIsLoading(false);
+        return;
+      }
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      setUser(parsedUser);
       // Verify token is still valid
       fetch(`${API_BASE}/v1/account`, {
         headers: { Authorization: `Bearer ${storedToken}`, 'X-AM-User-ID': USER_ID },

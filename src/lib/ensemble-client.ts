@@ -19,73 +19,10 @@ import {
 import { EngramApiError } from './types';
 
 // ============================================================================
-// CONFIGURATION
+// SHARED FETCH (from centralized api-config)
 // ============================================================================
 
-const getConfig = () => ({
-  baseUrl: process.env.NEXT_PUBLIC_ENGRAM_API_URL ||
-           process.env.ENGRAM_API_URL ||
-           'https://api.openengram.ai',
-  apiKey: process.env.NEXT_PUBLIC_ENGRAM_API_KEY ||
-          process.env.ENGRAM_API_KEY || '',
-  userId: process.env.NEXT_PUBLIC_ENGRAM_USER_ID ||
-          process.env.ENGRAM_USER_ID || '',
-});
-
-// ============================================================================
-// HELPER
-// ============================================================================
-
-async function apiFetch<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  const config = getConfig();
-  const url = `${config.baseUrl}${endpoint}`;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options?.headers as Record<string, string>),
-  };
-
-  if (config.apiKey) {
-    headers['X-AM-API-Key'] = config.apiKey;
-  } else if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('engram_token');
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-  }
-
-  if (config.userId) {
-    headers['X-AM-User-ID'] = config.userId;
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    let errorBody: unknown;
-    try {
-      errorBody = await response.json();
-    } catch {
-      errorBody = await response.text();
-    }
-    throw new EngramApiError(
-      response.status,
-      `API Error: ${response.statusText}`,
-      errorBody
-    );
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json();
-}
+import { apiFetch } from './api-config';
 
 // ============================================================================
 // ENSEMBLE STATUS
