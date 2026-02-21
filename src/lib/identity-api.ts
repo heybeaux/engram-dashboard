@@ -461,6 +461,75 @@ export async function deleteSource(id: string): Promise<void> {
 }
 
 // ============================================================================
+// INSIGHTS & AWARENESS API (HEY-309)
+// ============================================================================
+
+export interface Insight {
+  id: string;
+  title?: string;
+  content: string;
+  category?: string;
+  confidence?: number;
+  createdAt?: string;
+}
+
+export interface CycleStatus {
+  phase?: string;
+  lastRun?: string;
+  nextRun?: string;
+  insightsGenerated?: number;
+}
+
+export async function getInsights(): Promise<Insight[]> {
+  const data = await identityFetch<Insight[] | { insights: Insight[] }>('/v1/awareness/insights');
+  return Array.isArray(data) ? data : data.insights;
+}
+
+export async function getCycleStatus(): Promise<CycleStatus> {
+  return identityFetch<CycleStatus>('/v1/awareness/cycle/status');
+}
+
+// ============================================================================
+// NOTIFICATION SETTINGS API (HEY-310)
+// ============================================================================
+
+export interface NotificationConfig {
+  enabled: boolean;
+  confidenceThreshold: number;
+  webhookUrl: string;
+  hmacSecret: string;
+}
+
+export interface NotificationEvent {
+  id: string;
+  type: string;
+  status: string;
+  sentAt: string;
+  insightId?: string;
+}
+
+export interface NotificationConfigResponse {
+  config?: NotificationConfig;
+  history?: NotificationEvent[];
+  // May also be flat config fields
+  enabled?: boolean;
+  confidenceThreshold?: number;
+  webhookUrl?: string;
+  hmacSecret?: string;
+}
+
+export async function getNotificationConfig(): Promise<NotificationConfigResponse> {
+  return identityFetch<NotificationConfigResponse>('/v1/notifications/config');
+}
+
+export async function saveNotificationConfig(config: NotificationConfig & { test?: boolean }): Promise<void> {
+  return identityFetch<void>('/v1/notifications/config', {
+    method: 'POST',
+    body: JSON.stringify(config),
+  });
+}
+
+// ============================================================================
 // RECONCILIATION API (HEY-285)
 // ============================================================================
 
