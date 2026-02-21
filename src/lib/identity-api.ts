@@ -376,7 +376,24 @@ export async function getAgent(agentId: string): Promise<AgentProfile> {
 }
 
 export async function getAgentTrustProfile(agentId: string): Promise<AgentTrustProfile> {
-  return identityFetch<AgentTrustProfile>(`/v1/identity/agents/${agentId}/trust-profile`);
+  const raw = await identityFetch<Record<string, unknown>>(`/v1/identity/agents/${agentId}/trust-profile`);
+
+  // Normalize backend response to match AgentTrustProfile shape
+  // Backend returns `domains` but frontend expects `domainScores`
+  const domains = (raw.domains ?? raw.domainScores ?? []) as Array<Record<string, unknown>>;
+  const domainScores: DomainScore[] = domains.map((d) => ({
+    domain: (d.domain as string) ?? '',
+    confidence: (d.confidence ?? d.score ?? 0) as number,
+    taskCount: (d.taskCount ?? d.sampleCount ?? 0) as number,
+  }));
+
+  return {
+    agentId: (raw.agentId as string) ?? agentId,
+    overallTrust: (raw.overallTrust as number) ?? 0,
+    domainScores,
+    recentCompletions: (raw.recentCompletions as TaskCompletion[]) ?? [],
+    behavioralPatterns: (raw.behavioralPatterns as BehavioralPattern[]) ?? [],
+  };
 }
 
 export async function getContracts(params?: {

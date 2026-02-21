@@ -79,12 +79,18 @@ export default function AgentDetailPage() {
 
   useEffect(() => {
     if (!agentId) return;
-    Promise.all([getAgent(agentId), getAgentTrustProfile(agentId)])
-      .then(([a, t]) => {
-        setAgent(a);
-        setTrust(t);
+    Promise.allSettled([getAgent(agentId), getAgentTrustProfile(agentId)])
+      .then(([agentResult, trustResult]) => {
+        if (agentResult.status === "fulfilled") {
+          setAgent(agentResult.value);
+        } else {
+          setError(agentResult.reason instanceof Error ? agentResult.reason.message : "Failed to load agent");
+        }
+        if (trustResult.status === "fulfilled") {
+          setTrust(trustResult.value);
+        }
+        // Trust failure is non-fatal — page still shows agent profile
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load agent"))
       .finally(() => setLoading(false));
   }, [agentId]);
 

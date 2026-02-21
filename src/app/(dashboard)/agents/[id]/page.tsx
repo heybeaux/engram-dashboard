@@ -53,15 +53,17 @@ export default function AgentDetailPage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [context, setContext] = useState<AgentContext | null>(null);
   const [trust, setTrust] = useState<TrustProfile | null>(null);
+  const [agentName, setAgentName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const fetchData = useCallback(async () => {
     try {
-      const [memRes, ctxRes, trustRes] = await Promise.allSettled([
+      const [memRes, ctxRes, trustRes, profileRes] = await Promise.allSettled([
         fetch(`${API_BASE}/v1/agents/${id}/memories?limit=20`, { headers: getAuthHeaders() }),
         fetch(`${API_BASE}/v1/agents/${id}/context`, { headers: getAuthHeaders() }),
         fetch(`${API_BASE}/v1/identity/agents/${id}/trust-profile`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/v1/identity/agents/${id}`, { headers: getAuthHeaders() }),
       ]);
 
       if (memRes.status === "fulfilled" && memRes.value.ok) {
@@ -73,6 +75,10 @@ export default function AgentDetailPage() {
       }
       if (trustRes.status === "fulfilled" && trustRes.value.ok) {
         setTrust(await trustRes.value.json());
+      }
+      if (profileRes.status === "fulfilled" && profileRes.value.ok) {
+        const profile = await profileRes.value.json();
+        if (profile.name) setAgentName(profile.name);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load agent data");
@@ -101,7 +107,7 @@ export default function AgentDetailPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             <Bot className="h-7 w-7 text-primary" />
-            {context?.name || id}
+            {agentName || context?.name || id}
           </h1>
           <p className="text-sm text-muted-foreground mt-1 font-mono">{context?.agentId || id}</p>
         </div>
