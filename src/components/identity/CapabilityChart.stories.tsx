@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { CapabilityChart } from "./CapabilityChart";
 
 const meta: Meta<typeof CapabilityChart> = {
