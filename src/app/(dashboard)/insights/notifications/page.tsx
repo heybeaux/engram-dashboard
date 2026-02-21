@@ -19,18 +19,12 @@ import {
   Globe,
   Key,
 } from "lucide-react";
-
-const API_BASE =
-  typeof window !== "undefined" ? "/api/engram" : "";
-
-function getAuthHeaders(): Record<string, string> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("engram_token") : null;
-  if (token) {
-    return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-  }
-  return { "Content-Type": "application/json" };
-}
+import {
+  getNotificationConfig,
+  saveNotificationConfig,
+  type NotificationConfig,
+  type NotificationEvent,
+} from "@/lib/identity-api";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -40,21 +34,6 @@ function timeAgo(dateStr: string): string {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
-}
-
-interface NotificationConfig {
-  enabled: boolean;
-  confidenceThreshold: number;
-  webhookUrl: string;
-  hmacSecret: string;
-}
-
-interface NotificationEvent {
-  id: string;
-  type: string;
-  status: string;
-  sentAt: string;
-  insightId?: string;
 }
 
 export default function NotificationSettingsPage() {
@@ -76,12 +55,13 @@ export default function NotificationSettingsPage() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/v1/notifications/config`, {
-        headers: getAuthHeaders(),
+      const data = await getNotificationConfig();
+      setConfig(data.config || {
+        enabled: data.enabled ?? false,
+        confidenceThreshold: data.confidenceThreshold ?? 0.7,
+        webhookUrl: data.webhookUrl ?? "",
+        hmacSecret: data.hmacSecret ?? "",
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setConfig(data.config || data);
       if (data.history) setHistory(data.history);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
@@ -119,15 +99,7 @@ export default function NotificationSettingsPage() {
     setError("");
     setSaved(false);
     try {
-      const res = await fetch(`${API_BASE}/v1/notifications/config`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(config),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to save");
-      }
+      await saveNotificationConfig(config);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -142,12 +114,7 @@ export default function NotificationSettingsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch(`${API_BASE}/v1/notifications/config`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ ...config, test: true }),
-      });
-      if (!res.ok) throw new Error("Test failed");
+      await saveNotificationConfig({ ...config, test: true });
       setTestResult("success");
     } catch {
       setTestResult("error");

@@ -6,14 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Activity, AlertCircle, Clock } from "lucide-react";
-
-const API_BASE = typeof window !== "undefined" ? "/api/engram" : "";
-
-function getAuthHeaders(): Record<string, string> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("engram_token") : null;
-  if (token) return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-  return { "Content-Type": "application/json" };
-}
+import {
+  getInsights,
+  getCycleStatus,
+  type Insight,
+  type CycleStatus,
+} from "@/lib/identity-api";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -25,22 +23,6 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-interface Insight {
-  id: string;
-  title?: string;
-  content: string;
-  category?: string;
-  confidence?: number;
-  createdAt?: string;
-}
-
-interface CycleStatus {
-  phase?: string;
-  lastRun?: string;
-  nextRun?: string;
-  insightsGenerated?: number;
-}
-
 export default function InsightsPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [cycle, setCycle] = useState<CycleStatus | null>(null);
@@ -49,17 +31,19 @@ export default function InsightsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [iRes, cRes] = await Promise.allSettled([
-        fetch(`${API_BASE}/v1/awareness/insights`, { headers: getAuthHeaders() }),
-        fetch(`${API_BASE}/v1/awareness/cycle/status`, { headers: getAuthHeaders() }),
+      const [insightsResult, cycleResult] = await Promise.allSettled([
+        getInsights(),
+        getCycleStatus(),
       ]);
 
-      if (iRes.status === "fulfilled" && iRes.value.ok) {
-        const d = await iRes.value.json();
-        setInsights(Array.isArray(d) ? d : d.insights || []);
+      if (insightsResult.status === "fulfilled") {
+        setInsights(insightsResult.value);
       }
-      if (cRes.status === "fulfilled" && cRes.value.ok) {
-        setCycle(await cRes.value.json());
+      if (cycleResult.status === "fulfilled") {
+        setCycle(cycleResult.value);
+      }
+      if (insightsResult.status === "rejected" && cycleResult.status === "rejected") {
+        throw insightsResult.reason;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load insights");
