@@ -10,32 +10,41 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
 
-      - run: pnpm build
+      - name: Build
+        run: pnpm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:3000
+          NEXT_PUBLIC_ENGRAM_API_URL: http://localhost:3001
+          NEXT_PUBLIC_ENGRAM_API_KEY: test_key
+          NEXT_PUBLIC_ENGRAM_USER_ID: test_user
 
       - name: Run Playwright tests
         run: pnpm test:e2e --project=chromium
         env:
           CI: true
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-report
