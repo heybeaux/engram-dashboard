@@ -1,17 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { TrustGauge } from "./trust-gauge";
+import { TrustGauge } from "./TrustGauge";
 
 const meta: Meta<typeof TrustGauge> = {
   title: "Identity/TrustGauge",
   component: TrustGauge,
-  argTypes: { score: { control: { type: "range", min: 0, max: 1, step: 0.01 } } },
+  tags: ["autodocs"],
 };
 export default meta;
 type Story = StoryObj<typeof TrustGauge>;
 
-export const High: Story = { args: { score: 0.92 } };
-export const Medium: Story = { args: { score: 0.6 } };
-export const Low: Story = { args: { score: 0.2 } };
-export const Empty: Story = { args: { score: 0 } };
-export const Small: Story = { args: { score: 0.75, size: "sm" } };
-export const Large: Story = { args: { score: 0.75, size: "lg" } };
+export const HighTrust: Story = { args: { score: 0.9 } };
+export const MediumTrust: Story = { args: { score: 0.55 } };
+export const LowTrust: Story = { args: { score: 0.15 } };
+export const Perfect: Story = { args: { score: 1.0, label: "Perfect" } };
+export const Zero: Story = { args: { score: 0 } };
+export const Small: Story = { args: { score: 0.7, size: 60 } };
+export const Large: Story = { args: { score: 0.7, size: 200 } };

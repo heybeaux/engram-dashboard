@@ -20,6 +20,14 @@
 .DS_Store
 *.pem
 
+# Playwright
+e2e-results/
+playwright-report/
+test-results/
+
+# Storybook
+storybook-static/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -37,3 +45,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+*storybook.log
