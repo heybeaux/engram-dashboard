@@ -252,6 +252,40 @@ export interface ResolveChallengeRequest {
 }
 
 // ============================================================================
+// TYPES — Sources (HEY-286)
+// ============================================================================
+
+export interface Source {
+  id: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  status: 'connected' | 'disconnected' | 'error';
+  signalCount: number;
+  lastSyncAt: string | null;
+  config?: Record<string, string>;
+}
+
+// ============================================================================
+// TYPES — Reconciliation (HEY-285)
+// ============================================================================
+
+export interface PreviewData {
+  localOnly: number;
+  cloudOnly: number;
+  shared: number;
+}
+
+export interface ReconcileResult {
+  pushed: number;
+  pulled: number;
+  errors: number;
+  durationMs: number;
+}
+
+export type ReconcileStrategy = 'push-all' | 'pull-all' | 'selective';
+
+// ============================================================================
 // API CLIENT (object-style, used by teams/trust/recall/export pages)
 // ============================================================================
 
@@ -389,5 +423,54 @@ export async function resolveChallenge(id: string, data: ResolveChallengeRequest
   return identityFetch<Challenge>(`/v1/identity/challenges/${id}/resolve`, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export async function completeContract(agentId: string, id: string): Promise<DelegationContract> {
+  return identityFetch<DelegationContract>(
+    `/v1/identity/agents/${agentId}/contracts/${id}/complete`,
+    { method: 'POST' },
+  );
+}
+
+export async function getBulkTrustProfiles(agentIds: string[]): Promise<TrustProfile[]> {
+  return identityFetch<TrustProfile[]>('/v1/identity/trust/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ agentIds }),
+  });
+}
+
+// ============================================================================
+// SOURCES API (HEY-286)
+// ============================================================================
+
+export async function getSources(): Promise<Source[]> {
+  const data = await identityFetch<Source[] | { sources: Source[] }>('/v1/awareness/sources');
+  return Array.isArray(data) ? data : data.sources;
+}
+
+export async function updateSource(id: string, updates: Partial<Pick<Source, 'enabled' | 'config'>>): Promise<Source> {
+  return identityFetch<Source>(`/v1/awareness/sources/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteSource(id: string): Promise<void> {
+  return identityFetch<void>(`/v1/awareness/sources/${id}`, { method: 'DELETE' });
+}
+
+// ============================================================================
+// RECONCILIATION API (HEY-285)
+// ============================================================================
+
+export async function getReconcilePreview(): Promise<PreviewData> {
+  return identityFetch<PreviewData>('/v1/cloud/reconcile/preview');
+}
+
+export async function executeReconcile(strategy: ReconcileStrategy): Promise<ReconcileResult> {
+  return identityFetch<ReconcileResult>('/v1/cloud/reconcile', {
+    method: 'POST',
+    body: JSON.stringify({ strategy }),
   });
 }

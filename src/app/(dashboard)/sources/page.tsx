@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   Loader2,
-
   Settings2,
   Unplug,
   CheckCircle2,
@@ -28,18 +27,12 @@ import {
   Rss,
   XCircle,
 } from "lucide-react";
-
-const API_BASE =
-  typeof window !== "undefined" ? "/api/engram" : "";
-
-function getAuthHeaders(): Record<string, string> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("engram_token") : null;
-  if (token) {
-    return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-  }
-  return { "Content-Type": "application/json" };
-}
+import {
+  getSources,
+  updateSource,
+  deleteSource,
+  type Source,
+} from "@/lib/identity-api";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -49,17 +42,6 @@ function timeAgo(dateStr: string): string {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
-}
-
-interface Source {
-  id: string;
-  name: string;
-  type: string;
-  enabled: boolean;
-  status: "connected" | "disconnected" | "error";
-  signalCount: number;
-  lastSyncAt: string | null;
-  config?: Record<string, string>;
 }
 
 export default function SourcesPage() {
@@ -81,12 +63,8 @@ export default function SourcesPage() {
 
   const fetchSources = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/v1/awareness/sources`, {
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setSources(Array.isArray(data) ? data : data.sources || []);
+      const data = await getSources();
+      setSources(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -101,12 +79,7 @@ export default function SourcesPage() {
   const handleToggle = async (source: Source, enabled: boolean) => {
     setTogglingId(source.id);
     try {
-      const res = await fetch(`${API_BASE}/v1/awareness/sources/${source.id}`, {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ enabled }),
-      });
-      if (!res.ok) throw new Error("Failed");
+      await updateSource(source.id, { enabled });
       setSources((prev) =>
         prev.map((s) => (s.id === source.id ? { ...s, enabled } : s))
       );
@@ -121,12 +94,7 @@ export default function SourcesPage() {
     if (!configuring) return;
     setSavingConfig(true);
     try {
-      const res = await fetch(`${API_BASE}/v1/awareness/sources/${configuring.id}`, {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ config: configValues }),
-      });
-      if (!res.ok) throw new Error("Failed");
+      await updateSource(configuring.id, { config: configValues });
       setSources((prev) =>
         prev.map((s) =>
           s.id === configuring.id ? { ...s, config: configValues } : s
@@ -144,11 +112,7 @@ export default function SourcesPage() {
     if (!disconnecting) return;
     setConfirmDisconnect(true);
     try {
-      const res = await fetch(`${API_BASE}/v1/awareness/sources/${disconnecting.id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) throw new Error("Failed");
+      await deleteSource(disconnecting.id);
       setSources((prev) => prev.filter((s) => s.id !== disconnecting.id));
       setDisconnecting(null);
     } catch {
