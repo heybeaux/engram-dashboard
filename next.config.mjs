@@ -27,7 +27,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.openengram.ai https://us.i.posthog.com https://*.sentry.io",
+              "connect-src 'self' https://api.openengram.ai https://staging-api.openengram.ai https://us.i.posthog.com https://*.sentry.io",
               "frame-ancestors 'none'",
             ].join('; '),
           },
