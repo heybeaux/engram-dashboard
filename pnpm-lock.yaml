@@ -97,6 +97,9 @@ devDependencies:
   '@storybook/nextjs':
     specifier: ^8.6.17
     version: 8.6.17(esbuild@0.25.12)(next@14.2.35)(react-dom@18.3.1)(react@18.3.1)(storybook@8.6.17)(typescript@5.9.3)(webpack@5.105.2)
+  '@storybook/react':
+    specifier: ^8.6.17
+    version: 8.6.17(@storybook/test@8.6.17)(react-dom@18.3.1)(react@18.3.1)(storybook@8.6.17)(typescript@5.9.3)
   '@testing-library/jest-dom':
     specifier: ^6.9.1
     version: 6.9.1
