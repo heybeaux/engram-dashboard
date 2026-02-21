@@ -1,10 +1,16 @@
 /**
- * Delegation, Teams & Challenge types for Phase 2 UI
+ * Delegation, Teams & Challenge types — Re-export file
+ *
+ * Types have been consolidated into identity-api.ts.
+ * This file is kept for backwards compatibility.
+ *
  * HEY-303, HEY-304, HEY-305, HEY-307
  */
 
 // ============================================================================
-// DELEGATION (HEY-303)
+// Legacy types kept for delegation-client.ts compatibility
+// These types match the older /v1/delegation-* and /v1/challenges endpoints.
+// The canonical identity types live in identity-api.ts.
 // ============================================================================
 
 export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
@@ -36,21 +42,6 @@ export interface DelegationContract {
   verifiedAt: string | null;
 }
 
-export interface DelegationTemplate {
-  id: string;
-  name: string;
-  taskType: string;
-  capabilities: string[];
-  estimatedDuration: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ============================================================================
-// CHALLENGES (HEY-304)
-// ============================================================================
-
 export type ChallengeStatus = 'OPEN' | 'UPHELD' | 'DISMISSED' | 'RESOLVED';
 export type ResolutionMethod = 'uphold' | 'dismiss' | 'resolve';
 
@@ -70,9 +61,26 @@ export interface Challenge {
   updatedAt: string;
 }
 
-// ============================================================================
-// TEAMS (HEY-305)
-// ============================================================================
+export interface Team {
+  id: string;
+  name: string;
+  description: string;
+  memberCount: number;
+  trustScore: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DelegationTemplate {
+  id: string;
+  name: string;
+  taskType: string;
+  capabilities: string[];
+  estimatedDuration: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface TeamMember {
   id: string;
@@ -96,7 +104,7 @@ export interface TeamTimelineEvent {
   agentId: string;
 }
 
-export interface Team {
+export interface TeamDetail {
   id: string;
   name: string;
   description: string;
@@ -104,17 +112,10 @@ export interface Team {
   trustScore: number;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface TeamDetail extends Team {
   members: TeamMember[];
   capabilities: TeamCapability[];
   timeline: TeamTimelineEvent[];
 }
-
-// ============================================================================
-// DELEGATION RECALL (HEY-307)
-// ============================================================================
 
 export interface RecalledMemory {
   id: string;
@@ -125,15 +126,15 @@ export interface RecalledMemory {
   createdAt: string;
 }
 
+export interface DelegationRecallResponse {
+  memories: RecalledMemory[];
+  recommendedAgents: RecommendedAgent[];
+}
+
 export interface RecommendedAgent {
   agentId: string;
   name: string;
   trustScore: number;
   relevantCapabilities: string[];
   pastTaskCount: number;
-}
-
-export interface DelegationRecallResponse {
-  memories: RecalledMemory[];
-  recommendedAgents: RecommendedAgent[];
 }

@@ -15,44 +15,21 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getApiBaseUrl } from "@/lib/api-config";
-
-const API_BASE = getApiBaseUrl();
-
-function getAuthHeaders(): Record<string, string> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("engram_token") : null;
-  if (token) return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-  const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
-  const userId = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "Beaux";
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (apiKey) headers["X-AM-API-Key"] = apiKey;
-  headers["X-AM-User-ID"] = userId;
-  return headers;
-}
-
-interface PreviewData {
-  localOnly: number;
-  cloudOnly: number;
-  shared: number;
-}
-
-interface ReconcileResult {
-  pushed: number;
-  pulled: number;
-  errors: number;
-  durationMs: number;
-}
+import {
+  getReconcilePreview,
+  executeReconcile,
+  type PreviewData,
+  type ReconcileResult,
+  type ReconcileStrategy,
+} from "@/lib/identity-api";
 
 const steps = ["Preview", "Options", "Execute", "Results"];
-
-type Strategy = "push-all" | "pull-all" | "selective";
 
 export default function ReconcilePage() {
   const [step, setStep] = useState(0);
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [strategy, setStrategy] = useState<Strategy>("push-all");
+  const [strategy, setStrategy] = useState<ReconcileStrategy>("push-all");
   const [progress, setProgress] = useState(0);
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<ReconcileResult | null>(null);
@@ -62,11 +39,7 @@ export default function ReconcilePage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_BASE}/v1/cloud/reconcile/preview`, {
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await getReconcilePreview();
       setPreview(data);
       setStep(1);
     } catch (err) {
@@ -76,26 +49,19 @@ export default function ReconcilePage() {
     }
   };
 
-  const executeReconcile = async () => {
+  const runReconcile = async () => {
     setExecuting(true);
     setProgress(0);
     setError("");
     setStep(2);
 
-    // Simulate progress updates
     const interval = setInterval(() => {
       setProgress((p) => Math.min(p + 10, 90));
     }, 500);
 
     try {
-      const res = await fetch(`${API_BASE}/v1/cloud/reconcile`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ strategy }),
-      });
+      const data = await executeReconcile(strategy);
       clearInterval(interval);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
       setResult(data);
       setProgress(100);
       setTimeout(() => setStep(3), 500);
@@ -158,7 +124,6 @@ export default function ReconcilePage() {
         </div>
       )}
 
-      {/* Step 0: Start / Preview */}
       {step === 0 && (
         <Card>
           <CardHeader>
@@ -176,7 +141,6 @@ export default function ReconcilePage() {
         </Card>
       )}
 
-      {/* Step 1: Preview Results + Options */}
       {step === 1 && preview && (
         <Card>
           <CardHeader>
@@ -241,7 +205,7 @@ export default function ReconcilePage() {
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={executeReconcile}>
+              <Button onClick={runReconcile}>
                 Execute
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
@@ -250,7 +214,6 @@ export default function ReconcilePage() {
         </Card>
       )}
 
-      {/* Step 2: Executing */}
       {step === 2 && (
         <Card>
           <CardHeader>
@@ -265,7 +228,6 @@ export default function ReconcilePage() {
         </Card>
       )}
 
-      {/* Step 3: Results */}
       {step === 3 && result && (
         <Card>
           <CardHeader>
