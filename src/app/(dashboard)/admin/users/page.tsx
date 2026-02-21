@@ -79,7 +79,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, user?.id]);
 
   useEffect(() => {
     if (authLoading) return;

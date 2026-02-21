@@ -112,7 +112,7 @@ export function MobileNav() {
   const [identityOpen, setIdentityOpen] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
-  const { features, mode } = useInstance();
+  const { mode } = useInstance();
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   const edition = mode === "self-hosted" ? "local" : "cloud";
