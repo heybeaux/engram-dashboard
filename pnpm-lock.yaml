@@ -127,8 +127,8 @@ importers:
         specifier: 14.2.35
         version: 14.2.35(eslint@8.57.1)(typescript@5.9.3)
       eslint-plugin-storybook:
-        specifier: ^10.2.10
-        version: 10.2.10(eslint@8.57.1)(storybook@8.6.17)(typescript@5.9.3)
+        specifier: ^0.12.0
+        version: 0.12.0(eslint@8.57.1)(typescript@5.9.3)
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0
@@ -2572,6 +2572,9 @@ packages:
     peerDependencies:
       storybook: ^8.6.14
 
+  '@storybook/csf@0.1.13':
+    resolution: {integrity: sha512-7xOOwCLGB3ebM87eemep89MYRFTko+D8qE7EdAAq74lgdqRR5cOUtYWJLjO2dLtP94nqoOdHJo6MdLLKzg412Q==}
+
   '@storybook/global@5.0.0':
     resolution: {integrity: sha512-FcOqPAXACP0I3oJ/ws6/rrPT9WGhu915Cg8D02a9YxLo0DE9zI+a9A5gRGvmQ09fiWPukqI8ZAEoQEdWUKMQdQ==}
 
@@ -4030,11 +4033,11 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7
 
-  eslint-plugin-storybook@10.2.10:
-    resolution: {integrity: sha512-aWkoh2rhTaEsMA4yB1iVIcISM5wb0uffp09ZqhwpoD4GAngCs131uq6un+QdnOMc7vXyAnBBfsuhtOj8WwCUgw==}
+  eslint-plugin-storybook@0.12.0:
+    resolution: {integrity: sha512-Lg5I0+npTgiYgZ4KSvGWGDFZi3eOCNJPaWX0c9rTEEXC5wvooOClsP9ZtbI4hhFKyKgYR877KiJxbRTSJq9gWA==}
+    engines: {node: '>= 18'}
     peerDependencies:
       eslint: '>=8'
-      storybook: ^10.2.10
 
   eslint-scope@5.1.1:
     resolution: {integrity: sha512-2NxwbF/hZ0KpepYN0cNbo+FN6XoK7GaHlQhgx/hIZl6Va0bF45RQOOwhLIy8lQDbuCiadSLCBnH2CFYquit5bw==}
@@ -8829,6 +8832,10 @@ snapshots:
       storybook: 8.6.17
       unplugin: 1.16.1
 
+  '@storybook/csf@0.1.13':
+    dependencies:
+      type-fest: 2.19.0
+
   '@storybook/global@5.0.0': {}
 
   '@storybook/icons@1.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
@@ -10654,11 +10661,12 @@ snapshots:
       string.prototype.matchall: 4.0.12
       string.prototype.repeat: 1.0.0
 
-  eslint-plugin-storybook@10.2.10(eslint@8.57.1)(storybook@8.6.17)(typescript@5.9.3):
+  eslint-plugin-storybook@0.12.0(eslint@8.57.1)(typescript@5.9.3):
     dependencies:
+      '@storybook/csf': 0.1.13
       '@typescript-eslint/utils': 8.56.0(eslint@8.57.1)(typescript@5.9.3)
       eslint: 8.57.1
-      storybook: 8.6.17
+      ts-dedent: 2.2.0
     transitivePeerDependencies:
       - supports-color
       - typescript
