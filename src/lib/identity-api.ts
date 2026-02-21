@@ -6,7 +6,39 @@
  * Agent Overview, Delegation Contracts, and Challenge Protocol.
  */
 
-import { apiFetch } from './api-config';
+import { buildAuthHeaders } from './api-config';
+
+// Use the Next.js API proxy to avoid CORS and centralize auth
+const PROXY_BASE = '/api/engram';
+
+/**
+ * Fetch through the /api/engram proxy with auth headers.
+ */
+async function identityFetch<T>(
+  endpoint: string,
+  options?: RequestInit,
+): Promise<T> {
+  const url = `${PROXY_BASE}${endpoint}`;
+  const headers = buildAuthHeaders({
+    extraHeaders: options?.headers as Record<string, string>,
+  });
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (!response.ok) {
+    let msg: string;
+    try {
+      const body = await response.json();
+      msg = body.error || body.message || response.statusText;
+    } catch {
+      msg = response.statusText;
+    }
+    throw new Error(msg);
+  }
+
+  if (response.status === 204) return undefined as T;
+  return response.json();
+}
 
 // ============================================================================
 // TYPES — Core (Teams, Trust, Recall)
@@ -226,37 +258,37 @@ export interface ResolveChallengeRequest {
 export const identityApi = {
   // --- Agents ---
   async listAgents(): Promise<Agent[]> {
-    return apiFetch<Agent[]>('/v1/identity/agents');
+    return identityFetch<Agent[]>('/v1/identity/agents');
   },
 
   // --- Teams ---
   async listTeams(): Promise<Team[]> {
-    return apiFetch<Team[]>('/v1/identity/teams');
+    return identityFetch<Team[]>('/v1/identity/teams');
   },
 
   async getTeam(id: string): Promise<Team> {
-    return apiFetch<Team>(`/v1/identity/teams/${id}`);
+    return identityFetch<Team>(`/v1/identity/teams/${id}`);
   },
 
   async createTeam(req: CreateTeamRequest): Promise<Team> {
-    return apiFetch<Team>('/v1/identity/teams', {
+    return identityFetch<Team>('/v1/identity/teams', {
       method: 'POST',
       body: JSON.stringify(req),
     });
   },
 
   async deleteTeam(id: string): Promise<void> {
-    return apiFetch<void>(`/v1/identity/teams/${id}`, { method: 'DELETE' });
+    return identityFetch<void>(`/v1/identity/teams/${id}`, { method: 'DELETE' });
   },
 
   // --- Trust Profiles ---
   async getTrustProfile(agentId: string): Promise<TrustProfile> {
-    return apiFetch<TrustProfile>(`/v1/identity/trust/${agentId}`);
+    return identityFetch<TrustProfile>(`/v1/identity/trust/${agentId}`);
   },
 
   // --- Delegation Recall ---
   async recallDelegation(query: string): Promise<DelegationRecallResponse> {
-    return apiFetch<DelegationRecallResponse>('/v1/identity/recall', {
+    return identityFetch<DelegationRecallResponse>('/v1/identity/recall', {
       method: 'POST',
       body: JSON.stringify({ query }),
     });
@@ -264,19 +296,18 @@ export const identityApi = {
 
   // --- Portable Identity ---
   async exportIdentity(): Promise<IdentityExport> {
-    return apiFetch<IdentityExport>('/v1/identity/export');
+    return identityFetch<IdentityExport>('/v1/identity/export');
   },
 
   async previewImport(file: File): Promise<ImportPreview> {
     const formData = new FormData();
     formData.append('file', file);
-    const url = `${process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.ENGRAM_API_URL || 'https://api.openengram.ai'}/v1/identity/import/preview`;
-    const token = typeof window !== 'undefined'
-      ? (localStorage.getItem('engram_token') || localStorage.getItem('token') || '')
-      : '';
-    const res = await fetch(url, {
+    const headers = buildAuthHeaders();
+    // Remove Content-Type so browser sets multipart boundary
+    delete headers['Content-Type'];
+    const res = await fetch(`${PROXY_BASE}/v1/identity/import/preview`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers,
       body: formData,
     });
     if (!res.ok) throw new Error(`Import preview failed: ${res.statusText}`);
@@ -286,13 +317,11 @@ export const identityApi = {
   async confirmImport(file: File): Promise<{ imported: number }> {
     const formData = new FormData();
     formData.append('file', file);
-    const url = `${process.env.NEXT_PUBLIC_ENGRAM_API_URL || process.env.ENGRAM_API_URL || 'https://api.openengram.ai'}/v1/identity/import`;
-    const token = typeof window !== 'undefined'
-      ? (localStorage.getItem('engram_token') || localStorage.getItem('token') || '')
-      : '';
-    const res = await fetch(url, {
+    const headers = buildAuthHeaders();
+    delete headers['Content-Type'];
+    const res = await fetch(`${PROXY_BASE}/v1/identity/import`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers,
       body: formData,
     });
     if (!res.ok) throw new Error(`Import failed: ${res.statusText}`);
@@ -305,15 +334,15 @@ export const identityApi = {
 // ============================================================================
 
 export async function getAgents(): Promise<{ agents: AgentProfile[] }> {
-  return apiFetch<{ agents: AgentProfile[] }>('/v1/identity/agents');
+  return identityFetch<{ agents: AgentProfile[] }>('/v1/identity/agents');
 }
 
 export async function getAgent(agentId: string): Promise<AgentProfile> {
-  return apiFetch<AgentProfile>(`/v1/identity/agents/${agentId}`);
+  return identityFetch<AgentProfile>(`/v1/identity/agents/${agentId}`);
 }
 
 export async function getAgentTrustProfile(agentId: string): Promise<AgentTrustProfile> {
-  return apiFetch<AgentTrustProfile>(`/v1/identity/agents/${agentId}/trust-profile`);
+  return identityFetch<AgentTrustProfile>(`/v1/identity/agents/${agentId}/trust-profile`);
 }
 
 export async function getContracts(params?: {
@@ -324,15 +353,15 @@ export async function getContracts(params?: {
   if (params?.status) searchParams.set('status', params.status);
   if (params?.isTemplate !== undefined) searchParams.set('isTemplate', String(params.isTemplate));
   const qs = searchParams.toString();
-  return apiFetch<{ contracts: DelegationContract[] }>(`/v1/identity/contracts${qs ? `?${qs}` : ''}`);
+  return identityFetch<{ contracts: DelegationContract[] }>(`/v1/identity/contracts${qs ? `?${qs}` : ''}`);
 }
 
 export async function getContract(id: string): Promise<DelegationContract> {
-  return apiFetch<DelegationContract>(`/v1/identity/contracts/${id}`);
+  return identityFetch<DelegationContract>(`/v1/identity/contracts/${id}`);
 }
 
 export async function createContract(data: CreateContractRequest): Promise<DelegationContract> {
-  return apiFetch<DelegationContract>('/v1/identity/contracts', {
+  return identityFetch<DelegationContract>('/v1/identity/contracts', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -346,18 +375,18 @@ export async function getChallenges(params?: {
   if (params?.status) searchParams.set('status', params.status);
   if (params?.type) searchParams.set('type', params.type);
   const qs = searchParams.toString();
-  return apiFetch<{ challenges: Challenge[] }>(`/v1/identity/challenges${qs ? `?${qs}` : ''}`);
+  return identityFetch<{ challenges: Challenge[] }>(`/v1/identity/challenges${qs ? `?${qs}` : ''}`);
 }
 
 export async function createChallenge(data: CreateChallengeRequest): Promise<Challenge> {
-  return apiFetch<Challenge>('/v1/identity/challenges', {
+  return identityFetch<Challenge>('/v1/identity/challenges', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
 export async function resolveChallenge(id: string, data: ResolveChallengeRequest): Promise<Challenge> {
-  return apiFetch<Challenge>(`/v1/identity/challenges/${id}/resolve`, {
+  return identityFetch<Challenge>(`/v1/identity/challenges/${id}/resolve`, {
     method: 'POST',
     body: JSON.stringify(data),
   });

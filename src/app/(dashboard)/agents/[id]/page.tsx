@@ -1,205 +1,180 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrustGauge } from "@/components/trust-gauge";
-import { ConfidenceBadge } from "@/components/confidence-badge";
-import { InsightTypeBadge } from "@/components/insight-type-badge";
-import { ArrowLeft, Shield, Download, Clock } from "lucide-react";
-import { engram } from "@/lib/engram-client";
-import type { AgentIdentity } from "@/lib/types";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts";
+import { Button } from "@/components/ui/button";
+import { Bot, Brain, Shield, Clock, AlertCircle, FileText } from "lucide-react";
+import Link from "next/link";
 
-function PageSkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-4 w-72" />
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i}><CardContent className="pt-6"><Skeleton className="h-32" /></CardContent></Card>
-        ))}
-      </div>
-    </div>
-  );
+const API_BASE = typeof window !== "undefined" ? "/api/engram" : "";
+
+function getAuthHeaders(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("engram_token") : null;
+  if (token) return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  return { "Content-Type": "application/json" };
 }
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
 
-export default function AgentIdentityPage() {
-  const params = useParams<{ id: string }>();
-  const [identity, setIdentity] = useState<AgentIdentity | null>(null);
+interface Memory {
+  id: string;
+  content: string;
+  type?: string;
+  createdAt: string;
+}
+
+interface TrustProfile {
+  overallScore?: number;
+  domains?: Record<string, number>;
+  lastUpdated?: string;
+}
+
+interface AgentContext {
+  agentId?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+export default function AgentDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [context, setContext] = useState<AgentContext | null>(null);
+  const [trust, setTrust] = useState<TrustProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await engram.getAgentIdentity(params.id);
-        setIdentity(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load identity");
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async () => {
+    try {
+      const [memRes, ctxRes, trustRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/v1/agents/${id}/memories?limit=20`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/v1/agents/${id}/context`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/v1/identity/agents/${id}/trust-profile`, { headers: getAuthHeaders() }),
+      ]);
+
+      if (memRes.status === "fulfilled" && memRes.value.ok) {
+        const d = await memRes.value.json();
+        setMemories(Array.isArray(d) ? d : d.memories || []);
       }
-    })();
-  }, [params.id]);
+      if (ctxRes.status === "fulfilled" && ctxRes.value.ok) {
+        setContext(await ctxRes.value.json());
+      }
+      if (trustRes.status === "fulfilled" && trustRes.value.ok) {
+        setTrust(await trustRes.value.json());
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load agent data");
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
-  if (loading) return <PageSkeleton />;
-  if (error) return (
-    <Card className="border-destructive">
-      <CardContent className="pt-6 text-destructive">{error}</CardContent>
-    </Card>
-  );
-  if (!identity) return null;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  const prefsByCategory = identity.preferences.reduce<Record<string, typeof identity.preferences>>(
-    (acc, p) => { (acc[p.category] ??= []).push(p); return acc; }, {}
-  );
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-9 w-64" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Link href="/agents">
-              <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></Button>
-            </Link>
-            <h1 className="text-2xl font-bold tracking-tight">{identity.name}</h1>
-          </div>
-          {identity.description && (
-            <p className="text-muted-foreground ml-10">{identity.description}</p>
-          )}
-          <p className="text-xs text-muted-foreground ml-10 mt-1">
-            Created {formatDate(identity.createdAt)}
-          </p>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <Bot className="h-7 w-7 text-primary" />
+            {context?.name || id}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1 font-mono">{context?.agentId || id}</p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/agents/${params.id}/trust`}>
-            <Button variant="outline" size="sm"><Shield className="h-4 w-4 mr-1" />Trust Profile</Button>
+          <Link href={`/agents/${id}/trust`}>
+            <Button variant="outline" size="sm"><Shield className="mr-1.5 h-3.5 w-3.5" />Trust Profile</Button>
           </Link>
-          <Link href={`/agents/${params.id}/export`}>
-            <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" />Export</Button>
+          <Link href={`/agents/${id}/export`}>
+            <Button variant="outline" size="sm"><FileText className="mr-1.5 h-3.5 w-3.5" />Export</Button>
           </Link>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Trust Score */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />{error}
+          <Button variant="ghost" size="sm" className="ml-auto h-6" onClick={() => setError("")}>Dismiss</Button>
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Trust Summary */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Trust Score</CardTitle></CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <TrustGauge score={identity.trustScore} label="Trust" />
-            {identity.trustHistory.length > 0 && (
-              <div className="w-full h-16 mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={identity.trustHistory}>
-                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={false} />
-                    <Tooltip formatter={(v) => `${Math.round(Number(v) * 100)}%`} />
-                  </LineChart>
-                </ResponsiveContainer>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4" /> Trust Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trust ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Overall Score</span>
+                  <span className="text-2xl font-bold">{trust.overallScore ?? "N/A"}</span>
+                </div>
+                {trust.domains && Object.entries(trust.domains).map(([domain, score]) => (
+                  <div key={domain} className="flex items-center justify-between text-sm">
+                    <span className="capitalize">{domain}</span>
+                    <Badge variant="outline">{score}</Badge>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No trust profile available.</p>
             )}
           </CardContent>
         </Card>
 
-        {/* Capabilities */}
+        {/* Recent Memories */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Capabilities</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {identity.capabilities.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No capabilities discovered yet</p>
-            ) : identity.capabilities.map((cap) => (
-              <div key={cap.name} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="truncate">{cap.name}</span>
-                  <span className="text-xs text-muted-foreground">{Math.round(cap.score * 100)}%</span>
-                </div>
-                <Progress value={cap.score * 100} className="h-1.5" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Preferences */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Preferences</CardTitle></CardHeader>
-          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {Object.keys(prefsByCategory).length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No preferences recorded yet</p>
-            ) : Object.entries(prefsByCategory).map(([cat, prefs]) => (
-              <div key={cat}>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">{cat}</p>
-                {prefs.map((p) => (
-                  <div key={p.key} className="flex items-center justify-between text-sm py-0.5">
-                    <span>{p.key}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-muted-foreground">{p.value}</span>
-                      <ConfidenceBadge score={p.confidence} />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Brain className="h-4 w-4" /> Recent Memories
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {memories.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No memories recorded yet.</p>
+            ) : (
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {memories.map((mem) => (
+                  <div key={mem.id} className="border-b pb-2 last:border-0">
+                    <p className="text-sm line-clamp-2">{mem.content}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {mem.type && <Badge variant="outline" className="text-xs">{mem.type}</Badge>}
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />{timeAgo(mem.createdAt)}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Behavioral Patterns */}
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Behavioral Patterns</CardTitle></CardHeader>
-          <CardContent>
-            {identity.behavioralPatterns.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No patterns detected yet</p>
-            ) : (
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={identity.behavioralPatterns}>
-                    <XAxis dataKey="topic" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="frequency" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Recent Activity</CardTitle></CardHeader>
-          <CardContent className="space-y-3 max-h-64 overflow-y-auto">
-            {identity.recentActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No recent activity</p>
-            ) : identity.recentActivity.map((act) => (
-              <div key={act.id} className="flex items-start gap-2 text-sm">
-                <Clock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <InsightTypeBadge type={act.type} />
-                    <span className="text-xs text-muted-foreground">{formatDate(act.timestamp)}</span>
-                  </div>
-                  <p className="text-muted-foreground mt-0.5">{act.description}</p>
-                </div>
-              </div>
-            ))}
           </CardContent>
         </Card>
       </div>
