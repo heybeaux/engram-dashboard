@@ -84,35 +84,71 @@ export default function InsightsPage() {
       )}
 
       {/* Cycle Status */}
-      {cycle && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="h-4 w-4" /> Awareness Cycle
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">Phase</p>
-                <p className="font-medium capitalize">{cycle.phase || "idle"}</p>
+      {(cycle || insights.length > 0) && (() => {
+        // Derive accurate stats from actual insights when cycle status is stale
+        const latestInsight = insights.length > 0
+          ? insights.reduce((a, b) =>
+              (a.createdAt && b.createdAt && new Date(b.createdAt) > new Date(a.createdAt)) ? b : a
+            )
+          : null;
+        const effectiveInsightCount = (cycle?.insightsGenerated && cycle.insightsGenerated > 0)
+          ? cycle.insightsGenerated
+          : insights.length;
+        const effectiveLastRun = cycle?.lastRun || latestInsight?.createdAt || null;
+        const effectivePhase = cycle?.phase || (insights.length > 0 ? "completed" : "idle");
+
+        // Group insights by category for summary
+        const categoryCount = insights.reduce((acc, i) => {
+          const cat = i.category || "uncategorized";
+          acc[cat] = (acc[cat] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const topCategories = Object.entries(categoryCount)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 3);
+
+        return (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="h-4 w-4" /> Awareness Cycle
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Phase</p>
+                  <p className="font-medium capitalize">{effectivePhase}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Last Insight</p>
+                  <p className="font-medium">{effectiveLastRun ? timeAgo(effectiveLastRun) : "Never"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Next Run</p>
+                  <p className="font-medium">{cycle?.nextRun ? timeAgo(cycle.nextRun) : "Scheduled"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Insights</p>
+                  <p className="font-medium">{effectiveInsightCount}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Last Run</p>
-                <p className="font-medium">{cycle.lastRun ? timeAgo(cycle.lastRun) : "Never"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Next Run</p>
-                <p className="font-medium">{cycle.nextRun ? timeAgo(cycle.nextRun) : "N/A"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Insights Generated</p>
-                <p className="font-medium">{cycle.insightsGenerated ?? 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              {topCategories.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Top Categories</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {topCategories.map(([cat, count]) => (
+                      <Badge key={cat} variant="secondary" className="text-xs">
+                        {cat} ({count})
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Insights List */}
       {insights.length === 0 ? (
