@@ -4,9 +4,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useRouter, usePathname } from 'next/navigation';
 
 import { resetPostHog } from '@/lib/posthog';
+import { getApiBaseUrl } from './api-config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.openengram.ai';
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
+const API_BASE = getApiBaseUrl();
+/** Fallback user ID for pre-auth requests (login/register). Authenticated requests should use user.id. */
+const FALLBACK_USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
 const EDITION = process.env.NEXT_PUBLIC_EDITION || 'cloud';
 
 interface User {
@@ -39,7 +41,8 @@ const TOKEN_KEY = 'engram_token';
 const USER_KEY = 'engram_user';
 
 function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? ';Secure' : '';
+  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax${secure}`;
 }
 
 function deleteCookie(name: string) {
@@ -58,11 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem(TOKEN_KEY);
     const storedUser = localStorage.getItem(USER_KEY);
     if (storedToken && storedUser) {
+      let parsedUser: User | null = null;
+      try {
+        parsedUser = JSON.parse(storedUser);
+      } catch {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setIsLoading(false);
+        return;
+      }
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      // Verify token is still valid
+      setUser(parsedUser);
+      // Verify token is still valid — use stored user's ID, not the env default
       fetch(`${API_BASE}/v1/account`, {
-        headers: { Authorization: `Bearer ${storedToken}`, 'X-AM-User-ID': USER_ID },
+        headers: { Authorization: `Bearer ${storedToken}`, 'X-AM-User-ID': parsedUser?.id || FALLBACK_USER_ID },
       })
         .then((res) => {
           if (!res.ok) {
@@ -93,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': FALLBACK_USER_ID },
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
@@ -121,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API_BASE}/v1/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': USER_ID },
+        headers: { 'Content-Type': 'application/json', 'X-AM-User-ID': FALLBACK_USER_ID },
         body: JSON.stringify({ email, password, name, plan, accessCode }),
       });
       if (!res.ok) {

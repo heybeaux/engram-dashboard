@@ -16,12 +16,13 @@
  * - POST /v1/observe - Observe conversation turns
  * - POST /v1/observe/analyze - Analyze without storing
  *
- * MISSING ENDPOINTS (need to be added to Engram):
+ * DASHBOARD ENDPOINTS (implemented in Engram backend):
  * - GET /v1/stats - Dashboard statistics
  * - GET /v1/memories - List memories with filters (pagination)
- * - GET /v1/users - List all users
- * - GET /v1/users/:id - Get user detail
- * - GET/POST/DELETE /v1/api-keys - API key management
+ * - GET /v1/users - List all users (InternalOnlyGuard)
+ * - GET /v1/users/:id - Get user detail (InternalOnlyGuard)
+ * - DELETE /v1/users/:id - Delete user
+ * - GET/POST/DELETE /v1/account/api-keys - API key management
  */
 
 import {
@@ -51,14 +52,15 @@ import {
 // CONFIGURATION
 // ============================================================================
 
+import { getApiBaseUrl, getApiKey, getDefaultUserId } from './api-config';
+
+const isBrowser = typeof window !== 'undefined';
+
 const getConfig = () => ({
-  baseUrl: process.env.NEXT_PUBLIC_ENGRAM_API_URL ||
-           process.env.ENGRAM_API_URL ||
-           'https://api.openengram.ai',
-  apiKey: process.env.NEXT_PUBLIC_ENGRAM_API_KEY ||
-          process.env.ENGRAM_API_KEY || '',
-  defaultUserId: process.env.NEXT_PUBLIC_ENGRAM_USER_ID ||
-                 process.env.ENGRAM_USER_ID || '',
+  // In the browser, route through Next.js API proxy to keep API key server-side (HEY-203).
+  baseUrl: isBrowser ? '/api/engram' : getApiBaseUrl(),
+  apiKey: isBrowser ? '' : getApiKey(),
+  defaultUserId: getDefaultUserId(),
 });
 
 // ============================================================================
@@ -311,7 +313,7 @@ export class EngramClient {
   }
 
   // ==========================================================================
-  // DASHBOARD ENDPOINTS (NOT YET IMPLEMENTED IN ENGRAM)
+  // DASHBOARD ENDPOINTS
   // ==========================================================================
 
   /**
@@ -370,26 +372,14 @@ export class EngramClient {
   /**
    * Get dashboard statistics
    * @endpoint GET /v1/stats
-   * @status NOT IMPLEMENTED - returns mock data
    */
   async getStats(): Promise<DashboardStats> {
-    try {
-      return await this.fetch<DashboardStats>('/v1/stats');
-    } catch (error) {
-      if (error instanceof EngramApiError && error.statusCode === 404) {
-        console.warn(
-          'GET /v1/stats not implemented in Engram. Returning mock data.'
-        );
-        return this.getMockStats();
-      }
-      throw error;
-    }
+    return this.fetch<DashboardStats>('/v1/stats');
   }
 
   /**
    * List memories with pagination and filters
    * @endpoint GET /v1/memories
-   * @status NOT IMPLEMENTED - falls back to query endpoint
    */
   async getMemories(params?: {
     userId?: string;
@@ -398,83 +388,36 @@ export class EngramClient {
     limit?: number;
     offset?: number;
   }): Promise<ListMemoriesResponse> {
-    // Try the list endpoint first
-    try {
-      const searchParams = new URLSearchParams();
-      if (params?.userId) searchParams.set('userId', params.userId);
-      if (params?.layer) searchParams.set('layer', params.layer);
-      if (params?.search) searchParams.set('q', params.search);
-      if (params?.limit) searchParams.set('limit', String(params.limit));
-      if (params?.offset) searchParams.set('offset', String(params.offset));
+    const searchParams = new URLSearchParams();
+    if (params?.userId) searchParams.set('userId', params.userId);
+    if (params?.layer) searchParams.set('layer', params.layer);
+    if (params?.search) searchParams.set('q', params.search);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
 
-      const queryString = searchParams.toString();
-      const endpoint = queryString ? `/v1/memories?${queryString}` : '/v1/memories';
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/v1/memories?${queryString}` : '/v1/memories';
 
-      return await this.fetch<ListMemoriesResponse>(endpoint);
-    } catch (error) {
-      // Fallback to query endpoint for search
-      if (
-        error instanceof EngramApiError &&
-        (error.statusCode === 404 || error.statusCode === 405)
-      ) {
-        console.warn(
-          'GET /v1/memories not implemented. Using /v1/memories/query fallback.'
-        );
-
-        if (params?.search) {
-          const result = await this.searchMemories(
-            params.search,
-            { limit: params.limit ?? 20 },
-            params.userId
-          );
-          return {
-            memories: result.memories,
-            total: result.memories.length,
-            limit: params.limit ?? 20,
-            offset: params.offset ?? 0,
-          };
-        }
-
-        // Without search, we can't use query - return empty
-        return {
-          memories: [],
-          total: 0,
-          limit: params?.limit ?? 20,
-          offset: params?.offset ?? 0,
-        };
-      }
-      throw error;
-    }
+    return this.fetch<ListMemoriesResponse>(endpoint);
   }
 
   /**
    * Get all users
    * @endpoint GET /v1/users
-   * @status NOT IMPLEMENTED - returns mock data
    */
   async getUsers(): Promise<ListUsersResponse> {
-    try {
-      return await this.fetch<ListUsersResponse>('/v1/users');
-    } catch (error) {
-      if (error instanceof EngramApiError && error.statusCode === 404) {
-        console.warn('GET /v1/users not implemented. Returning empty list.');
-        return { users: [], total: 0 };
-      }
-      throw error;
-    }
+    return this.fetch<ListUsersResponse>('/v1/users');
   }
 
   /**
    * Get user detail with memories
    * @endpoint GET /v1/users/:id
-   * @status NOT IMPLEMENTED - returns mock data
    */
   async getUser(id: string): Promise<UserDetailResponse | null> {
     try {
       return await this.fetch<UserDetailResponse>(`/v1/users/${id}`);
     } catch (error) {
       if (error instanceof EngramApiError && error.statusCode === 404) {
-        console.warn(`GET /v1/users/${id} not implemented.`);
         return null;
       }
       throw error;
@@ -494,33 +437,23 @@ export class EngramClient {
   }
 
   // ==========================================================================
-  // API KEYS (NOT YET IMPLEMENTED IN ENGRAM)
+  // API KEYS (via /v1/account/api-keys)
   // ==========================================================================
 
   /**
    * Get all API keys
-   * @endpoint GET /v1/api-keys
-   * @status NOT IMPLEMENTED
+   * @endpoint GET /v1/account/api-keys
    */
   async getApiKeys(): Promise<{ keys: ApiKey[] }> {
-    try {
-      return await this.fetch<{ keys: ApiKey[] }>('/v1/api-keys');
-    } catch (error) {
-      if (error instanceof EngramApiError && error.statusCode === 404) {
-        console.warn('GET /v1/api-keys not implemented.');
-        return { keys: [] };
-      }
-      throw error;
-    }
+    return this.fetch<{ keys: ApiKey[] }>('/v1/account/api-keys');
   }
 
   /**
    * Create a new API key
-   * @endpoint POST /v1/api-keys
-   * @status NOT IMPLEMENTED
+   * @endpoint POST /v1/account/api-keys
    */
   async createApiKey(name: string): Promise<{ key: string; id: string }> {
-    return this.fetch<{ key: string; id: string }>('/v1/api-keys', {
+    return this.fetch<{ key: string; id: string }>('/v1/account/api-keys', {
       method: 'POST',
       body: JSON.stringify({ name }),
     });
@@ -528,11 +461,10 @@ export class EngramClient {
 
   /**
    * Revoke an API key
-   * @endpoint DELETE /v1/api-keys/:id
-   * @status NOT IMPLEMENTED
+   * @endpoint DELETE /v1/account/api-keys/:id
    */
   async revokeApiKey(id: string): Promise<void> {
-    await this.fetch<void>(`/v1/api-keys/${id}`, { method: 'DELETE' });
+    await this.fetch<void>(`/v1/account/api-keys/${id}`, { method: 'DELETE' });
   }
 
   // ==========================================================================
@@ -685,6 +617,21 @@ export class EngramClient {
     });
   }
 
+  /**
+   * Get dream cycle reports
+   * @endpoint GET /v1/consolidation/dream-cycle/reports
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getDreamCycleReports(userId?: string, limit: number = 10): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (userId) params.set('userId', userId);
+    params.set('limit', String(limit));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.fetch<any>(`/v1/consolidation/dream-cycle/reports?${params}`);
+    return Array.isArray(data) ? data : data.reports || [];
+  }
+
   // ==========================================================================
   // MULTI-AGENT (v0.7)
   // ==========================================================================
@@ -775,29 +722,6 @@ export class EngramClient {
   }
 
   // ==========================================================================
-  // MOCK DATA (for unimplemented endpoints)
-  // ==========================================================================
-
-  private getMockStats(): DashboardStats {
-    return {
-      totalMemories: 0,
-      memoryTrend: 0,
-      totalUsers: 0,
-      userTrend: 0,
-      healthScore: 100,
-      memoryByLayer: [
-        { layer: 'IDENTITY', count: 0, percentage: 0 },
-        { layer: 'PROJECT', count: 0, percentage: 0 },
-        { layer: 'SESSION', count: 0, percentage: 0 },
-        { layer: 'TASK', count: 0, percentage: 0 },
-        { layer: 'INSIGHT', count: 0, percentage: 0 },
-      ],
-      recentActivity: [],
-      apiRequests: [],
-    };
-  }
-
-  // ==========================================================================
   // FOG INDEX
   // ==========================================================================
 
@@ -808,6 +732,42 @@ export class EngramClient {
 
   async getFogIndexHistory(limit = 30): Promise<import('./types').FogIndexHistory[]> {
     return this.fetch(`/v1/fog-index/history?limit=${limit}`);
+  }
+
+  // ==========================================================================
+  // AGENT IDENTITY (Phase 2)
+  // ==========================================================================
+
+  async getAgents(): Promise<{ agents: import('./types').AgentSummary[] }> {
+    return this.fetch('/v1/agents');
+  }
+
+  async getAgentIdentity(agentId: string): Promise<import('./types').AgentIdentity> {
+    return this.fetch(`/v1/agents/${agentId}/identity`);
+  }
+
+  async getAgentTrustNarrative(agentId: string): Promise<import('./types').AgentTrustNarrative> {
+    return this.fetch(`/v1/agents/${agentId}/trust/narrative`);
+  }
+
+  async exportAgentIdentity(agentId: string): Promise<Blob> {
+    const url = `${this.baseUrl}/v1/agents/${agentId}/export`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.apiKey) headers['X-AM-API-Key'] = this.apiKey;
+    else if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('engram_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+    return res.blob();
+  }
+
+  async importAgentIdentity(agentId: string, data: unknown): Promise<{ success: boolean; message?: string }> {
+    return this.fetch(`/v1/agents/${agentId}/import`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 }
 

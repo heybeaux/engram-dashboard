@@ -4,12 +4,14 @@ import { Suspense, useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useRateLimit } from '@/hooks/use-rate-limit';
 import { createCheckout } from '@/lib/account-api';
 import { trackEvent, identifyUser } from '@/lib/posthog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, ChevronDown, ChevronUp, Check } from 'lucide-react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { AlertCircle, Loader2, ChevronDown, ChevronUp, Check, ShieldAlert } from 'lucide-react';
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
   let score = 0;
@@ -47,9 +49,13 @@ function SignupForm() {
   const [accessCode, setAccessCode] = useState('');
   const [showAccessCode, setShowAccessCode] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [honeyField, setHoneyField] = useState(''); // honeypot for bots
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { isLocked, secondsLeft, recordFailure, recordSuccess } = useRateLimit();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -65,6 +71,8 @@ function SignupForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isLocked) return;
+    if (honeyField) return;
     setError('');
 
     if (password !== confirmPassword) {
@@ -95,8 +103,9 @@ function SignupForm() {
     setLoading(false);
 
     if (result.success) {
-      identifyUser(email, { name });
-      trackEvent('user_signed_up', { email, name, plan: result.selectedPlan, accessCode: !!accessCode });
+      recordSuccess();
+      identifyUser(email);
+      trackEvent('user_signed_up', { plan: result.selectedPlan, hasAccessCode: !!accessCode });
       if (result.apiKey) {
         sessionStorage.setItem('engram_onboarding_apikey', result.apiKey);
       }
@@ -115,6 +124,7 @@ function SignupForm() {
         router.push(result.apiKey ? '/onboarding' : '/dashboard');
       }
     } else {
+      recordFailure();
       setError(result.error || 'Registration failed');
     }
   }
@@ -126,7 +136,13 @@ function SignupForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {error && (
+          {isLocked && (
+            <div className="flex items-center gap-2 rounded-md bg-orange-500/10 p-3 text-sm text-orange-600 dark:text-orange-400">
+              <ShieldAlert className="h-4 w-4 shrink-0" />
+              Too many attempts. Try again in {secondsLeft} second{secondsLeft !== 1 ? 's' : ''}.
+            </div>
+          )}
+          {error && !isLocked && (
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
@@ -258,6 +274,11 @@ function SignupForm() {
               autoComplete="new-password"
             />
           </div>
+          {/* Honeypot — hidden from humans, traps bots */}
+          <div className="absolute opacity-0 top-0 left-0 h-0 w-0 -z-10 overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" value={honeyField} onChange={(e) => setHoneyField(e.target.value)} />
+          </div>
           <label className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -267,14 +288,14 @@ function SignupForm() {
             />
             <span className="text-sm text-muted-foreground">
               I agree to the{' '}
-              <Link href="/terms" className="text-primary hover:underline" target="_blank">
+              <Link href="/terms" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                 Terms of Service
               </Link>
             </span>
           </label>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || isLocked}>
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {accessCode ? 'Create account' : `Start with ${PLANS.find(p => p.id === selectedPlan)?.name || 'Starter'}`}
           </Button>

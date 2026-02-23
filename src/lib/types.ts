@@ -578,6 +578,94 @@ export interface FogIndexHistory {
 }
 
 // ============================================================================
+// AGENT IDENTITY (Phase 2)
+// ============================================================================
+
+export interface AgentSummary {
+  id: string;
+  name: string;
+  description?: string;
+  memoryCount: number;
+  trustScore: number;
+  capabilities: { name: string; score: number }[];
+  lastActive: string | null;
+  createdAt: string;
+}
+
+export interface AgentCapability {
+  name: string;
+  score: number;
+  domain?: string;
+}
+
+export interface AgentPreference {
+  category: string;
+  key: string;
+  value: string;
+  confidence: number;
+}
+
+export interface BehavioralPattern {
+  topic: string;
+  frequency: number;
+}
+
+export interface RecentActivity {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+}
+
+export interface TrustSignal {
+  id: string;
+  type: "SUCCESS" | "FAILURE" | "CORRECTION";
+  description: string;
+  domain?: string;
+  timestamp: string;
+}
+
+export interface TrustHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface DomainTrust {
+  domain: string;
+  score: number;
+  signalCount: number;
+}
+
+export interface AgentIdentity {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  capabilities: AgentCapability[];
+  preferences: AgentPreference[];
+  trustScore: number;
+  trustHistory: TrustHistoryPoint[];
+  behavioralPatterns: BehavioralPattern[];
+  recentActivity: RecentActivity[];
+  trustSignals: TrustSignal[];
+}
+
+export interface NarrativeTrustMemory {
+  id: string;
+  content: string;
+  createdAt: string;
+  confidence: number;
+}
+
+export interface AgentTrustNarrative {
+  trustScore: number;
+  trustHistory: TrustHistoryPoint[];
+  domains: DomainTrust[];
+  signals: TrustSignal[];
+  narrativeMemories: NarrativeTrustMemory[];
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 

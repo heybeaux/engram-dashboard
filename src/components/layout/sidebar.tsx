@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,20 @@ import {
   Search,
   Link2,
   Gauge,
+  Fingerprint,
+  FileText,
+  UsersRound,
+  Shield,
+  RotateCcw,
+  FileDown,
+  RefreshCw,
+  ArrowLeftRight,
+  ChevronDown,
+  ChevronRight,
+  Bot,
+  ListTodo,
+  Lightbulb,
+  Swords,
 } from "lucide-react";
 import type { Edition } from "@/types/instance";
 
@@ -36,6 +51,7 @@ interface NavItem {
   badge?: string;
   /** Only show in these editions. Omit = show in all. */
   editions?: Edition[];
+  children?: NavItem[];
 }
 
 const navigation: NavItem[] = [
@@ -47,9 +63,36 @@ const navigation: NavItem[] = [
   { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
   { name: "Search", href: "/code", icon: Search },
   { name: "Consolidation", href: "/consolidation", icon: Moon },
+  { name: "Sources", href: "/sources", icon: Cloud },
   { name: "Pools", href: "/pools", icon: Database },
+
+
+  // === Identity section ===
+  {
+    name: "Identity",
+    href: "/identity",
+    icon: Fingerprint,
+    children: [
+      { name: "Overview", href: "/identity", icon: Fingerprint },
+      { name: "Contracts", href: "/identity/contracts", icon: FileText },
+      { name: "Teams", href: "/identity/teams", icon: UsersRound },
+      { name: "Trust", href: "/identity/trust", icon: Shield },
+      { name: "Recall", href: "/identity/recall", icon: RotateCcw },
+      { name: "Export", href: "/identity/export", icon: FileDown },
+    ],
+  },
+
+  { name: "Agents", href: "/agents", icon: Bot },
+  { name: "Delegation", href: "/delegation", icon: ListTodo },
+  { name: "Insights", href: "/insights", icon: Lightbulb },
+  { name: "Challenges", href: "/challenges", icon: Swords },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Sync Status", href: "/settings/sync", icon: RefreshCw },
+  { name: "Reconcile", href: "/settings/reconcile", icon: ArrowLeftRight },
+
+  // === Local only: Sync ===
+  { name: "Sync", href: "/settings/cloud", icon: RefreshCw, editions: ["local"] },
 
   // === Cloud only ===
   { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
@@ -63,6 +106,86 @@ const navigation: NavItem[] = [
   // === Local only ===
   { name: "Code", href: "/code", icon: Code2, badge: "Local", editions: ["local"] },
 ];
+
+function NavItemLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const isActive =
+    pathname === item.href ||
+    (item.href !== "/" && pathname.startsWith(item.href));
+
+  // Auto-expand if child is active
+  const childActive = item.children?.some(
+    (c) => pathname === c.href || (c.href !== "/" && pathname.startsWith(c.href))
+  );
+
+  const expanded = open || childActive;
+
+  if (item.children) {
+    return (
+      <div>
+        <button
+          onClick={() => setOpen(!expanded)}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            childActive
+              ? "text-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <item.icon className="h-5 w-5" />
+          {item.name}
+          <span className="ml-auto">
+            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </span>
+        </button>
+        {expanded && (
+          <div className="ml-5 space-y-0.5 border-l pl-3 mt-0.5">
+            {item.children.map((child) => {
+              const isChildActive =
+                pathname === child.href ||
+                (child.href !== "/" && pathname.startsWith(child.href));
+              return (
+                <Link
+                  key={child.href}
+                  href={child.href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors",
+                    isChildActive
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <child.icon className="h-4 w-4" />
+                  {child.name}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        isActive
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
+    >
+      <item.icon className="h-5 w-5" />
+      {item.name}
+      {item.badge && (
+        <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -82,32 +205,10 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
-        {filteredNav.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.name}
-              {item.badge && (
-                <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+        {filteredNav.map((item) => (
+          <NavItemLink key={item.name} item={item} pathname={pathname} />
+        ))}
       </nav>
 
       {/* Footer */}

@@ -1,0 +1,31 @@
+name: Linear Ticket Sync
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, closed]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Extract ticket references
+        run: |
+          TICKETS=$(git log --format=%B -1 HEAD | grep -oP 'HEY-\d+' | sort -u || true)
+          echo "Found tickets: $TICKETS"
+          echo "TICKETS=$TICKETS" >> $GITHUB_ENV
+      - name: Comment on Linear tickets
+        if: env.TICKETS != ''
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          for ticket in $TICKETS; do
+            echo "Linking $ticket to commit $GITHUB_SHA"
+            curl -s -X POST https://api.linear.app/graphql \
+              -H "Content-Type: application/json" \
+              -H "Authorization: $LINEAR_API_KEY" \
+              -d "{\"query\": \"mutation { commentCreate(input: { issueId: \\\"$ticket\\\", body: \\\"Commit $GITHUB_SHA pushed to $GITHUB_REF_NAME\\\\n\\\\n$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA\\\" }) { success } }\"}"
+          done

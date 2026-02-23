@@ -33,8 +33,9 @@ import {
   Monitor,
 } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
+import { getApiBaseUrl } from '@/lib/api-config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
+const API_BASE = getApiBaseUrl();
 
 interface CloudStatus {
   linked: boolean;
@@ -95,7 +96,7 @@ function getAuthHeaders(): Record<string, string> {
     return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   }
   const apiKey = process.env.NEXT_PUBLIC_ENGRAM_API_KEY || "";
-  const userId = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "Beaux";
+  const userId = "default";
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (apiKey) headers["X-AM-API-Key"] = apiKey;
   headers["X-AM-User-ID"] = userId;
@@ -142,7 +143,15 @@ function CloudSettingsPageContent() {
   const [syncHistory, setSyncHistory] = useState<SyncEvent[]>([]);
   const [pulling, setPulling] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pullResult, setPullResult] = useState<any>(null);
+  const [pullResult, setPullResult] = useState<{
+    pulled?: number;
+    message?: string;
+    durationMs?: number;
+    newCount?: number;
+    updatedCount?: number;
+    skippedCount?: number;
+    deletedCount?: number;
+  } | null>(null);
 
   // Cloud instances (for cloud edition)
   const [instances, setInstances] = useState<CloudInstance[]>([]);

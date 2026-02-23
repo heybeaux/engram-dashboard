@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { InstanceInfo, DEFAULT_INSTANCE_INFO } from "@/types/instance";
+import { getApiBaseUrl } from '@/lib/api-config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.openengram.ai";
+const API_BASE = getApiBaseUrl();
 const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || "default";
 const defaultHeaders: Record<string, string> = { "X-AM-User-ID": USER_ID };
 

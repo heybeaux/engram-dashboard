@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { getAccount, type Account } from '@/lib/account-api';
+import { getApiBaseUrl } from '@/lib/api-config';
 
-const API_URL = process.env.NEXT_PUBLIC_ENGRAM_API_URL || 'https://api.openengram.ai';
+const API_URL = getApiBaseUrl();
 
 interface HealthStatus {
   status: string;

@@ -5,26 +5,21 @@
  * These are separate from the Engram memory API which uses API keys.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.openengram.ai';
-const USER_ID = process.env.NEXT_PUBLIC_ENGRAM_USER_ID || 'default';
-
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('engram_token') || localStorage.getItem('token') || localStorage.getItem('jwt') || null;
-}
+import { getApiBaseUrl, getDefaultUserId, getBrowserToken } from './api-config';
 
 async function authFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const token = getToken();
+  const token = getBrowserToken();
+  const userId = getDefaultUserId() || 'default';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-AM-User-ID': USER_ID,
+    'X-AM-User-ID': userId,
     ...(options?.headers as Record<string, string>),
   };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  const res = await fetch(`${getApiBaseUrl()}${endpoint}`, { ...options, headers });
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -97,7 +92,6 @@ export async function getAccount(): Promise<Account> {
 }
 
 export function updateAccount(data: { name?: string }) {
-  // TODO: PATCH /v1/account endpoint may not exist yet
   return authFetch<Account>('/v1/account', {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -105,7 +99,6 @@ export function updateAccount(data: { name?: string }) {
 }
 
 export function changePassword(data: { currentPassword: string; newPassword: string }) {
-  // TODO: POST /v1/account/password endpoint may not exist yet
   return authFetch<void>('/v1/account/change-password', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -113,7 +106,6 @@ export function changePassword(data: { currentPassword: string; newPassword: str
 }
 
 export function deleteAccount() {
-  // TODO: DELETE /v1/account endpoint may not exist yet
   return authFetch<void>('/v1/account', { method: 'DELETE' });
 }
 
@@ -122,6 +114,7 @@ export function deleteAccount() {
 export interface ApiKeyInfo {
   id: string;
   name: string;
+  agentName?: string;
   apiKeyHint: string;
   createdAt: string;
   lastUsedAt: string | null;
@@ -145,7 +138,6 @@ export async function createApiKey(name: string) {
 }
 
 export function deleteApiKey(id: string) {
-  // TODO: DELETE /v1/account/api-keys/:id endpoint may not exist yet
   return authFetch<void>(`/v1/account/api-keys/${id}`, { method: 'DELETE' });
 }
 

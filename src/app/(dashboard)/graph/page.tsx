@@ -20,14 +20,13 @@ const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ),
 });
 
-// Color map for memory layers
+// Color map for memory layers (matches analytics-colors.ts)
 const LAYER_COLORS: Record<string, string> = {
-  CORE: '#ef4444',
-  SEMANTIC: '#3b82f6',
-  EPISODIC: '#22c55e',
-  WORKING: '#f59e0b',
-  PROCEDURAL: '#8b5cf6',
-  INSIGHT: '#f59e0b',
+  IDENTITY: '#3B82F6',
+  PROJECT: '#22C55E',
+  SESSION: '#EAB308',
+  TASK: '#8B5CF6',
+  INSIGHT: '#F59E0B',
 };
 
 const DEFAULT_NODE_COLOR = '#6b7280';
@@ -156,9 +155,39 @@ export default function GraphPage() {
           <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
           <Badge variant="outline">Loading...</Badge>
         </div>
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="animate-pulse text-muted-foreground">Loading graph data...</div>
+        <div className="flex flex-wrap gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-muted animate-pulse" />
+              <span className="w-16 h-3 rounded bg-muted animate-pulse" />
+            </div>
+          ))}
+        </div>
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex flex-col items-center justify-center" style={{ height: Math.max(500, 600) }}>
+              <div className="relative w-64 h-64">
+                {Array.from({ length: 8 }).map((_, i) => {
+                  const angle = (i / 8) * Math.PI * 2;
+                  const r = 80 + (i % 3) * 20;
+                  return (
+                    <span
+                      key={i}
+                      className="absolute w-4 h-4 rounded-full bg-muted animate-pulse"
+                      style={{
+                        left: `${128 + Math.cos(angle) * r - 8}px`,
+                        top: `${128 + Math.sin(angle) * r - 8}px`,
+                        animationDelay: `${i * 150}ms`,
+                      }}
+                    />
+                  );
+                })}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Network className="h-8 w-8 text-muted-foreground/30 animate-pulse" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-4 animate-pulse">Loading graph data...</p>
+            </div>
           </CardContent>
         </Card>
       </div>
