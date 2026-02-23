@@ -213,14 +213,21 @@ export default function GraphPage() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const { width, height } = dimensions;
     const dpr = window.devicePixelRatio || 1;
 
     ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Reset to DPR base
-    ctx.clearRect(0, 0, width, height);
-    ctx.translate(transformRef.current.x, transformRef.current.y);
-    ctx.scale(transformRef.current.k, transformRef.current.k);
+    // Clear at full physical resolution
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Scale for DPR, then apply zoom transform
+    ctx.setTransform(
+      dpr * transformRef.current.k,
+      0,
+      0,
+      dpr * transformRef.current.k,
+      dpr * transformRef.current.x,
+      dpr * transformRef.current.y,
+    );
 
     const nodes = nodesRef.current;
     const links = linksRef.current;
@@ -359,63 +366,73 @@ export default function GraphPage() {
 
     const d3Canvas = d3.select(canvas);
 
-    // ── Zoom + pan (with node-drag integration) ─────────────────────
-    let dragNode: SimNode | null = null;
+    // ── Zoom + pan ──────────────────────────────────────────────────
+    let dragTarget: SimNode | null = null;
 
     const zoom = d3
       .zoom<HTMLCanvasElement, unknown>()
       .scaleExtent([0.1, 10])
-      .filter(() => true)
-      .on('start', (event) => {
-        if (event.sourceEvent?.type !== 'mousedown') return;
-        const rect = canvas.getBoundingClientRect();
-        const node = findNode(
-          event.sourceEvent.clientX - rect.left,
-          event.sourceEvent.clientY - rect.top,
-        );
-        if (node) {
-          dragNode = node;
-          node.fx = node.x;
-          node.fy = node.y;
-          simRef.current?.alphaTarget(0.3).restart();
+      .filter((event) => {
+        // Block pan when clicking on a node (drag handles it)
+        if (event.type === 'mousedown') {
+          const rect = canvas.getBoundingClientRect();
+          const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
+          if (node) return false; // Let the native handlers below deal with it
         }
+        return true;
       })
       .on('zoom', (event) => {
-        if (dragNode && event.sourceEvent?.type === 'mousemove') {
-          // Node drag — update fixed position
-          const rect = canvas.getBoundingClientRect();
-          const t = transformRef.current;
-          dragNode.fx =
-            (event.sourceEvent.clientX - rect.left - t.x) / t.k;
-          dragNode.fy =
-            (event.sourceEvent.clientY - rect.top - t.y) / t.k;
-        } else {
-          // Normal zoom/pan
-          transformRef.current = event.transform;
-        }
+        transformRef.current = event.transform;
         renderCanvas();
-      })
-      .on('end', () => {
-        if (dragNode) {
-          dragNode.fx = null;
-          dragNode.fy = null;
-          dragNode = null;
-          simRef.current?.alphaTarget(0);
-        }
       });
 
     d3Canvas.call(zoom);
 
-    // ── Hover ───────────────────────────────────────────────────────
-    d3Canvas.on('mousemove.hover', (event: MouseEvent) => {
+    // ── Node drag (native mouse events, won't conflict with zoom) ───
+    d3Canvas.on('mousedown.drag', (event: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
-      setHoveredNode(node);
-      canvas.style.cursor = node ? 'grab' : 'default';
+      if (!node) return;
+      event.stopPropagation(); // Prevent zoom from also handling this
+      dragTarget = node;
+      node.fx = node.x;
+      node.fy = node.y;
+      simRef.current?.alphaTarget(0.3).restart();
+      canvas.style.cursor = 'grabbing';
     });
 
+    // Use window for mousemove/mouseup so dragging continues outside canvas
+    const onMouseMove = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const t = transformRef.current;
+
+      if (dragTarget) {
+        dragTarget.fx = (event.clientX - rect.left - t.x) / t.k;
+        dragTarget.fy = (event.clientY - rect.top - t.y) / t.k;
+        renderCanvas();
+      } else {
+        // Hover detection
+        const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
+        setHoveredNode(node);
+        canvas.style.cursor = node ? 'grab' : 'default';
+      }
+    };
+
+    const onMouseUp = () => {
+      if (dragTarget) {
+        dragTarget.fx = null;
+        dragTarget.fy = null;
+        dragTarget = null;
+        simRef.current?.alphaTarget(0);
+        canvas.style.cursor = 'default';
+      }
+    };
+
+    canvas.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
     // ── Double-click to center ──────────────────────────────────────
-    d3Canvas.on('dblclick.zoom', null); // remove default zoom dblclick
+    d3Canvas.on('dblclick.zoom', null);
     d3Canvas.on('dblclick.center', (event: MouseEvent) => {
       event.preventDefault();
       const rect = canvas.getBoundingClientRect();
@@ -432,8 +449,10 @@ export default function GraphPage() {
     return () => {
       sim.stop();
       d3Canvas.on('.zoom', null);
-      d3Canvas.on('.hover', null);
+      d3Canvas.on('.drag', null);
       d3Canvas.on('.center', null);
+      canvas.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
   }, [simData, dimensions, renderCanvas]);
 
