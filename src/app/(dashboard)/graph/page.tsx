@@ -219,15 +219,11 @@ export default function GraphPage() {
     // Clear at full physical resolution
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Scale for DPR, then apply zoom transform
-    ctx.setTransform(
-      dpr * transformRef.current.k,
-      0,
-      0,
-      dpr * transformRef.current.k,
-      dpr * transformRef.current.x,
-      dpr * transformRef.current.y,
-    );
+    // Scale by DPR for crisp rendering on HiDPI
+    ctx.scale(dpr, dpr);
+    // Apply zoom/pan transform (in CSS pixel space)
+    ctx.translate(transformRef.current.x, transformRef.current.y);
+    ctx.scale(transformRef.current.k, transformRef.current.k);
 
     const nodes = nodesRef.current;
     const links = linksRef.current;
@@ -401,8 +397,8 @@ export default function GraphPage() {
       canvas.style.cursor = 'grabbing';
     });
 
-    // Use window for mousemove/mouseup so dragging continues outside canvas
-    const onMouseMove = (event: MouseEvent) => {
+    // Mousemove: drag + hover (use d3 selection for consistent event handling)
+    d3Canvas.on('mousemove.interaction', (event: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const t = transformRef.current;
 
@@ -410,14 +406,15 @@ export default function GraphPage() {
         dragTarget.fx = (event.clientX - rect.left - t.x) / t.k;
         dragTarget.fy = (event.clientY - rect.top - t.y) / t.k;
         renderCanvas();
-      } else {
-        // Hover detection
-        const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
-        setHoveredNode(node);
-        canvas.style.cursor = node ? 'grab' : 'default';
       }
-    };
 
+      // Always do hover detection
+      const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
+      setHoveredNode(node);
+      canvas.style.cursor = dragTarget ? 'grabbing' : node ? 'grab' : 'default';
+    });
+
+    // Mouseup: release drag (on window so it works even if cursor leaves canvas)
     const onMouseUp = () => {
       if (dragTarget) {
         dragTarget.fx = null;
@@ -427,8 +424,6 @@ export default function GraphPage() {
         canvas.style.cursor = 'default';
       }
     };
-
-    canvas.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
 
     // ── Double-click to center ──────────────────────────────────────
@@ -450,8 +445,8 @@ export default function GraphPage() {
       sim.stop();
       d3Canvas.on('.zoom', null);
       d3Canvas.on('.drag', null);
+      d3Canvas.on('.interaction', null);
       d3Canvas.on('.center', null);
-      canvas.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
   }, [simData, dimensions, renderCanvas]);
