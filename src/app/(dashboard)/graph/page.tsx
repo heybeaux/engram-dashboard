@@ -1,26 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Network, ZoomIn, ZoomOut } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  RefreshCw,
+  Network,
+  ZoomIn,
+  ZoomOut,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { engram as engramClient } from '@/lib/engram-client';
 import type { GraphData } from '@/lib/types';
 
-// Force graph must be loaded client-side only (uses canvas/window)
+// Dynamically import to avoid SSR issues with canvas
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full text-muted-foreground">
-      Loading graph renderer...
-    </div>
-  ),
 });
 
-// Color map for memory layers (matches analytics-colors.ts)
+// ── Color scheme ────────────────────────────────────────────────────────
 const LAYER_COLORS: Record<string, string> = {
   IDENTITY: '#3B82F6',
   PROJECT: '#22C55E',
@@ -28,59 +32,84 @@ const LAYER_COLORS: Record<string, string> = {
   TASK: '#8B5CF6',
   INSIGHT: '#F59E0B',
 };
-
+const ENTITY_COLOR = '#ec4899';
 const DEFAULT_NODE_COLOR = '#6b7280';
+const LAYERS = ['IDENTITY', 'PROJECT', 'SESSION', 'TASK', 'INSIGHT'] as const;
 
-interface ForceGraphNode {
+// ── Graph params state ──────────────────────────────────────────────────
+interface GraphParams {
+  limit: number;
+  minConfidence: number;
+  layers: Set<string>;
+  searchQuery: string;
+}
+
+function defaultParams(): GraphParams {
+  return {
+    limit: 200,
+    minConfidence: 0,
+    layers: new Set(LAYERS),
+    searchQuery: '',
+  };
+}
+
+interface GraphNode {
   id: string;
-  name: string;
+  label: string;
   layer: string;
   importance: number;
   color: string;
-  val: number;
+  radius: number;
+  isEntity: boolean;
 }
 
-interface ForceGraphLink {
+interface GraphLink {
   source: string;
   target: string;
   linkType: string;
   confidence: number;
 }
 
-interface ForceGraphData {
-  nodes: ForceGraphNode[];
-  links: ForceGraphLink[];
-}
+// ── Transform API data → graph data ─────────────────────────────────
+function buildGraphData(
+  data: GraphData,
+  params: GraphParams,
+): { nodes: GraphNode[]; links: GraphLink[] } {
+  const nodeMap = new Map<string, GraphNode>();
 
-function transformGraphData(data: GraphData): ForceGraphData {
-  const nodeMap = new Set(data.nodes.map((n) => n.id));
+  for (const n of data.nodes) {
+    if (!params.layers.has(n.layer)) continue;
+    nodeMap.set(n.id, {
+      id: n.id,
+      label: n.extraction?.what || n.raw?.slice(0, 50) || n.id.slice(0, 8),
+      layer: n.layer,
+      importance: n.importanceScore ?? 0.5,
+      color: LAYER_COLORS[n.layer] || DEFAULT_NODE_COLOR,
+      radius: 3 + (n.importanceScore ?? 0.5) * 5,
+      isEntity: false,
+    });
+  }
 
-  // Build entity nodes if we have entities but few memory nodes
-  const entityNodes: ForceGraphNode[] = data.entities
-    .filter((e) => !nodeMap.has(e.id))
-    .map((e) => ({
+  for (const e of data.entities) {
+    if (nodeMap.has(e.id)) continue;
+    nodeMap.set(e.id, {
       id: e.id,
-      name: e.name || e.normalizedName,
+      label: e.name || e.id.slice(0, 8),
       layer: 'ENTITY',
-      importance: 0.5,
-      color: '#ec4899',
-      val: 4,
-    }));
+      importance: 0.7,
+      color: ENTITY_COLOR,
+      radius: 5,
+      isEntity: true,
+    });
+  }
 
-  const memoryNodes: ForceGraphNode[] = data.nodes.map((n) => ({
-    id: n.id,
-    name: n.extraction?.what || n.raw?.slice(0, 60) || n.id.slice(0, 8),
-    layer: n.layer,
-    importance: n.importanceScore,
-    color: LAYER_COLORS[n.layer] || DEFAULT_NODE_COLOR,
-    val: 2 + n.importanceScore * 6,
-  }));
-
-  const allNodeIds = new Set([...memoryNodes.map((n) => n.id), ...entityNodes.map((n) => n.id)]);
-
-  // Only include edges where both endpoints exist
-  const links: ForceGraphLink[] = data.edges
-    .filter((e) => allNodeIds.has(e.source) && allNodeIds.has(e.target))
+  const links: GraphLink[] = data.edges
+    .filter(
+      (e) =>
+        e.confidence >= params.minConfidence &&
+        nodeMap.has(e.source) &&
+        nodeMap.has(e.target),
+    )
     .map((e) => ({
       source: e.source,
       target: e.target,
@@ -88,105 +117,190 @@ function transformGraphData(data: GraphData): ForceGraphData {
       confidence: e.confidence,
     }));
 
-  return {
-    nodes: [...memoryNodes, ...entityNodes],
-    links,
-  };
+  return { nodes: Array.from(nodeMap.values()), links };
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// Component
+// ════════════════════════════════════════════════════════════════════════
+
 export default function GraphPage() {
-  const [graphData, setGraphData] = useState<ForceGraphData | null>(null);
+  const graphRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [rawData, setRawData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ nodes: 0, edges: 0, entities: 0 });
-  const graphRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [params, setParams] = useState<GraphParams>(defaultParams);
+  const [showControls, setShowControls] = useState(true);
+  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
-  const loadGraph = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await engramClient.getGraphData({ limit: 200 });
-      setStats({
-        nodes: data.nodes.length,
-        edges: data.edges.length,
-        entities: data.entities.length,
-      });
-
-      if (data.nodes.length === 0 && data.entities.length === 0) {
-        setGraphData({ nodes: [], links: [] });
-      } else {
-        setGraphData(transformGraphData(data));
+  // ── Fetch data ──────────────────────────────────────────────────────
+  const loadGraph = useCallback(
+    async (limit?: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await engramClient.getGraphData({
+          limit: limit ?? params.limit,
+        });
+        setRawData(data);
+        setStats({
+          nodes: data.nodes.length,
+          edges: data.edges.length,
+          entities: data.entities.length,
+        });
+      } catch (err: any) {
+        setError(err.message || 'Failed to load graph data');
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load graph data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [params.limit],
+  );
 
   useEffect(() => {
     loadGraph();
   }, [loadGraph]);
 
-  // Resize observer for responsive dimensions
+  // ── Resize observer ─────────────────────────────────────────────────
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width } = entry.contentRect;
-        setDimensions({ width, height: Math.max(500, window.innerHeight - 260) });
+        if (width > 0) {
+          setDimensions({
+            width: Math.floor(width),
+            height: Math.max(500, window.innerHeight - 260),
+          });
+        }
       }
     });
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
 
-  const handleZoomIn = () => graphRef.current?.zoom(graphRef.current.zoom() * 1.5, 300);
-  const handleZoomOut = () => graphRef.current?.zoom(graphRef.current.zoom() / 1.5, 300);
+  // ── Build graph data when rawData or params change ──────────────────
+  const graphData = useMemo(() => {
+    if (!rawData) return { nodes: [], links: [] };
+    return buildGraphData(rawData, params);
+  }, [rawData, params]);
 
-  if (loading) {
+  // ── Zoom to fit after data loads ────────────────────────────────────
+  useEffect(() => {
+    if (graphData.nodes.length > 0 && graphRef.current) {
+      setTimeout(() => {
+        graphRef.current?.zoomToFit(400, 40);
+      }, 500);
+    }
+  }, [graphData]);
+
+  // ── Node canvas rendering ───────────────────────────────────────────
+  const searchQuery = params.searchQuery.toLowerCase().trim();
+
+  const nodeCanvasObject = useCallback(
+    (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      const n = node as GraphNode & { x: number; y: number };
+      const highlighted =
+        searchQuery.length > 0 &&
+        n.label.toLowerCase().includes(searchQuery);
+      const dimmed = searchQuery.length > 0 && !highlighted;
+
+      // Node circle
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+      ctx.fillStyle = dimmed ? `${n.color}33` : n.color;
+      ctx.fill();
+
+      if (highlighted) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2 / globalScale;
+        ctx.stroke();
+      }
+
+      // Labels when zoomed in or highlighted
+      if (globalScale > 2 || highlighted) {
+        const fontSize = Math.max(10 / globalScale, 2);
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = dimmed
+          ? 'rgba(255,255,255,0.2)'
+          : 'rgba(255,255,255,0.85)';
+        ctx.fillText(n.label.slice(0, 30), n.x, n.y + n.radius + 1);
+      }
+    },
+    [searchQuery],
+  );
+
+  // ── Link rendering ──────────────────────────────────────────────────
+  const linkColor = useCallback((link: any) => {
+    const l = link as GraphLink;
+    const isShared = l.linkType?.startsWith('shared:');
+    return isShared
+      ? `rgba(100, 116, 139, ${0.08 + l.confidence * 0.12})`
+      : `rgba(236, 72, 153, ${0.15 + l.confidence * 0.25})`;
+  }, []);
+
+  const linkWidth = useCallback((link: any) => {
+    const l = link as GraphLink;
+    const isShared = l.linkType?.startsWith('shared:');
+    return isShared ? 0.3 : 0.5 + l.confidence;
+  }, []);
+
+  // ── Zoom controls ───────────────────────────────────────────────────
+  const handleZoomIn = useCallback(() => {
+    const fg = graphRef.current;
+    if (fg) {
+      const currentZoom = fg.zoom();
+      fg.zoom(currentZoom * 1.5, 300);
+    }
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    const fg = graphRef.current;
+    if (fg) {
+      const currentZoom = fg.zoom();
+      fg.zoom(currentZoom / 1.5, 300);
+    }
+  }, []);
+
+  // ── Debounced limit change ──────────────────────────────────────────
+  const limitTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleLimitChange = useCallback(
+    (val: number[]) => {
+      setParams((p) => ({ ...p, limit: val[0] }));
+      clearTimeout(limitTimerRef.current);
+      limitTimerRef.current = setTimeout(() => loadGraph(val[0]), 500);
+    },
+    [loadGraph],
+  );
+
+  // ════════════════════════════════════════════════════════════════════
+  // Render
+  // ════════════════════════════════════════════════════════════════════
+
+  if (loading && !rawData) {
     return (
       <div className="space-y-4 md:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
           <Badge variant="outline">Loading...</Badge>
         </div>
-        <div className="flex flex-wrap gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-muted animate-pulse" />
-              <span className="w-16 h-3 rounded bg-muted animate-pulse" />
-            </div>
-          ))}
-        </div>
         <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <div className="flex flex-col items-center justify-center" style={{ height: Math.max(500, 600) }}>
-              <div className="relative w-64 h-64">
-                {Array.from({ length: 8 }).map((_, i) => {
-                  const angle = (i / 8) * Math.PI * 2;
-                  const r = 80 + (i % 3) * 20;
-                  return (
-                    <span
-                      key={i}
-                      className="absolute w-4 h-4 rounded-full bg-muted animate-pulse"
-                      style={{
-                        left: `${128 + Math.cos(angle) * r - 8}px`,
-                        top: `${128 + Math.sin(angle) * r - 8}px`,
-                        animationDelay: `${i * 150}ms`,
-                      }}
-                    />
-                  );
-                })}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Network className="h-8 w-8 text-muted-foreground/30 animate-pulse" />
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground mt-4 animate-pulse">Loading graph data...</p>
+            <div
+              className="flex flex-col items-center justify-center"
+              style={{ height: 600 }}
+            >
+              <Network className="h-12 w-12 text-muted-foreground/30 animate-pulse mb-4" />
+              <p className="text-sm text-muted-foreground animate-pulse">
+                Loading graph data...
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -197,16 +311,18 @@ export default function GraphPage() {
   if (error) {
     return (
       <div className="space-y-4 md:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
           <Badge variant="destructive">Error</Badge>
         </div>
         <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 text-center px-4">
-            <Network className="h-10 w-10 md:h-12 md:w-12 text-destructive mb-4" />
-            <h3 className="text-base md:text-lg font-semibold mb-2">Failed to Load Graph</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-md">{error}</p>
-            <Button onClick={loadGraph} variant="outline" size="sm" className="h-11">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Network className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Failed to Load Graph</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md">
+              {error}
+            </p>
+            <Button onClick={() => loadGraph()} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
             </Button>
@@ -216,102 +332,252 @@ export default function GraphPage() {
     );
   }
 
-  const isEmpty = graphData && graphData.nodes.length === 0;
-
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
-            {stats.nodes} memories · {stats.edges} links · {stats.entities} entities
+            {stats.nodes} memories · {stats.edges} links · {stats.entities}{' '}
+            entities
           </Badge>
-          <Button variant="ghost" size="sm" onClick={handleZoomIn} className="h-9 w-9 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowControls((v) => !v)}
+            className="h-9 w-9 p-0"
+            title="Toggle controls"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleZoomIn}
+            className="h-9 w-9 p-0"
+          >
             <ZoomIn className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleZoomOut} className="h-9 w-9 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleZoomOut}
+            className="h-9 w-9 p-0"
+          >
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={loadGraph} className="h-9 w-9 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => loadGraph()}
+            className="h-9 w-9 p-0"
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Layer legend */}
+      {/* Legend */}
       <div className="flex flex-wrap gap-3 text-xs">
-        {Object.entries(LAYER_COLORS).map(([layer, color]) => (
+        {LAYERS.map((layer) => (
           <div key={layer} className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: color }} />
-            <span className="text-muted-foreground capitalize">{layer.toLowerCase()}</span>
+            <span
+              className="w-3 h-3 rounded-full inline-block"
+              style={{ backgroundColor: LAYER_COLORS[layer] }}
+            />
+            <span className="text-muted-foreground capitalize">
+              {layer.toLowerCase()}
+            </span>
           </div>
         ))}
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#ec4899' }} />
+          <span
+            className="w-3 h-3 rounded-full inline-block"
+            style={{ backgroundColor: ENTITY_COLOR }}
+          />
           <span className="text-muted-foreground">entity</span>
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-        <CardContent className="p-0" ref={containerRef}>
-          {isEmpty ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Network className="h-12 w-12 text-muted-foreground/30 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Graph Data</h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                No memories or relationships found. Add some memories to see the graph visualization.
-              </p>
-            </div>
-          ) : (
-            graphData && (
+      {/* Main layout: controls + graph */}
+      <div className="flex gap-4">
+        {/* Controls panel */}
+        {showControls && (
+          <Card className="w-[280px] shrink-0">
+            <CardContent className="p-4 space-y-5">
+              {/* Search */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">Search entities</p>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search..."
+                    value={params.searchQuery}
+                    onChange={(e) =>
+                      setParams((p) => ({
+                        ...p,
+                        searchQuery: e.target.value,
+                      }))
+                    }
+                    className="pl-8 h-9 text-sm"
+                  />
+                  {params.searchQuery && (
+                    <button
+                      className="absolute right-2 top-2.5"
+                      onClick={() =>
+                        setParams((p) => ({ ...p, searchQuery: '' }))
+                      }
+                    >
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Node count */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">
+                  Nodes: {params.limit}
+                </p>
+                <input
+                  type="range"
+                  value={params.limit}
+                  onChange={(e) => handleLimitChange([parseInt(e.target.value)])}
+                  min={50}
+                  max={1000}
+                  step={50}
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              {/* Confidence threshold */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">
+                  Min confidence: {params.minConfidence.toFixed(2)}
+                </p>
+                <input
+                  type="range"
+                  value={params.minConfidence}
+                  onChange={(e) =>
+                    setParams((p) => ({
+                      ...p,
+                      minConfidence: parseFloat(e.target.value),
+                    }))
+                  }
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              {/* Layer filters */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">Layers</p>
+                {LAYERS.map((layer) => (
+                  <div key={layer} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`layer-${layer}`}
+                      checked={params.layers.has(layer)}
+                      onChange={(e) => {
+                        setParams((p) => {
+                          const next = new Set(p.layers);
+                          if (e.target.checked) next.add(layer);
+                          else next.delete(layer);
+                          return { ...p, layers: next };
+                        });
+                      }}
+                      className="accent-primary"
+                    />
+                    <label
+                      htmlFor={`layer-${layer}`}
+                      className="text-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full inline-block"
+                        style={{ backgroundColor: LAYER_COLORS[layer] }}
+                      />
+                      {layer.toLowerCase()}
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              {/* Hovered node info */}
+              {hoveredNode && (
+                <div className="border-t pt-3 space-y-1">
+                  <p className="text-xs font-medium truncate">
+                    {hoveredNode.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {hoveredNode.isEntity ? 'Entity' : hoveredNode.layer}
+                    {!hoveredNode.isEntity &&
+                      ` · importance ${hoveredNode.importance.toFixed(2)}`}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Graph */}
+        <Card className="overflow-hidden flex-1">
+          <CardContent className="p-0" ref={containerRef}>
+            {graphData.nodes.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center py-16 text-center"
+                style={{ height: dimensions.height }}
+              >
+                <Network className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Graph Data</h3>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  No memories match the current filters. Try adjusting the layer
+                  filters or increasing the node count.
+                </p>
+              </div>
+            ) : (
               <ForceGraph2D
                 ref={graphRef}
                 graphData={graphData}
                 width={dimensions.width}
                 height={dimensions.height}
-                nodeLabel={(node: any) => `${node.name}\n[${node.layer}]`}
-                nodeColor={(node: any) => node.color}
-                nodeRelSize={4}
-                linkColor={() => 'rgba(100, 116, 139, 0.3)'}
-                linkWidth={(link: any) => 0.5 + link.confidence * 2}
-                linkDirectionalParticles={1}
-                linkDirectionalParticleWidth={2}
-                backgroundColor="transparent"
-                onNodeClick={(node: any) => {
-                  // Center on clicked node
-                  graphRef.current?.centerAt(node.x, node.y, 500);
-                  graphRef.current?.zoom(3, 500);
-                }}
-                nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-                  const label = node.name;
-                  const fontSize = Math.max(10 / globalScale, 1.5);
-                  const r = Math.sqrt(node.val) * 4;
-
-                  // Draw node circle
+                nodeId="id"
+                nodeCanvasObject={nodeCanvasObject}
+                nodePointerAreaPaint={(node: any, color, ctx) => {
+                  const n = node as GraphNode & { x: number; y: number };
                   ctx.beginPath();
-                  ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
-                  ctx.fillStyle = node.color;
+                  ctx.arc(n.x, n.y, n.radius + 4, 0, Math.PI * 2);
+                  ctx.fillStyle = color;
                   ctx.fill();
-                  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-                  ctx.lineWidth = 0.5;
-                  ctx.stroke();
-
-                  // Draw label if zoomed in enough
-                  if (globalScale > 1.5) {
-                    ctx.font = `${fontSize}px Sans-Serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                    ctx.fillText(label.slice(0, 30), node.x, node.y + r + 1);
+                }}
+                linkColor={linkColor}
+                linkWidth={linkWidth}
+                linkDirectionalParticles={0}
+                d3AlphaDecay={0.015}
+                d3VelocityDecay={0.3}
+                cooldownTicks={200}
+                onNodeHover={(node: any) => setHoveredNode(node as GraphNode | null)}
+                onNodeDragEnd={(node: any) => {
+                  node.fx = node.x;
+                  node.fy = node.y;
+                }}
+                onNodeClick={(node: any) => {
+                  // Double-click to unpin
+                  if (node.fx != null) {
+                    node.fx = undefined;
+                    node.fy = undefined;
                   }
                 }}
-                cooldownTicks={100}
-                warmupTicks={50}
+                onBackgroundClick={() => setHoveredNode(null)}
+                backgroundColor="transparent"
+                enablePointerInteraction={true}
               />
-            )
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

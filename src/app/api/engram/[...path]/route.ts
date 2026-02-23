@@ -23,8 +23,12 @@ async function authenticateCaller(request: NextRequest): Promise<{ valid: boolea
 }
 
 async function proxyRequest(request: NextRequest, { params }: { params: { path: string[] } }) {
-  const auth = await authenticateCaller(request);
-  if (!auth.valid) return NextResponse.json({ error: auth.error }, { status: 401 });
+  // Local edition: skip JWT auth (single-user, no abuse risk)
+  const edition = process.env.NEXT_PUBLIC_EDITION || 'cloud';
+  if (edition !== 'local') {
+    const auth = await authenticateCaller(request);
+    if (!auth.valid) return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
 
   const url = new URL(`/${params.path.join('/')}`, ENGRAM_API_URL);
   request.nextUrl.searchParams.forEach((v, k) => url.searchParams.set(k, v));
@@ -35,7 +39,7 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
   if (ENGRAM_API_KEY) headers['X-AM-API-Key'] = ENGRAM_API_KEY;
   const authHeader = request.headers.get('authorization');
   if (authHeader) headers['Authorization'] = authHeader;
-  const userId = request.headers.get('x-am-user-id');
+  const userId = request.headers.get('x-am-user-id') || process.env.ENGRAM_USER_ID || '';
   if (userId) headers['X-AM-User-ID'] = userId;
 
   const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined;
