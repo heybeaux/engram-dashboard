@@ -347,71 +347,81 @@ export default function GraphPage() {
 
     simRef.current = sim;
 
-    // ── Zoom ────────────────────────────────────────────────────────
-    const d3Canvas = d3.select(canvas);
-    const zoom = d3
-      .zoom<HTMLCanvasElement, unknown>()
-      .scaleExtent([0.1, 10])
-      .on('zoom', (event) => {
-        transformRef.current = event.transform;
-        renderCanvas();
-      });
-    d3Canvas.call(zoom);
-
-    // ── Drag ────────────────────────────────────────────────────────
-    const findNode = (x: number, y: number): SimNode | null => {
+    // ── Hit testing ───────────────────────────────────────────────
+    const findNode = (cx: number, cy: number): SimNode | null => {
       const t = transformRef.current;
-      const sx = (x - t.x) / t.k;
-      const sy = (y - t.y) / t.k;
+      const sx = (cx - t.x) / t.k;
+      const sy = (cy - t.y) / t.k;
       for (let i = nodesRef.current.length - 1; i >= 0; i--) {
         const n = nodesRef.current[i];
         if (n.x == null) continue;
         const dx = sx - n.x;
         const dy = sy - n.y!;
-        if (dx * dx + dy * dy < (n.radius + 3) * (n.radius + 3)) return n;
+        if (dx * dx + dy * dy < (n.radius + 4) * (n.radius + 4)) return n;
       }
       return null;
     };
 
+    const d3Canvas = d3.select(canvas);
+
+    // ── Zoom + pan (with node-drag integration) ─────────────────────
     let dragNode: SimNode | null = null;
 
-    d3Canvas.on('mousedown', (event: MouseEvent) => {
+    const zoom = d3
+      .zoom<HTMLCanvasElement, unknown>()
+      .scaleExtent([0.1, 10])
+      .filter(() => true)
+      .on('start', (event) => {
+        if (event.sourceEvent?.type !== 'mousedown') return;
+        const rect = canvas.getBoundingClientRect();
+        const node = findNode(
+          event.sourceEvent.clientX - rect.left,
+          event.sourceEvent.clientY - rect.top,
+        );
+        if (node) {
+          dragNode = node;
+          node.fx = node.x;
+          node.fy = node.y;
+          simRef.current?.alphaTarget(0.3).restart();
+        }
+      })
+      .on('zoom', (event) => {
+        if (dragNode && event.sourceEvent?.type === 'mousemove') {
+          // Node drag — update fixed position
+          const rect = canvas.getBoundingClientRect();
+          const t = transformRef.current;
+          dragNode.fx =
+            (event.sourceEvent.clientX - rect.left - t.x) / t.k;
+          dragNode.fy =
+            (event.sourceEvent.clientY - rect.top - t.y) / t.k;
+        } else {
+          // Normal zoom/pan
+          transformRef.current = event.transform;
+        }
+        renderCanvas();
+      })
+      .on('end', () => {
+        if (dragNode) {
+          dragNode.fx = null;
+          dragNode.fy = null;
+          dragNode = null;
+          simRef.current?.alphaTarget(0);
+        }
+      });
+
+    d3Canvas.call(zoom);
+
+    // ── Hover ───────────────────────────────────────────────────────
+    d3Canvas.on('mousemove.hover', (event: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
-      if (node) {
-        dragNode = node;
-        node.fx = node.x;
-        node.fy = node.y;
-        simRef.current?.alphaTarget(0.3).restart();
-      }
-    });
-
-    d3Canvas.on('mousemove', (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const t = transformRef.current;
-
-      if (dragNode) {
-        dragNode.fx = (event.clientX - rect.left - t.x) / t.k;
-        dragNode.fy = (event.clientY - rect.top - t.y) / t.k;
-      }
-
-      // Hover detection
       const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
       setHoveredNode(node);
-      canvas.style.cursor = node ? 'pointer' : 'default';
+      canvas.style.cursor = node ? 'grab' : 'default';
     });
 
-    d3Canvas.on('mouseup', () => {
-      if (dragNode) {
-        dragNode.fx = null;
-        dragNode.fy = null;
-        dragNode = null;
-        simRef.current?.alphaTarget(0);
-      }
-    });
-
-    // ── Click to center ─────────────────────────────────────────────
-    d3Canvas.on('dblclick', (event: MouseEvent) => {
+    // ── Double-click to center ──────────────────────────────────────
+    d3Canvas.on('dblclick.zoom', null); // remove default zoom dblclick
+    d3Canvas.on('dblclick.center', (event: MouseEvent) => {
       event.preventDefault();
       const rect = canvas.getBoundingClientRect();
       const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
@@ -427,10 +437,8 @@ export default function GraphPage() {
     return () => {
       sim.stop();
       d3Canvas.on('.zoom', null);
-      d3Canvas.on('mousedown', null);
-      d3Canvas.on('mousemove', null);
-      d3Canvas.on('mouseup', null);
-      d3Canvas.on('dblclick', null);
+      d3Canvas.on('.hover', null);
+      d3Canvas.on('.center', null);
     };
   }, [simData, dimensions, renderCanvas]);
 
