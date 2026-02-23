@@ -217,15 +217,10 @@ export default function GraphPage() {
     const dpr = window.devicePixelRatio || 1;
 
     ctx.save();
-    ctx.clearRect(0, 0, width * dpr, height * dpr);
-    ctx.translate(
-      transformRef.current.x * dpr,
-      transformRef.current.y * dpr,
-    );
-    ctx.scale(
-      transformRef.current.k * dpr,
-      transformRef.current.k * dpr,
-    );
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Reset to DPR base
+    ctx.clearRect(0, 0, width, height);
+    ctx.translate(transformRef.current.x, transformRef.current.y);
+    ctx.scale(transformRef.current.k, transformRef.current.k);
 
     const nodes = nodesRef.current;
     const links = linksRef.current;
@@ -445,12 +440,20 @@ export default function GraphPage() {
   // ── Canvas DPR sizing ───────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = dimensions.width * dpr;
-    canvas.height = dimensions.height * dpr;
-    canvas.style.width = `${dimensions.width}px`;
-    canvas.style.height = `${dimensions.height}px`;
+    // Use container's actual width for accurate sizing
+    const rect = container.getBoundingClientRect();
+    const w = Math.floor(rect.width);
+    const h = dimensions.height;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    if (w !== dimensions.width) {
+      setDimensions((d) => ({ ...d, width: w }));
+    }
     renderCanvas();
   }, [dimensions, renderCanvas]);
 
@@ -744,7 +747,7 @@ export default function GraphPage() {
               <canvas
                 ref={canvasRef}
                 style={{
-                  width: dimensions.width,
+                  width: '100%',
                   height: dimensions.height,
                   display: 'block',
                 }}
