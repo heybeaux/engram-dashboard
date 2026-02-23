@@ -190,12 +190,17 @@ export default function GraphPage() {
     return buildGraphData(rawData, params);
   }, [rawData, params]);
 
-  // ── Zoom to fit after data loads ────────────────────────────────────
+  // ── Configure forces and zoom to fit after data loads ─────────────
   useEffect(() => {
     if (graphData.nodes.length > 0 && graphRef.current) {
+      // Configure force strengths
       setTimeout(() => {
-        graphRef.current?.zoomToFit(400, 40);
-      }, 500);
+        if (graphRef.current) {
+          graphRef.current.d3Force('charge')?.strength(-120);
+          graphRef.current.d3Force('link')?.distance(60);
+          graphRef.current.d3ReheatSimulation();
+        }
+      }, 100);
     }
   }, [graphData]);
 
@@ -555,9 +560,12 @@ export default function GraphPage() {
                 linkColor={linkColor}
                 linkWidth={linkWidth}
                 linkDirectionalParticles={0}
-                d3AlphaDecay={0.015}
+                d3AlphaDecay={0.02}
                 d3VelocityDecay={0.3}
+                warmupTicks={100}
                 cooldownTicks={200}
+                nodeRelSize={6}
+                onEngineStop={() => graphRef.current?.zoomToFit(400, 50)}
                 onNodeHover={(node: any) => setHoveredNode(node as GraphNode | null)}
                 onNodeDragEnd={(node: any) => {
                   node.fx = node.x;
