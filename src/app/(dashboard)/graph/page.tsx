@@ -307,6 +307,14 @@ export default function GraphPage() {
     simRef.current?.stop();
 
     const { width, height } = dimensions;
+    // Scale forces based on graph density
+    const nodeCount = simData.nodes.length;
+    const linkCount = simData.links.length;
+    const density = nodeCount > 0 ? linkCount / nodeCount : 0;
+    // Higher density → more repulsion to spread out clusters
+    const chargeStrength = Math.max(-120, -30 - density * 10);
+    const linkDistance = Math.max(30, 60 - density * 2);
+
     const sim = d3
       .forceSimulation<SimNode>(simData.nodes)
       .force(
@@ -314,13 +322,21 @@ export default function GraphPage() {
         d3
           .forceLink<SimNode, SimLink>(simData.links)
           .id((d) => d.id)
-          .distance(40)
-          .strength((l) => 0.1 + (l as SimLink).confidence * 0.2),
+          .distance(linkDistance)
+          .strength((l) => {
+            const link = l as SimLink;
+            // Shared-entity links are weaker (don't pull memories together so tightly)
+            const isShared = link.linkType?.startsWith('shared:');
+            return isShared ? 0.02 + link.confidence * 0.03 : 0.1 + link.confidence * 0.15;
+          }),
       )
-      .force('charge', d3.forceManyBody().strength(-30).distanceMax(200))
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
-      .force('collision', d3.forceCollide<SimNode>().radius((d) => d.radius + 1))
-      .alphaDecay(0.02)
+      .force('charge', d3.forceManyBody().strength(chargeStrength).distanceMax(300))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.03))
+      .force('collision', d3.forceCollide<SimNode>().radius((d) => d.radius + 2))
+      .force('x', d3.forceX(width / 2).strength(0.01))
+      .force('y', d3.forceY(height / 2).strength(0.01))
+      .alphaDecay(0.015)
+      .velocityDecay(0.3)
       .on('tick', renderCanvas);
 
     // Warm-start: if nodes already have positions, reduce alpha
