@@ -15,9 +15,14 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
-import * as d3 from 'd3';
+import dynamic from 'next/dynamic';
 import { engram as engramClient } from '@/lib/engram-client';
 import type { GraphData } from '@/lib/types';
+
+// Dynamically import to avoid SSR issues with canvas
+const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
+  ssr: false,
+});
 
 // ── Color scheme ────────────────────────────────────────────────────────
 const LAYER_COLORS: Record<string, string> = {
@@ -30,23 +35,6 @@ const LAYER_COLORS: Record<string, string> = {
 const ENTITY_COLOR = '#ec4899';
 const DEFAULT_NODE_COLOR = '#6b7280';
 const LAYERS = ['IDENTITY', 'PROJECT', 'SESSION', 'TASK', 'INSIGHT'] as const;
-
-// ── D3 node/link types ──────────────────────────────────────────────────
-interface SimNode extends d3.SimulationNodeDatum {
-  id: string;
-  label: string;
-  layer: string;
-  importance: number;
-  color: string;
-  radius: number;
-  isEntity: boolean;
-  highlighted: boolean;
-}
-
-interface SimLink extends d3.SimulationLinkDatum<SimNode> {
-  linkType: string;
-  confidence: number;
-}
 
 // ── Graph params state ──────────────────────────────────────────────────
 interface GraphParams {
@@ -65,18 +53,32 @@ function defaultParams(): GraphParams {
   };
 }
 
-// ── Transform API data → d3 simulation data ─────────────────────────────
-function buildSimData(
+interface GraphNode {
+  id: string;
+  label: string;
+  layer: string;
+  importance: number;
+  color: string;
+  radius: number;
+  isEntity: boolean;
+}
+
+interface GraphLink {
+  source: string;
+  target: string;
+  linkType: string;
+  confidence: number;
+}
+
+// ── Transform API data → graph data ─────────────────────────────────
+function buildGraphData(
   data: GraphData,
   params: GraphParams,
-  oldNodes: Map<string, { x: number; y: number }>,
-): { nodes: SimNode[]; links: SimLink[] } {
-  const nodeMap = new Map<string, SimNode>();
+): { nodes: GraphNode[]; links: GraphLink[] } {
+  const nodeMap = new Map<string, GraphNode>();
 
-  // Memory nodes
   for (const n of data.nodes) {
     if (!params.layers.has(n.layer)) continue;
-    const old = oldNodes.get(n.id);
     nodeMap.set(n.id, {
       id: n.id,
       label: n.extraction?.what || n.raw?.slice(0, 50) || n.id.slice(0, 8),
@@ -85,15 +87,11 @@ function buildSimData(
       color: LAYER_COLORS[n.layer] || DEFAULT_NODE_COLOR,
       radius: 3 + (n.importanceScore ?? 0.5) * 5,
       isEntity: false,
-      highlighted: false,
-      ...(old ? { x: old.x, y: old.y } : {}),
     });
   }
 
-  // Entity nodes
   for (const e of data.entities) {
     if (nodeMap.has(e.id)) continue;
-    const old = oldNodes.get(e.id);
     nodeMap.set(e.id, {
       id: e.id,
       label: e.name || e.id.slice(0, 8),
@@ -102,13 +100,10 @@ function buildSimData(
       color: ENTITY_COLOR,
       radius: 5,
       isEntity: true,
-      highlighted: false,
-      ...(old ? { x: old.x, y: old.y } : {}),
     });
   }
 
-  // Links — filter by confidence and ensure both endpoints exist
-  const links: SimLink[] = data.edges
+  const links: GraphLink[] = data.edges
     .filter(
       (e) =>
         e.confidence >= params.minConfidence &&
@@ -130,13 +125,8 @@ function buildSimData(
 // ════════════════════════════════════════════════════════════════════════
 
 export default function GraphPage() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const graphRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
-  const transformRef = useRef(d3.zoomIdentity);
-  const nodesRef = useRef<SimNode[]>([]);
-  const linksRef = useRef<SimLink[]>([]);
-  const oldPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
 
   const [rawData, setRawData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +134,7 @@ export default function GraphPage() {
   const [stats, setStats] = useState({ nodes: 0, edges: 0, entities: 0 });
   const [params, setParams] = useState<GraphParams>(defaultParams);
   const [showControls, setShowControls] = useState(true);
-  const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
   // ── Fetch data ──────────────────────────────────────────────────────
@@ -182,312 +172,102 @@ export default function GraphPage() {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width } = entry.contentRect;
-        setDimensions({
-          width,
-          height: Math.max(500, window.innerHeight - 260),
-        });
+        if (width > 0) {
+          setDimensions({
+            width: Math.floor(width),
+            height: Math.max(500, window.innerHeight - 260),
+          });
+        }
       }
     });
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
 
-  // ── Build simulation data when rawData or params change ─────────────
-  const simData = useMemo(() => {
+  // ── Build graph data when rawData or params change ──────────────────
+  const graphData = useMemo(() => {
     if (!rawData) return { nodes: [], links: [] };
-    return buildSimData(rawData, params, oldPositionsRef.current);
+    return buildGraphData(rawData, params);
   }, [rawData, params]);
 
-  // ── Search highlighting ─────────────────────────────────────────────
+  // ── Zoom to fit after data loads ────────────────────────────────────
   useEffect(() => {
-    const q = params.searchQuery.toLowerCase().trim();
-    for (const node of nodesRef.current) {
-      node.highlighted = q.length > 0 && node.label.toLowerCase().includes(q);
+    if (graphData.nodes.length > 0 && graphRef.current) {
+      setTimeout(() => {
+        graphRef.current?.zoomToFit(400, 40);
+      }, 500);
     }
-    renderCanvas();
-  }, [params.searchQuery]);
+  }, [graphData]);
 
-  // ── D3 simulation + Canvas rendering ────────────────────────────────
-  const renderCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
+  // ── Node canvas rendering ───────────────────────────────────────────
+  const searchQuery = params.searchQuery.toLowerCase().trim();
 
-    ctx.save();
-    // Clear at full physical resolution
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Scale by DPR for crisp rendering on HiDPI
-    ctx.scale(dpr, dpr);
-    // Apply zoom/pan transform (in CSS pixel space)
-    ctx.translate(transformRef.current.x, transformRef.current.y);
-    ctx.scale(transformRef.current.k, transformRef.current.k);
+  const nodeCanvasObject = useCallback(
+    (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      const n = node as GraphNode & { x: number; y: number };
+      const highlighted =
+        searchQuery.length > 0 &&
+        n.label.toLowerCase().includes(searchQuery);
+      const dimmed = searchQuery.length > 0 && !highlighted;
 
-    const nodes = nodesRef.current;
-    const links = linksRef.current;
-    const hasSearch = params.searchQuery.trim().length > 0;
-
-    // Draw links
-    for (const link of links) {
-      const source = link.source as SimNode;
-      const target = link.target as SimNode;
-      if (source.x == null || target.x == null) continue;
-
+      // Node circle
       ctx.beginPath();
-      ctx.moveTo(source.x, source.y!);
-      ctx.lineTo(target.x, target.y!);
-      const isShared = link.linkType?.startsWith('shared:');
-      ctx.strokeStyle = isShared
-        ? `rgba(100, 116, 139, ${0.08 + link.confidence * 0.12})`
-        : `rgba(236, 72, 153, ${0.15 + link.confidence * 0.25})`;
-      ctx.lineWidth = isShared ? 0.3 : 0.5 + link.confidence;
-      ctx.stroke();
-    }
-
-    // Draw nodes
-    for (const node of nodes) {
-      if (node.x == null) continue;
-
-      const dimmed = hasSearch && !node.highlighted;
-      const bright = hasSearch && node.highlighted;
-
-      ctx.beginPath();
-      ctx.arc(node.x, node.y!, node.radius, 0, Math.PI * 2);
-      ctx.fillStyle = dimmed
-        ? `${node.color}33`
-        : node.color;
+      ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+      ctx.fillStyle = dimmed ? `${n.color}33` : n.color;
       ctx.fill();
 
-      if (bright) {
+      if (highlighted) {
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 / globalScale;
         ctx.stroke();
       }
 
-      // Labels: show when zoomed in or highlighted
-      if (transformRef.current.k > 2 || bright) {
-        const fontSize = Math.max(10 / transformRef.current.k, 2);
+      // Labels when zoomed in or highlighted
+      if (globalScale > 2 || highlighted) {
+        const fontSize = Math.max(10 / globalScale, 2);
         ctx.font = `${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillStyle = dimmed
           ? 'rgba(255,255,255,0.2)'
           : 'rgba(255,255,255,0.85)';
-        ctx.fillText(
-          node.label.slice(0, 30),
-          node.x,
-          node.y! + node.radius + 1,
-        );
+        ctx.fillText(n.label.slice(0, 30), n.x, n.y + n.radius + 1);
       }
-    }
+    },
+    [searchQuery],
+  );
 
-    ctx.restore();
-  }, [dimensions, params.searchQuery]);
+  // ── Link rendering ──────────────────────────────────────────────────
+  const linkColor = useCallback((link: any) => {
+    const l = link as GraphLink;
+    const isShared = l.linkType?.startsWith('shared:');
+    return isShared
+      ? `rgba(100, 116, 139, ${0.08 + l.confidence * 0.12})`
+      : `rgba(236, 72, 153, ${0.15 + l.confidence * 0.25})`;
+  }, []);
 
-  // ── Initialize / update simulation ──────────────────────────────────
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || simData.nodes.length === 0) return;
-
-    // Save old positions for warm-start
-    for (const node of nodesRef.current) {
-      if (node.x != null && node.y != null) {
-        oldPositionsRef.current.set(node.id, { x: node.x, y: node.y });
-      }
-    }
-
-    nodesRef.current = simData.nodes;
-    linksRef.current = simData.links;
-
-    // Kill old simulation
-    simRef.current?.stop();
-
-    const { width, height } = dimensions;
-    // Scale forces based on graph density
-    const nodeCount = simData.nodes.length;
-    const linkCount = simData.links.length;
-    const density = nodeCount > 0 ? linkCount / nodeCount : 0;
-    // Higher density → more repulsion to spread out clusters
-    const chargeStrength = Math.max(-120, -30 - density * 10);
-    const linkDistance = Math.max(30, 60 - density * 2);
-
-    const sim = d3
-      .forceSimulation<SimNode>(simData.nodes)
-      .force(
-        'link',
-        d3
-          .forceLink<SimNode, SimLink>(simData.links)
-          .id((d) => d.id)
-          .distance(linkDistance)
-          .strength((l) => {
-            const link = l as SimLink;
-            // Shared-entity links are weaker (don't pull memories together so tightly)
-            const isShared = link.linkType?.startsWith('shared:');
-            return isShared ? 0.02 + link.confidence * 0.03 : 0.1 + link.confidence * 0.15;
-          }),
-      )
-      .force('charge', d3.forceManyBody().strength(chargeStrength).distanceMax(300))
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.03))
-      .force('collision', d3.forceCollide<SimNode>().radius((d) => d.radius + 2))
-      .force('x', d3.forceX(width / 2).strength(0.01))
-      .force('y', d3.forceY(height / 2).strength(0.01))
-      .alphaDecay(0.015)
-      .velocityDecay(0.3)
-      .on('tick', renderCanvas);
-
-    // Warm-start: if nodes already have positions, reduce alpha
-    const hasPositions = simData.nodes.some((n) => n.x != null && n.y != null);
-    if (hasPositions) {
-      sim.alpha(0.3).restart();
-    }
-
-    simRef.current = sim;
-
-    // ── Hit testing ───────────────────────────────────────────────
-    const findNode = (cx: number, cy: number): SimNode | null => {
-      const t = transformRef.current;
-      const sx = (cx - t.x) / t.k;
-      const sy = (cy - t.y) / t.k;
-      for (let i = nodesRef.current.length - 1; i >= 0; i--) {
-        const n = nodesRef.current[i];
-        if (n.x == null) continue;
-        const dx = sx - n.x;
-        const dy = sy - n.y!;
-        if (dx * dx + dy * dy < (n.radius + 4) * (n.radius + 4)) return n;
-      }
-      return null;
-    };
-
-    const d3Canvas = d3.select(canvas);
-
-    // ── Zoom + pan ──────────────────────────────────────────────────
-    let dragTarget: SimNode | null = null;
-
-    const zoom = d3
-      .zoom<HTMLCanvasElement, unknown>()
-      .scaleExtent([0.1, 10])
-      .filter((event) => {
-        // Block pan when clicking on a node (drag handles it)
-        if (event.type === 'mousedown') {
-          const rect = canvas.getBoundingClientRect();
-          const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
-          if (node) return false; // Let the native handlers below deal with it
-        }
-        return true;
-      })
-      .on('zoom', (event) => {
-        transformRef.current = event.transform;
-        renderCanvas();
-      });
-
-    d3Canvas.call(zoom);
-
-    // ── Node drag (native mouse events, won't conflict with zoom) ───
-    d3Canvas.on('mousedown.drag', (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
-      if (!node) return;
-      event.stopPropagation(); // Prevent zoom from also handling this
-      dragTarget = node;
-      node.fx = node.x;
-      node.fy = node.y;
-      simRef.current?.alphaTarget(0.3).restart();
-      canvas.style.cursor = 'grabbing';
-    });
-
-    // Mousemove: drag + hover (use d3 selection for consistent event handling)
-    d3Canvas.on('mousemove.interaction', (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const t = transformRef.current;
-
-      if (dragTarget) {
-        dragTarget.fx = (event.clientX - rect.left - t.x) / t.k;
-        dragTarget.fy = (event.clientY - rect.top - t.y) / t.k;
-        renderCanvas();
-      }
-
-      // Always do hover detection
-      const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
-      setHoveredNode(node);
-      canvas.style.cursor = dragTarget ? 'grabbing' : node ? 'grab' : 'default';
-    });
-
-    // Mouseup: release drag (on window so it works even if cursor leaves canvas)
-    const onMouseUp = () => {
-      if (dragTarget) {
-        dragTarget.fx = null;
-        dragTarget.fy = null;
-        dragTarget = null;
-        simRef.current?.alphaTarget(0);
-        canvas.style.cursor = 'default';
-      }
-    };
-    window.addEventListener('mouseup', onMouseUp);
-
-    // ── Double-click to center ──────────────────────────────────────
-    d3Canvas.on('dblclick.zoom', null);
-    d3Canvas.on('dblclick.center', (event: MouseEvent) => {
-      event.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const node = findNode(event.clientX - rect.left, event.clientY - rect.top);
-      if (node && node.x != null) {
-        const t = d3.zoomIdentity
-          .translate(width / 2, height / 2)
-          .scale(3)
-          .translate(-node.x, -node.y!);
-        d3Canvas.transition().duration(500).call(zoom.transform, t);
-      }
-    });
-
-    return () => {
-      sim.stop();
-      d3Canvas.on('.zoom', null);
-      d3Canvas.on('.drag', null);
-      d3Canvas.on('.interaction', null);
-      d3Canvas.on('.center', null);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [simData, dimensions, renderCanvas]);
-
-  // ── Canvas DPR sizing ───────────────────────────────────────────────
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-    const dpr = window.devicePixelRatio || 1;
-    // Use container's actual width for accurate sizing
-    const rect = container.getBoundingClientRect();
-    const w = Math.floor(rect.width);
-    const h = dimensions.height;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
-    if (w !== dimensions.width) {
-      setDimensions((d) => ({ ...d, width: w }));
-    }
-    renderCanvas();
-  }, [dimensions, renderCanvas]);
+  const linkWidth = useCallback((link: any) => {
+    const l = link as GraphLink;
+    const isShared = l.linkType?.startsWith('shared:');
+    return isShared ? 0.3 : 0.5 + l.confidence;
+  }, []);
 
   // ── Zoom controls ───────────────────────────────────────────────────
-  const handleZoom = useCallback(
-    (factor: number) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const d3Canvas = d3.select(canvas);
-      const zoom = d3.zoom<HTMLCanvasElement, unknown>().scaleExtent([0.1, 10]);
-      d3Canvas
-        .transition()
-        .duration(300)
-        .call(
-          zoom.scaleBy,
-          factor,
-        );
-    },
-    [],
-  );
+  const handleZoomIn = useCallback(() => {
+    const fg = graphRef.current;
+    if (fg) {
+      const currentZoom = fg.zoom();
+      fg.zoom(currentZoom * 1.5, 300);
+    }
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    const fg = graphRef.current;
+    if (fg) {
+      const currentZoom = fg.zoom();
+      fg.zoom(currentZoom / 1.5, 300);
+    }
+  }, []);
 
   // ── Debounced limit change ──────────────────────────────────────────
   const limitTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -574,7 +354,7 @@ export default function GraphPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleZoom(1.5)}
+            onClick={handleZoomIn}
             className="h-9 w-9 p-0"
           >
             <ZoomIn className="h-4 w-4" />
@@ -582,7 +362,7 @@ export default function GraphPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleZoom(1 / 1.5)}
+            onClick={handleZoomOut}
             className="h-9 w-9 p-0"
           >
             <ZoomOut className="h-4 w-4" />
@@ -742,10 +522,10 @@ export default function GraphPage() {
           </Card>
         )}
 
-        {/* Canvas */}
+        {/* Graph */}
         <Card className="overflow-hidden flex-1">
           <CardContent className="p-0" ref={containerRef}>
-            {simData.nodes.length === 0 ? (
+            {graphData.nodes.length === 0 ? (
               <div
                 className="flex flex-col items-center justify-center py-16 text-center"
                 style={{ height: dimensions.height }}
@@ -758,13 +538,41 @@ export default function GraphPage() {
                 </p>
               </div>
             ) : (
-              <canvas
-                ref={canvasRef}
-                style={{
-                  width: '100%',
-                  height: dimensions.height,
-                  display: 'block',
+              <ForceGraph2D
+                ref={graphRef}
+                graphData={graphData}
+                width={dimensions.width}
+                height={dimensions.height}
+                nodeId="id"
+                nodeCanvasObject={nodeCanvasObject}
+                nodePointerAreaPaint={(node: any, color, ctx) => {
+                  const n = node as GraphNode & { x: number; y: number };
+                  ctx.beginPath();
+                  ctx.arc(n.x, n.y, n.radius + 4, 0, Math.PI * 2);
+                  ctx.fillStyle = color;
+                  ctx.fill();
                 }}
+                linkColor={linkColor}
+                linkWidth={linkWidth}
+                linkDirectionalParticles={0}
+                d3AlphaDecay={0.015}
+                d3VelocityDecay={0.3}
+                cooldownTicks={200}
+                onNodeHover={(node: any) => setHoveredNode(node as GraphNode | null)}
+                onNodeDragEnd={(node: any) => {
+                  node.fx = node.x;
+                  node.fy = node.y;
+                }}
+                onNodeClick={(node: any) => {
+                  // Double-click to unpin
+                  if (node.fx != null) {
+                    node.fx = undefined;
+                    node.fy = undefined;
+                  }
+                }}
+                onBackgroundClick={() => setHoveredNode(null)}
+                backgroundColor="transparent"
+                enablePointerInteraction={true}
               />
             )}
           </CardContent>
