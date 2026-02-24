@@ -267,31 +267,35 @@ export default function GraphPage() {
     loadGraph();
   }, [loadGraph]);
 
-  // ── Resize observer ─────────────────────────────────────────────────
+  // ── Resize: fill viewport below the graph card ─────────────────────
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const graphCard = containerRef.current?.closest('.overflow-hidden');
     const updateSize = () => {
-      const rect = container.getBoundingClientRect();
-      if (rect.width > 0) {
-        // Fill from container top to bottom of viewport (minus small padding)
-        const availableHeight = window.innerHeight - rect.top - 16;
-        setDimensions({
-          width: Math.floor(rect.width),
-          height: Math.max(400, Math.floor(availableHeight)),
-        });
-      }
+      // Use the graph Card's position to calculate available space
+      const el = graphCard || containerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const availableHeight = window.innerHeight - rect.top - 8;
+      const availableWidth = rect.width > 0 ? Math.floor(rect.width) : 800;
+      setDimensions({
+        width: availableWidth,
+        height: Math.max(400, Math.floor(availableHeight)),
+      });
     };
+
+    // Observe the flex container that holds both sidebar + graph
+    const flexParent = containerRef.current?.closest('.flex.gap-4');
     const observer = new ResizeObserver(() => updateSize());
-    observer.observe(container);
+    if (flexParent) observer.observe(flexParent);
     window.addEventListener('resize', updateSize);
-    // Initial calc after mount
-    setTimeout(updateSize, 100);
+    // Recalc after layout settles
+    setTimeout(updateSize, 50);
+    setTimeout(updateSize, 300);
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', updateSize);
     };
-  }, []);
+  }, [showControls]);
 
   // ── Build graph data ────────────────────────────────────────────────
   const graphData = useMemo(() => {
@@ -588,11 +592,11 @@ export default function GraphPage() {
         </div>
       </div>
 
-      {/* Main layout: controls + graph */}
-      <div className="flex gap-4">
+      {/* Main layout: controls + graph — fill remaining viewport */}
+      <div className="flex gap-4" style={{ height: `calc(100vh - 220px)` }}>
         {/* Controls panel */}
         {showControls && (
-          <Card className="w-[320px] shrink-0 overflow-y-auto" style={{ maxHeight: dimensions.height }}>
+          <Card className="w-[320px] shrink-0 overflow-y-auto h-full">
             <CardContent className="p-4 space-y-5">
               {/* Search */}
               <div className="space-y-2">
@@ -762,8 +766,8 @@ export default function GraphPage() {
         )}
 
         {/* Graph */}
-        <Card className="overflow-hidden flex-1">
-          <CardContent className="p-0" ref={containerRef}>
+        <Card className="overflow-hidden flex-1 h-full">
+          <CardContent className="p-0 h-full" ref={containerRef}>
             {graphData.nodes.length === 0 ? (
               <div
                 className="flex flex-col items-center justify-center py-16 text-center"
