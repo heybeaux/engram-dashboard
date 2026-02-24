@@ -14,7 +14,7 @@ jobs:
           fetch-depth: 2
       - name: Extract ticket references
         run: |
-          TICKETS=$(git log --format=%B -1 HEAD | grep -oP 'HEY-\d+' | sort -u || true)
+          TICKETS=$(git log --format=%B -1 HEAD | grep -oP 'HEY-\d+' | sort -u | tr '\n' ' ' | xargs || true)
           echo "Found tickets: $TICKETS"
           echo "TICKETS=$TICKETS" >> $GITHUB_ENV
       - name: Comment on Linear tickets
