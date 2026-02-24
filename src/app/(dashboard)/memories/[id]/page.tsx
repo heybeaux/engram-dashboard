@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { decodeHtmlEntities } from "@/lib/decode-html";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -253,7 +254,7 @@ export default function MemoryDetailPage() {
       {/* Memory Content */}
       <Card>
         <CardContent className="pt-4 md:pt-6">
-          <p className="text-lg md:text-2xl font-medium">&ldquo;{memory.raw}&rdquo;</p>
+          <p className="text-lg md:text-2xl font-medium">&ldquo;{decodeHtmlEntities(memory.raw)}&rdquo;</p>
         </CardContent>
       </Card>
 
