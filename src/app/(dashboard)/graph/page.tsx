@@ -20,10 +20,30 @@ import dynamic from 'next/dynamic';
 import { engram as engramClient } from '@/lib/engram-client';
 import type { GraphData } from '@/lib/types';
 
-// Dynamically import to avoid SSR issues with canvas
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ssr: false,
 });
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+/** Decode HTML entities like &#x27; &amp; &quot; etc. */
+function decodeHtmlEntities(text: string): string {
+  if (typeof document !== 'undefined') {
+    const el = document.createElement('textarea');
+    el.innerHTML = text;
+    return el.value;
+  }
+  // SSR fallback
+  return text
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
 
 // ── Color scheme ────────────────────────────────────────────────────────
 const LAYER_COLORS: Record<string, string> = {
@@ -37,7 +57,7 @@ const ENTITY_COLOR = '#ec4899';
 const DEFAULT_NODE_COLOR = '#6b7280';
 const LAYERS = ['IDENTITY', 'PROJECT', 'SESSION', 'TASK', 'INSIGHT'] as const;
 
-// ── Graph params state ──────────────────────────────────────────────────
+// ── Types ───────────────────────────────────────────────────────────────
 interface GraphParams {
   limit: number;
   minConfidence: number;
@@ -47,7 +67,7 @@ interface GraphParams {
 
 function defaultParams(): GraphParams {
   return {
-    limit: 200,
+    limit: 500,
     minConfidence: 0,
     layers: new Set(LAYERS),
     searchQuery: '',
@@ -57,11 +77,15 @@ function defaultParams(): GraphParams {
 interface GraphNode {
   id: string;
   label: string;
+  raw: string; // full memory text
   layer: string;
   importance: number;
   color: string;
   radius: number;
   isEntity: boolean;
+  mentionCount?: number;
+  source?: string;
+  createdAt?: string;
 }
 
 interface GraphLink {
@@ -71,7 +95,7 @@ interface GraphLink {
   confidence: number;
 }
 
-// ── Transform API data → graph data ─────────────────────────────────
+// ── Build graph ─────────────────────────────────────────────────────────
 function buildGraphData(
   data: GraphData,
   params: GraphParams,
@@ -80,45 +104,106 @@ function buildGraphData(
 
   for (const n of data.nodes) {
     if (!params.layers.has(n.layer)) continue;
+    const rawText = decodeHtmlEntities(n.raw || '');
     nodeMap.set(n.id, {
       id: n.id,
-      label: n.extraction?.what || n.raw?.slice(0, 50) || n.id.slice(0, 8),
+      label: decodeHtmlEntities(n.extraction?.what || rawText.slice(0, 60) || n.id.slice(0, 8)),
+      raw: rawText,
       layer: n.layer,
       importance: n.importanceScore ?? 0.5,
       color: LAYER_COLORS[n.layer] || DEFAULT_NODE_COLOR,
       radius: 3 + (n.importanceScore ?? 0.5) * 5,
       isEntity: false,
+      source: n.source,
+      createdAt: n.createdAt,
     });
   }
 
+  // Build entity → memory mapping from shared edges
+  const entityMemories = new Map<string, Set<string>>();
+  const entityNodeLookup = new Map<string, any>();
+
   for (const e of data.entities) {
-    if (nodeMap.has(e.id)) continue;
-    nodeMap.set(e.id, {
-      id: e.id,
-      label: e.name || e.id.slice(0, 8),
+    entityNodeLookup.set(e.name, e);
+  }
+
+  for (const edge of data.edges) {
+    if (!edge.linkType?.startsWith('shared:')) continue;
+    const entityName = edge.linkType.slice(7);
+    if (!entityMemories.has(entityName)) {
+      entityMemories.set(entityName, new Set());
+    }
+    if (nodeMap.has(edge.source)) entityMemories.get(entityName)!.add(edge.source);
+    if (nodeMap.has(edge.target)) entityMemories.get(entityName)!.add(edge.target);
+  }
+
+  // Entity hub nodes
+  Array.from(entityMemories.entries()).forEach(([entityName, memoryIds]) => {
+    if (memoryIds.size < 2) return;
+    const entityData = entityNodeLookup.get(entityName);
+    const entityId = entityData?.id || `entity:${entityName}`;
+    if (nodeMap.has(entityId)) return;
+
+    nodeMap.set(entityId, {
+      id: entityId,
+      label: entityName,
+      raw: `Entity: ${entityName} (${memoryIds.size} connected memories)`,
       layer: 'ENTITY',
       importance: 0.7,
       color: ENTITY_COLOR,
-      radius: 5,
+      radius: Math.min(4 + Math.sqrt(memoryIds.size) * 2, 14),
       isEntity: true,
+      mentionCount: memoryIds.size,
     });
-  }
+  });
 
-  const links: GraphLink[] = data.edges
-    .filter(
-      (e) =>
-        e.confidence >= params.minConfidence &&
-        nodeMap.has(e.source) &&
-        nodeMap.has(e.target),
-    )
-    .map((e) => ({
+  const links: GraphLink[] = [];
+
+  // Entity → memory hub edges
+  Array.from(entityMemories.entries()).forEach(([entityName, memoryIds]) => {
+    if (memoryIds.size < 2) return;
+    const entityData = entityNodeLookup.get(entityName);
+    const entityId = entityData?.id || `entity:${entityName}`;
+    if (!nodeMap.has(entityId)) return;
+
+    Array.from(memoryIds).forEach((memId) => {
+      if (!nodeMap.has(memId)) return;
+      links.push({
+        source: entityId,
+        target: memId,
+        linkType: `entity:${entityName}`,
+        confidence: 0.7,
+      });
+    });
+  });
+
+  // Non-shared edges
+  for (const e of data.edges) {
+    if (e.linkType?.startsWith('shared:')) continue;
+    if (e.confidence < params.minConfidence) continue;
+    if (!nodeMap.has(e.source) || !nodeMap.has(e.target)) continue;
+    links.push({
       source: e.source,
       target: e.target,
       linkType: e.linkType,
       confidence: e.confidence,
-    }));
+    });
+  }
 
-  return { nodes: Array.from(nodeMap.values()), links };
+  // Remove unconnected memory nodes (keep entities — they always have edges)
+  const connectedIds = new Set<string>();
+  for (const link of links) {
+    const srcId = typeof link.source === 'string' ? link.source : (link.source as any).id;
+    const tgtId = typeof link.target === 'string' ? link.target : (link.target as any).id;
+    connectedIds.add(srcId);
+    connectedIds.add(tgtId);
+  }
+
+  const filteredNodes = Array.from(nodeMap.values()).filter(
+    (n) => n.isEntity || connectedIds.has(n.id),
+  );
+
+  return { nodes: filteredNodes, links };
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -137,7 +222,22 @@ export default function GraphPage() {
   const [params, setParams] = useState<GraphParams>(defaultParams);
   const [showControls, setShowControls] = useState(true);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+
+  // Track which node IDs are "active" (selected + its neighbors)
+  const activeNodeIds = useMemo(() => {
+    if (!selectedNode) return null; // null = show all
+    const ids = new Set<string>([selectedNode.id]);
+    // Find all neighbors via links
+    for (const link of (graphRef.current?.graphData?.()?.links || [])) {
+      const srcId = typeof link.source === 'object' ? link.source.id : link.source;
+      const tgtId = typeof link.target === 'object' ? link.target.id : link.target;
+      if (srcId === selectedNode.id) ids.add(tgtId);
+      if (tgtId === selectedNode.id) ids.add(srcId);
+    }
+    return ids;
+  }, [selectedNode]);
 
   // ── Fetch data ──────────────────────────────────────────────────────
   const loadGraph = useCallback(
@@ -186,110 +286,161 @@ export default function GraphPage() {
     return () => observer.disconnect();
   }, []);
 
-  // ── Build graph data when rawData or params change ──────────────────
+  // ── Build graph data ────────────────────────────────────────────────
   const graphData = useMemo(() => {
     if (!rawData) return { nodes: [], links: [] };
     return buildGraphData(rawData, params);
   }, [rawData, params]);
 
-  // ── Configure forces and zoom to fit after data loads ─────────────
+  // ── Configure forces ────────────────────────────────────────────────
   useEffect(() => {
     if (graphData.nodes.length > 0 && graphRef.current) {
-      // Configure force strengths
       setTimeout(() => {
-        if (graphRef.current) {
-          const nodeCount = graphData.nodes.length;
-          const linkCount = graphData.links.length;
-          const density = nodeCount > 0 ? linkCount / nodeCount : 0;
+        if (!graphRef.current) return;
+        const fg = graphRef.current;
+        const nodeCount = graphData.nodes.length;
 
-          // Scale repulsion with density — more edges = push harder
-          const charge = Math.min(-80, -150 - density * 15);
-          graphRef.current.d3Force('charge')?.strength(charge).distanceMax(400);
+        const charge = -200 - nodeCount * 0.5;
+        fg.d3Force('charge')?.strength(charge).distanceMax(600);
 
-          // Weaken shared-entity links so they don't collapse clusters
-          graphRef.current.d3Force('link')
-            ?.distance((link: any) => {
-              const isShared = link.linkType?.startsWith('shared:');
-              return isShared ? 120 : 60;
-            })
-            .strength((link: any) => {
-              const isShared = link.linkType?.startsWith('shared:');
-              return isShared ? 0.02 : 0.1 + (link.confidence || 0) * 0.1;
-            });
-          graphRef.current.d3ReheatSimulation();
-        }
-      }, 100);
+        fg.d3Force('link')
+          ?.distance((link: any) => {
+            const isEntityHub = (typeof link.linkType === 'string')
+              ? link.linkType.startsWith('entity:')
+              : false;
+            return isEntityHub ? 40 : 80;
+          })
+          .strength((link: any) => {
+            const isEntityHub = (typeof link.linkType === 'string')
+              ? link.linkType.startsWith('entity:')
+              : false;
+            return isEntityHub ? 0.3 : 0.15 + (link.confidence || 0) * 0.15;
+          });
+
+        fg.d3Force('center')?.strength(0.05);
+        fg.d3ReheatSimulation();
+
+        setTimeout(() => fg.zoomToFit(400, 60), 2000);
+      }, 200);
     }
   }, [graphData]);
 
-  // ── Node canvas rendering ───────────────────────────────────────────
+  // ── Node rendering ──────────────────────────────────────────────────
   const searchQuery = params.searchQuery.toLowerCase().trim();
 
   const nodeCanvasObject = useCallback(
     (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const n = node as GraphNode & { x: number; y: number };
-      const highlighted =
-        searchQuery.length > 0 &&
-        n.label.toLowerCase().includes(searchQuery);
-      const dimmed = searchQuery.length > 0 && !highlighted;
+      const searchMatch =
+        searchQuery.length > 0 && n.label.toLowerCase().includes(searchQuery);
+      const dimmedBySearch = searchQuery.length > 0 && !searchMatch;
+      const dimmedBySelection = activeNodeIds !== null && !activeNodeIds.has(n.id);
+      const dimmed = dimmedBySearch || dimmedBySelection;
+      const isSelected = selectedNode?.id === n.id;
 
-      // Node circle
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-      ctx.fillStyle = dimmed ? `${n.color}33` : n.color;
+      ctx.fillStyle = dimmed ? `${n.color}22` : n.color;
       ctx.fill();
 
-      if (highlighted) {
+      // Selected node ring
+      if (isSelected) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius + 3, 0, Math.PI * 2);
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2 / globalScale;
+        ctx.lineWidth = 2.5 / globalScale;
         ctx.stroke();
       }
 
-      // Labels when zoomed in or highlighted
-      if (globalScale > 2 || highlighted) {
-        const fontSize = Math.max(10 / globalScale, 2);
-        ctx.font = `${fontSize}px sans-serif`;
+      // Entity hub glow
+      if (n.isEntity && !dimmed) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = `${ENTITY_COLOR}66`;
+        ctx.lineWidth = 1.5 / globalScale;
+        ctx.stroke();
+      }
+
+      if (searchMatch && !isSelected) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5 / globalScale;
+        ctx.stroke();
+      }
+
+      // Labels
+      const showLabel = n.isEntity || globalScale > 2.5 || searchMatch || isSelected;
+      if (showLabel && !dimmed) {
+        const fontSize = n.isEntity
+          ? Math.max(11 / globalScale, 3)
+          : Math.max(10 / globalScale, 2);
+        ctx.font = `${n.isEntity ? 'bold ' : ''}${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.fillStyle = dimmed
-          ? 'rgba(255,255,255,0.2)'
-          : 'rgba(255,255,255,0.85)';
-        ctx.fillText(n.label.slice(0, 30), n.x, n.y + n.radius + 1);
+        ctx.fillStyle = n.isEntity
+          ? 'rgba(255,255,255,0.95)'
+          : 'rgba(255,255,255,0.75)';
+        ctx.fillText(n.label.slice(0, 30), n.x, n.y + n.radius + 2);
       }
     },
-    [searchQuery],
+    [searchQuery, activeNodeIds, selectedNode],
   );
 
   // ── Link rendering ──────────────────────────────────────────────────
-  const linkColor = useCallback((link: any) => {
-    const l = link as GraphLink;
-    const isShared = l.linkType?.startsWith('shared:');
-    return isShared
-      ? `rgba(100, 116, 139, ${0.08 + l.confidence * 0.12})`
-      : `rgba(236, 72, 153, ${0.15 + l.confidence * 0.25})`;
-  }, []);
+  const linkColor = useCallback(
+    (link: any) => {
+      const l = link as GraphLink;
+      const srcId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+      const tgtId = typeof l.target === 'object' ? (l.target as any).id : l.target;
 
-  const linkWidth = useCallback((link: any) => {
-    const l = link as GraphLink;
-    const isShared = l.linkType?.startsWith('shared:');
-    return isShared ? 0.3 : 0.5 + l.confidence;
-  }, []);
+      // Dim links not connected to selected node
+      if (activeNodeIds !== null) {
+        if (!activeNodeIds.has(srcId) || !activeNodeIds.has(tgtId)) {
+          return 'rgba(100, 116, 139, 0.03)';
+        }
+        // Highlighted link
+        const isEntityHub = (typeof l.linkType === 'string') && l.linkType.startsWith('entity:');
+        return isEntityHub
+          ? 'rgba(236, 72, 153, 0.6)'
+          : 'rgba(100, 200, 255, 0.7)';
+      }
+
+      const isEntityHub = (typeof l.linkType === 'string') && l.linkType.startsWith('entity:');
+      if (isEntityHub) {
+        return 'rgba(236, 72, 153, 0.25)';
+      }
+      return `rgba(100, 200, 255, ${0.3 + l.confidence * 0.4})`;
+    },
+    [activeNodeIds],
+  );
+
+  const linkWidth = useCallback(
+    (link: any) => {
+      const l = link as GraphLink;
+      if (activeNodeIds !== null) {
+        const srcId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+        const tgtId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+        if (!activeNodeIds.has(srcId) || !activeNodeIds.has(tgtId)) return 0.1;
+        return 1.5;
+      }
+      const isEntityHub = (typeof l.linkType === 'string') && l.linkType.startsWith('entity:');
+      return isEntityHub ? 0.5 : 1 + l.confidence;
+    },
+    [activeNodeIds],
+  );
 
   // ── Zoom controls ───────────────────────────────────────────────────
   const handleZoomIn = useCallback(() => {
-    const fg = graphRef.current;
-    if (fg) {
-      const currentZoom = fg.zoom();
-      fg.zoom(currentZoom * 1.5, 300);
-    }
+    graphRef.current?.zoom(graphRef.current.zoom() * 1.5, 300);
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    const fg = graphRef.current;
-    if (fg) {
-      const currentZoom = fg.zoom();
-      fg.zoom(currentZoom / 1.5, 300);
-    }
+    graphRef.current?.zoom(graphRef.current.zoom() / 1.5, 300);
+  }, []);
+
+  const handleZoomToFit = useCallback(() => {
+    graphRef.current?.zoomToFit(400, 60);
   }, []);
 
   // ── Debounced limit change ──────────────────────────────────────────
@@ -302,6 +453,28 @@ export default function GraphPage() {
     },
     [loadGraph],
   );
+
+  // ── Node click handler ──────────────────────────────────────────────
+  const handleNodeClick = useCallback(
+    (node: any) => {
+      const n = node as GraphNode;
+      if (selectedNode?.id === n.id) {
+        // Second click → navigate to memory detail (or deselect for entities)
+        if (!n.isEntity) {
+          router.push(`/memories/${n.id}`);
+        } else {
+          setSelectedNode(null);
+        }
+      } else {
+        // First click → select and highlight connections
+        setSelectedNode(n);
+      }
+    },
+    [selectedNode, router],
+  );
+
+  // ── Display node for sidebar ────────────────────────────────────────
+  const displayNode = selectedNode || hoveredNode;
 
   // ════════════════════════════════════════════════════════════════════
   // Render
@@ -362,7 +535,7 @@ export default function GraphPage() {
         <h1 className="text-2xl md:text-3xl font-bold">Memory Graph</h1>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
-            {stats.nodes} memories · {stats.edges} links · {stats.entities}{' '}
+            {graphData.nodes.length} nodes · {stats.edges} links · {stats.entities}{' '}
             entities
           </Badge>
           <Button
@@ -374,28 +547,16 @@ export default function GraphPage() {
           >
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleZoomIn}
-            className="h-9 w-9 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={handleZoomIn} className="h-9 w-9 p-0">
             <ZoomIn className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleZoomOut}
-            className="h-9 w-9 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={handleZoomOut} className="h-9 w-9 p-0">
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => loadGraph()}
-            className="h-9 w-9 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={handleZoomToFit} className="h-9 w-9 p-0" title="Zoom to fit">
+            <Network className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => loadGraph()} className="h-9 w-9 p-0">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -415,10 +576,7 @@ export default function GraphPage() {
           </div>
         ))}
         <div className="flex items-center gap-1.5">
-          <span
-            className="w-3 h-3 rounded-full inline-block"
-            style={{ backgroundColor: ENTITY_COLOR }}
-          />
+          <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: ENTITY_COLOR }} />
           <span className="text-muted-foreground">entity</span>
         </div>
       </div>
@@ -427,30 +585,25 @@ export default function GraphPage() {
       <div className="flex gap-4">
         {/* Controls panel */}
         {showControls && (
-          <Card className="w-[280px] shrink-0">
+          <Card className="w-[320px] shrink-0 max-h-[calc(100vh-220px)] overflow-y-auto">
             <CardContent className="p-4 space-y-5">
               {/* Search */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-foreground">Search entities</p>
+                <p className="text-xs font-medium text-foreground">Search</p>
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search..."
                     value={params.searchQuery}
                     onChange={(e) =>
-                      setParams((p) => ({
-                        ...p,
-                        searchQuery: e.target.value,
-                      }))
+                      setParams((p) => ({ ...p, searchQuery: e.target.value }))
                     }
                     className="pl-8 h-9 text-sm"
                   />
                   {params.searchQuery && (
                     <button
                       className="absolute right-2 top-2.5"
-                      onClick={() =>
-                        setParams((p) => ({ ...p, searchQuery: '' }))
-                      }
+                      onClick={() => setParams((p) => ({ ...p, searchQuery: '' }))}
                     >
                       <X className="h-4 w-4 text-muted-foreground" />
                     </button>
@@ -468,7 +621,7 @@ export default function GraphPage() {
                   value={params.limit}
                   onChange={(e) => handleLimitChange([parseInt(e.target.value)])}
                   min={50}
-                  max={1000}
+                  max={2000}
                   step={50}
                   className="w-full accent-primary"
                 />
@@ -483,10 +636,7 @@ export default function GraphPage() {
                   type="range"
                   value={params.minConfidence}
                   onChange={(e) =>
-                    setParams((p) => ({
-                      ...p,
-                      minConfidence: parseFloat(e.target.value),
-                    }))
+                    setParams((p) => ({ ...p, minConfidence: parseFloat(e.target.value) }))
                   }
                   min={0}
                   max={1}
@@ -528,19 +678,75 @@ export default function GraphPage() {
                 ))}
               </div>
 
-              {/* Hovered node info */}
-              {hoveredNode && (
-                <div className="border-t pt-3 space-y-1">
-                  <p className="text-xs font-medium truncate">
-                    {hoveredNode.label}
+              {/* Memory detail panel */}
+              {displayNode && (
+                <div className="border-t pt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px]"
+                      style={{
+                        borderColor: displayNode.isEntity
+                          ? ENTITY_COLOR
+                          : LAYER_COLORS[displayNode.layer] || DEFAULT_NODE_COLOR,
+                        color: displayNode.isEntity
+                          ? ENTITY_COLOR
+                          : LAYER_COLORS[displayNode.layer] || DEFAULT_NODE_COLOR,
+                      }}
+                    >
+                      {displayNode.isEntity ? 'Entity' : displayNode.layer}
+                    </Badge>
+                    {selectedNode && (
+                      <button
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => setSelectedNode(null)}
+                      >
+                        ✕ Clear
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-sm font-medium leading-snug">
+                    {displayNode.label}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {hoveredNode.isEntity ? 'Entity' : hoveredNode.layer}
-                    {!hoveredNode.isEntity &&
-                      ` · importance ${hoveredNode.importance.toFixed(2)}`}
-                  </p>
-                  {!hoveredNode.isEntity && (
-                    <p className="text-xs text-primary mt-1">Click to view memory →</p>
+
+                  {/* Full memory text */}
+                  {!displayNode.isEntity && (
+                    <div className="bg-muted/50 rounded-md p-2.5 max-h-[200px] overflow-y-auto">
+                      <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {displayNode.raw}
+                      </p>
+                    </div>
+                  )}
+
+                  {displayNode.isEntity && (
+                    <p className="text-xs text-muted-foreground">
+                      {displayNode.mentionCount ?? 0} connected memories
+                    </p>
+                  )}
+
+                  {!displayNode.isEntity && (
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Importance: {displayNode.importance.toFixed(2)}</span>
+                      {displayNode.source && <span>{displayNode.source}</span>}
+                    </div>
+                  )}
+
+                  {!displayNode.isEntity && selectedNode?.id === displayNode.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => router.push(`/memories/${displayNode.id}`)}
+                    >
+                      View full memory →
+                    </Button>
+                  )}
+
+                  {!selectedNode && !displayNode.isEntity && (
+                    <p className="text-[10px] text-muted-foreground/60">
+                      Click to highlight connections · Double-click to view
+                    </p>
                   )}
                 </div>
               )}
@@ -583,20 +789,20 @@ export default function GraphPage() {
                 linkDirectionalParticles={0}
                 d3AlphaDecay={0.02}
                 d3VelocityDecay={0.3}
-                warmupTicks={100}
-                cooldownTicks={200}
+                warmupTicks={150}
+                cooldownTicks={300}
                 nodeRelSize={6}
-                onEngineStop={() => graphRef.current?.zoomToFit(400, 50)}
+                onEngineStop={() => graphRef.current?.zoomToFit(400, 60)}
                 onNodeHover={(node: any) => setHoveredNode(node as GraphNode | null)}
                 onNodeDragEnd={(node: any) => {
                   node.fx = node.x;
                   node.fy = node.y;
                 }}
-                onNodeClick={(node: any) => {
-                  if (node.isEntity) return; // Entities don't have detail pages
-                  router.push(`/memories/${node.id}`);
+                onNodeClick={handleNodeClick}
+                onBackgroundClick={() => {
+                  setSelectedNode(null);
+                  setHoveredNode(null);
                 }}
-                onBackgroundClick={() => setHoveredNode(null)}
                 backgroundColor="transparent"
                 enablePointerInteraction={true}
               />
