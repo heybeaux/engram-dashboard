@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -125,6 +126,7 @@ function buildGraphData(
 // ════════════════════════════════════════════════════════════════════════
 
 export default function GraphPage() {
+  const router = useRouter();
   const graphRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -196,8 +198,25 @@ export default function GraphPage() {
       // Configure force strengths
       setTimeout(() => {
         if (graphRef.current) {
-          graphRef.current.d3Force('charge')?.strength(-120);
-          graphRef.current.d3Force('link')?.distance(60);
+          const nodeCount = graphData.nodes.length;
+          const linkCount = graphData.links.length;
+          const density = nodeCount > 0 ? linkCount / nodeCount : 0;
+
+          // Scale repulsion with density — more edges = push harder
+          const charge = Math.min(-80, -150 - density * 15);
+          graphRef.current.d3Force('charge')?.strength(charge).distanceMax(400);
+
+          // Weaken shared-entity links so they don't collapse clusters
+          graphRef.current.d3Force('link')
+            ?.distance((link: any) => {
+              const isShared = link.linkType?.startsWith('shared:');
+              return isShared ? 120 : 60;
+            })
+            .strength((link: any) => {
+              const isShared = link.linkType?.startsWith('shared:');
+              return isShared ? 0.02 : 0.1 + (link.confidence || 0) * 0.1;
+            });
+
           graphRef.current.d3ReheatSimulation();
         }
       }, 100);
@@ -521,6 +540,9 @@ export default function GraphPage() {
                     {!hoveredNode.isEntity &&
                       ` · importance ${hoveredNode.importance.toFixed(2)}`}
                   </p>
+                  {!hoveredNode.isEntity && (
+                    <p className="text-xs text-primary mt-1">Click to view memory →</p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -572,11 +594,8 @@ export default function GraphPage() {
                   node.fy = node.y;
                 }}
                 onNodeClick={(node: any) => {
-                  // Double-click to unpin
-                  if (node.fx != null) {
-                    node.fx = undefined;
-                    node.fy = undefined;
-                  }
+                  if (node.isEntity) return; // Entities don't have detail pages
+                  router.push(`/memories/${node.id}`);
                 }}
                 onBackgroundClick={() => setHoveredNode(null)}
                 backgroundColor="transparent"
