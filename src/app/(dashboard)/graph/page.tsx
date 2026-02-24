@@ -28,21 +28,22 @@ const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
 
 /** Decode HTML entities like &#x27; &amp; &quot; etc. */
 function decodeHtmlEntities(text: string): string {
-  if (typeof document !== 'undefined') {
-    const el = document.createElement('textarea');
-    el.innerHTML = text;
-    return el.value;
-  }
-  // SSR fallback
+  if (!text) return text;
   return text
-    .replace(/&#x27;/g, "'")
-    .replace(/&#39;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);?/g, (_, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/&#(\d+);?/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)));
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&rsquo;/g, '\u2019')
+    .replace(/&lsquo;/g, '\u2018')
+    .replace(/&rdquo;/g, '\u201D')
+    .replace(/&ldquo;/g, '\u201C')
+    .replace(/&mdash;/g, '\u2014')
+    .replace(/&ndash;/g, '\u2013');
 }
 
 // ── Color scheme ────────────────────────────────────────────────────────
@@ -190,7 +191,7 @@ function buildGraphData(
     });
   }
 
-  // Remove unconnected memory nodes (keep entities — they always have edges)
+  // Mark unconnected memory nodes as orphans (smaller, faded)
   const connectedIds = new Set<string>();
   for (const link of links) {
     const srcId = typeof link.source === 'string' ? link.source : (link.source as any).id;
@@ -199,11 +200,14 @@ function buildGraphData(
     connectedIds.add(tgtId);
   }
 
-  const filteredNodes = Array.from(nodeMap.values()).filter(
-    (n) => n.isEntity || connectedIds.has(n.id),
-  );
+  const allNodes = Array.from(nodeMap.values()).map((n) => {
+    if (!n.isEntity && !connectedIds.has(n.id)) {
+      return { ...n, radius: 2, isOrphan: true } as GraphNode & { isOrphan?: boolean };
+    }
+    return n as GraphNode & { isOrphan?: boolean };
+  });
 
-  return { nodes: filteredNodes, links };
+  return { nodes: allNodes, links };
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -342,6 +346,7 @@ export default function GraphPage() {
   const nodeCanvasObject = useCallback(
     (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const n = node as GraphNode & { x: number; y: number };
+      const isOrphan = (n as any).isOrphan === true;
       const searchMatch =
         searchQuery.length > 0 && n.label.toLowerCase().includes(searchQuery);
       const dimmedBySearch = searchQuery.length > 0 && !searchMatch;
@@ -351,7 +356,7 @@ export default function GraphPage() {
 
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-      ctx.fillStyle = dimmed ? `${n.color}22` : n.color;
+      ctx.fillStyle = dimmed ? `${n.color}22` : isOrphan ? `${n.color}55` : n.color;
       ctx.fill();
 
       // Selected node ring
@@ -380,8 +385,8 @@ export default function GraphPage() {
         ctx.stroke();
       }
 
-      // Labels
-      const showLabel = n.isEntity || globalScale > 2.5 || searchMatch || isSelected;
+      // Labels — hide orphan labels unless zoomed way in or searched
+      const showLabel = (!isOrphan && (n.isEntity || globalScale > 2.5)) || searchMatch || isSelected;
       if (showLabel && !dimmed) {
         const fontSize = n.isEntity
           ? Math.max(11 / globalScale, 3)
