@@ -216,7 +216,6 @@ export default function GraphPage() {
               const isShared = link.linkType?.startsWith('shared:');
               return isShared ? 0.02 : 0.1 + (link.confidence || 0) * 0.1;
             });
-
           graphRef.current.d3ReheatSimulation();
         }
       }, 100);
