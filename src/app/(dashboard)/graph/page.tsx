@@ -271,19 +271,26 @@ export default function GraphPage() {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width } = entry.contentRect;
-        if (width > 0) {
-          setDimensions({
-            width: Math.floor(width),
-            height: Math.max(500, window.innerHeight - 260),
-          });
-        }
+    const updateSize = () => {
+      const rect = container.getBoundingClientRect();
+      if (rect.width > 0) {
+        // Fill from container top to bottom of viewport (minus small padding)
+        const availableHeight = window.innerHeight - rect.top - 16;
+        setDimensions({
+          width: Math.floor(rect.width),
+          height: Math.max(400, Math.floor(availableHeight)),
+        });
       }
-    });
+    };
+    const observer = new ResizeObserver(() => updateSize());
     observer.observe(container);
-    return () => observer.disconnect();
+    window.addEventListener('resize', updateSize);
+    // Initial calc after mount
+    setTimeout(updateSize, 100);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
   }, []);
 
   // ── Build graph data ────────────────────────────────────────────────
@@ -585,7 +592,7 @@ export default function GraphPage() {
       <div className="flex gap-4">
         {/* Controls panel */}
         {showControls && (
-          <Card className="w-[320px] shrink-0 max-h-[calc(100vh-220px)] overflow-y-auto">
+          <Card className="w-[320px] shrink-0 overflow-y-auto" style={{ maxHeight: dimensions.height }}>
             <CardContent className="p-4 space-y-5">
               {/* Search */}
               <div className="space-y-2">
