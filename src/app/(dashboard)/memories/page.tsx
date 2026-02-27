@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { decodeHtmlEntities } from "@/lib/decode-html";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -252,7 +253,7 @@ export default function MemoriesPage() {
     return (
       <DataListItem key={memory.id}>
         <DataListHeader>
-          <p className="line-clamp-2 text-sm">{memory.raw}</p>
+          <p className="line-clamp-2 text-sm">{decodeHtmlEntities(memory.raw)}</p>
           <p className="text-xs text-muted-foreground mt-1 font-mono truncate">
             {memory.id}
           </p>
@@ -438,7 +439,7 @@ export default function MemoriesPage() {
                   return (
                     <TableRow key={memory.id}>
                       <TableCell className="max-w-md">
-                        <p className="truncate font-medium">{memory.raw}</p>
+                        <p className="truncate font-medium">{decodeHtmlEntities(memory.raw)}</p>
                         <p className="text-xs text-muted-foreground">{memory.id}</p>
                       </TableCell>
                       <TableCell>
