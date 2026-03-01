@@ -29,6 +29,7 @@ import {
   Gauge,
   Fingerprint,
   FileText,
+  Mail,
   UsersRound,
   Shield,
   RotateCcw,
@@ -58,6 +59,7 @@ const navigation: NavItem[] = [
   // === Common (both editions) ===
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Memories", href: "/memories", icon: Brain },
+  { name: "Emails", href: "/emails", icon: Mail },
   { name: "Sessions", href: "/sessions", icon: Cpu },
   { name: "Graph", href: "/graph", icon: Network },
   { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
