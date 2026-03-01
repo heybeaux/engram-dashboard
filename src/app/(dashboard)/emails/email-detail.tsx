@@ -33,6 +33,11 @@ function formatTimestamp(dateString: string | null): string {
 export function EmailDetail({ email }: { email: Email }) {
   const [showRaw, setShowRaw] = useState(false);
 
+  const handleRawDataToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowRaw(!showRaw);
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4 bg-muted/30 border-t">
       {/* Header info */}
@@ -86,7 +91,7 @@ export function EmailDetail({ email }: { email: Email }) {
           variant="ghost"
           size="sm"
           className="h-8 text-xs text-muted-foreground"
-          onClick={() => setShowRaw(!showRaw)}
+          onClick={handleRawDataToggle}
         >
           {showRaw ? (
             <ChevronDown className="mr-1 h-3 w-3" />
