@@ -50,6 +50,7 @@ import {
   Link2,
   Gauge,
   ChevronDown,
+  Mail,
 } from "lucide-react";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
@@ -67,6 +68,7 @@ interface NavItem {
 const navigation: NavItem[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Memories", href: "/memories", icon: Brain },
+  { name: "Emails", href: "/emails", icon: Mail },
   { name: "Sessions", href: "/sessions", icon: Cpu },
   { name: "Graph", href: "/graph", icon: Network },
   { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },

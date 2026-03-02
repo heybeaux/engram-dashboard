@@ -73,8 +73,8 @@ export function EmailDetail({ email }: { email: Email }) {
         </div>
       </div>
 
-      {/* Text body */}
-      {email.textBody && (
+      {/* Email body */}
+      {email.textBody ? (
         <div>
           <h4 className="text-sm font-medium mb-2 text-muted-foreground">
             Body
@@ -82,6 +82,20 @@ export function EmailDetail({ email }: { email: Email }) {
           <pre className="text-sm whitespace-pre-wrap bg-background rounded-md border p-3 max-h-64 overflow-y-auto font-mono">
             {email.textBody}
           </pre>
+        </div>
+      ) : email.htmlBody ? (
+        <div>
+          <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+            Body (HTML)
+          </h4>
+          <div
+            className="text-sm bg-background rounded-md border p-3 max-h-64 overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: email.htmlBody }}
+          />
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-muted-foreground italic">No body content available</p>
         </div>
       )}
 
