@@ -52,141 +52,165 @@ interface NavItem {
   badge?: string;
   /** Only show in these editions. Omit = show in all. */
   editions?: Edition[];
-  children?: NavItem[];
 }
 
-const navigation: NavItem[] = [
-  // === Common (both editions) ===
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Memories", href: "/memories", icon: Brain },
-  { name: "Emails", href: "/emails", icon: Mail },
-  { name: "Sessions", href: "/sessions", icon: Cpu },
-  { name: "Graph", href: "/graph", icon: Network },
-  { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
-  { name: "Search", href: "/code", icon: Search },
-  { name: "Consolidation", href: "/consolidation", icon: Moon },
-  { name: "Sources", href: "/sources", icon: Cloud },
-  { name: "Pools", href: "/pools", icon: Database },
+interface NavSection {
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavItem[];
+}
 
-
-  // === Identity section ===
+const navSections: NavSection[] = [
+  {
+    name: "Overview",
+    icon: LayoutDashboard,
+    items: [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Analytics", href: "/analytics", icon: BarChart3, editions: ["cloud"] },
+      { name: "Status", href: "/status", icon: Gauge, editions: ["cloud"] },
+    ],
+  },
+  {
+    name: "Memory",
+    icon: Brain,
+    items: [
+      { name: "Memories", href: "/memories", icon: Brain },
+      { name: "Graph", href: "/graph", icon: Network },
+      { name: "Search", href: "/code", icon: Search },
+      { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
+      { name: "Consolidation", href: "/consolidation", icon: Moon },
+      { name: "Pools", href: "/pools", icon: Database },
+      { name: "Sessions", href: "/sessions", icon: Cpu },
+    ],
+  },
+  {
+    name: "Intelligence",
+    icon: Lightbulb,
+    items: [
+      { name: "Insights", href: "/insights", icon: Lightbulb },
+      { name: "Sources", href: "/sources", icon: Cloud },
+      { name: "Ensemble", href: "/ensemble", icon: Layers, editions: ["cloud"] },
+      { name: "Drift", href: "/ensemble/drift", icon: Activity, editions: ["cloud"] },
+      { name: "Emails", href: "/emails", icon: Mail },
+    ],
+  },
   {
     name: "Identity",
-    href: "/identity",
     icon: Fingerprint,
-    children: [
+    items: [
       { name: "Overview", href: "/identity", icon: Fingerprint },
+      { name: "Profiles", href: "/identity/profiles", icon: UsersRound },
+      { name: "Agents", href: "/agents", icon: Bot },
+      { name: "Teams", href: "/identity/teams", icon: UsersRound },
       { name: "Contracts", href: "/identity/contracts", icon: FileText },
       { name: "Tasks", href: "/identity/tasks", icon: ListTodo },
-      { name: "Teams", href: "/identity/teams", icon: UsersRound },
+      { name: "Challenges", href: "/challenges", icon: Swords },
       { name: "Trust", href: "/identity/trust", icon: Shield },
+      { name: "Delegation", href: "/delegation", icon: ArrowLeftRight },
       { name: "Recall", href: "/identity/recall", icon: RotateCcw },
       { name: "Export", href: "/identity/export", icon: FileDown },
     ],
   },
-
-  { name: "Agents", href: "/agents", icon: Bot },
-  { name: "Delegation", href: "/delegation", icon: ListTodo },
-  { name: "Insights", href: "/insights", icon: Lightbulb },
-  { name: "Challenges", href: "/challenges", icon: Swords },
-  { name: "API Keys", href: "/api-keys", icon: Key },
-  { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Sync Status", href: "/settings/sync", icon: RefreshCw },
-  { name: "Reconcile", href: "/settings/reconcile", icon: ArrowLeftRight },
-
-  // === Local only: Sync ===
-  { name: "Sync", href: "/settings/cloud", icon: RefreshCw, editions: ["local"] },
-
-  // === Cloud only ===
-  { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
-  { name: "Ensemble", href: "/ensemble", icon: Layers, editions: ["cloud"] },
-  { name: "Drift", href: "/ensemble/drift", icon: Activity, editions: ["cloud"] },
-  { name: "Analytics", href: "/analytics", icon: BarChart3, editions: ["cloud"] },
-  { name: "Cloud Link", href: "/settings/cloud", icon: Link2, editions: ["local", "cloud"] },
-  { name: "Usage", href: "/status", icon: Gauge, editions: ["cloud"] },
-  { name: "Users", href: "/users", icon: Users, editions: ["cloud"] },
-
-  // === Local only ===
-  { name: "Code", href: "/code", icon: Code2, badge: "Local", editions: ["local"] },
+  {
+    name: "Code",
+    icon: Code2,
+    items: [
+      { name: "Code Search", href: "/code", icon: Code2, editions: ["local"] },
+    ],
+  },
+  {
+    name: "Settings",
+    icon: Settings,
+    items: [
+      { name: "Settings", href: "/settings", icon: Settings },
+      { name: "API Keys", href: "/api-keys", icon: Key },
+      { name: "Sync", href: "/settings/cloud", icon: RefreshCw, editions: ["local"] },
+      { name: "Cloud Link", href: "/settings/cloud", icon: Link2, editions: ["local", "cloud"] },
+      { name: "Sync Status", href: "/settings/sync", icon: RefreshCw },
+      { name: "Reconcile", href: "/settings/reconcile", icon: ArrowLeftRight },
+      { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
+      { name: "Users", href: "/users", icon: Users, editions: ["cloud"] },
+    ],
+  },
 ];
 
-function NavItemLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const [open, setOpen] = useState(false);
-  const isActive =
-    pathname === item.href ||
-    (item.href !== "/" && pathname.startsWith(item.href));
-
-  // Auto-expand if child is active
-  const childActive = item.children?.some(
-    (c) => pathname === c.href || (c.href !== "/" && pathname.startsWith(c.href))
+function NavSectionGroup({
+  section,
+  pathname,
+  edition,
+}: {
+  section: NavSection;
+  pathname: string;
+  edition: Edition;
+}) {
+  const visibleItems = section.items.filter(
+    (item) => !item.editions || item.editions.includes(edition)
   );
 
-  const expanded = open || childActive;
+  const hasActiveItem = visibleItems.some(
+    (item) =>
+      pathname === item.href ||
+      (item.href !== "/" && pathname.startsWith(item.href))
+  );
 
-  if (item.children) {
-    return (
-      <div>
-        <button
-          onClick={() => setOpen(!expanded)}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            childActive
-              ? "text-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          )}
-        >
-          <item.icon className="h-5 w-5" />
-          {item.name}
-          <span className="ml-auto">
-            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </span>
-        </button>
-        {expanded && (
-          <div className="ml-5 space-y-0.5 border-l pl-3 mt-0.5">
-            {item.children.map((child) => {
-              const isChildActive =
-                pathname === child.href ||
-                (child.href !== "/" && pathname.startsWith(child.href));
-              return (
-                <Link
-                  key={child.href}
-                  href={child.href}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors",
-                    isChildActive
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <child.icon className="h-4 w-4" />
-                  {child.name}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
+  const [open, setOpen] = useState(false);
+  // Always expand if a child is active; otherwise follow manual toggle state
+  const expanded = open || hasActiveItem;
+
+  if (visibleItems.length === 0) return null;
 
   return (
-    <Link
-      href={item.href}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-        isActive
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-      )}
-    >
-      <item.icon className="h-5 w-5" />
-      {item.name}
-      {item.badge && (
-        <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-          {item.badge}
+    <div className="space-y-0.5">
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors select-none",
+          hasActiveItem
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <section.icon className="h-3.5 w-3.5 shrink-0" />
+        <span>{section.name}</span>
+        <span className="ml-auto">
+          {expanded ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
         </span>
+      </button>
+
+      {expanded && (
+        <div className="space-y-0.5">
+          {visibleItems.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.name + item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                {item.name}
+                {item.badge && (
+                  <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
       )}
-    </Link>
+    </div>
   );
 }
 
@@ -194,10 +218,6 @@ export function Sidebar() {
   const pathname = usePathname();
   useAuth();
   const { edition, cloudLinked } = useInstance();
-
-  const filteredNav = navigation.filter(
-    (item) => !item.editions || item.editions.includes(edition)
-  );
 
   return (
     <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-card">
@@ -208,9 +228,14 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-        {filteredNav.map((item) => (
-          <NavItemLink key={item.name} item={item} pathname={pathname} />
+      <nav className="flex-1 space-y-3 p-4 overflow-y-auto">
+        {navSections.map((section) => (
+          <NavSectionGroup
+            key={section.name}
+            section={section}
+            pathname={pathname}
+            edition={edition}
+          />
         ))}
       </nav>
 
@@ -221,7 +246,12 @@ export function Sidebar() {
             href="/settings/cloud"
             className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
           >
-            <Cloud className={cn("h-3.5 w-3.5", cloudLinked ? "text-green-500" : "text-muted-foreground")} />
+            <Cloud
+              className={cn(
+                "h-3.5 w-3.5",
+                cloudLinked ? "text-green-500" : "text-muted-foreground"
+              )}
+            />
             {cloudLinked ? "Cloud Connected" : "Connect to Cloud"}
           </Link>
         )}

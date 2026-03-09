@@ -50,6 +50,8 @@ import {
   Link2,
   Gauge,
   ChevronDown,
+  ChevronRight,
+  Mail,
 } from "lucide-react";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
@@ -61,66 +63,188 @@ interface NavItem {
   badge?: string;
   adminOnly?: boolean;
   editions?: string[];
-  children?: { name: string; href: string; icon: React.ComponentType<{ className?: string }> }[];
 }
 
-const navigation: NavItem[] = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Memories", href: "/memories", icon: Brain },
-  { name: "Sessions", href: "/sessions", icon: Cpu },
-  { name: "Graph", href: "/graph", icon: Network },
-  { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
-  { name: "Search", href: "/code", icon: Search },
-  { name: "Consolidation", href: "/consolidation", icon: Moon },
-  { name: "Sources", href: "/sources", icon: Cloud },
-  { name: "Pools", href: "/pools", icon: Database },
+interface NavSection {
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    name: "Overview",
+    icon: LayoutDashboard,
+    items: [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Analytics", href: "/analytics", icon: BarChart3, editions: ["cloud"] },
+      { name: "Status", href: "/status", icon: Gauge, editions: ["cloud"] },
+    ],
+  },
+  {
+    name: "Memory",
+    icon: Brain,
+    items: [
+      { name: "Memories", href: "/memories", icon: Brain },
+      { name: "Graph", href: "/graph", icon: Network },
+      { name: "Search", href: "/code", icon: Search },
+      { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
+      { name: "Consolidation", href: "/consolidation", icon: Moon },
+      { name: "Pools", href: "/pools", icon: Database },
+      { name: "Sessions", href: "/sessions", icon: Cpu },
+    ],
+  },
+  {
+    name: "Intelligence",
+    icon: Lightbulb,
+    items: [
+      { name: "Insights", href: "/insights", icon: Lightbulb },
+      { name: "Sources", href: "/sources", icon: Cloud },
+      { name: "Ensemble", href: "/ensemble", icon: Layers, editions: ["cloud"] },
+      { name: "Drift", href: "/ensemble/drift", icon: Activity, editions: ["cloud"] },
+      { name: "Emails", href: "/emails", icon: Mail },
+    ],
+  },
   {
     name: "Identity",
-    href: "/identity",
     icon: Fingerprint,
-    children: [
+    items: [
       { name: "Overview", href: "/identity", icon: Fingerprint },
+      { name: "Agents", href: "/agents", icon: Bot },
+      { name: "Teams", href: "/identity/teams", icon: UsersRound },
       { name: "Contracts", href: "/identity/contracts", icon: FileText },
       { name: "Tasks", href: "/identity/tasks", icon: ListTodo },
-      { name: "Teams", href: "/identity/teams", icon: UsersRound },
+      { name: "Challenges", href: "/challenges", icon: Swords },
       { name: "Trust", href: "/identity/trust", icon: Shield },
+      { name: "Delegation", href: "/delegation", icon: ArrowLeftRight },
       { name: "Recall", href: "/identity/recall", icon: RotateCcw },
       { name: "Export", href: "/identity/export", icon: FileDown },
     ],
   },
-  { name: "Agents", href: "/agents", icon: Bot },
-  { name: "Delegation", href: "/delegation", icon: ListTodo },
-  { name: "Insights", href: "/insights", icon: Lightbulb },
-  { name: "Challenges", href: "/challenges", icon: Swords },
-  { name: "API Keys", href: "/api-keys", icon: Key },
-  { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Sync Status", href: "/settings/sync", icon: RefreshCw },
-  { name: "Reconcile", href: "/settings/reconcile", icon: ArrowLeftRight },
-  { name: "Sync", href: "/settings/cloud", icon: RefreshCw, editions: ["local"] },
-  { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
-  { name: "Ensemble", href: "/ensemble", icon: Layers, editions: ["cloud"] },
-  { name: "Drift", href: "/ensemble/drift", icon: Activity, editions: ["cloud"] },
-  { name: "Analytics", href: "/analytics", icon: BarChart3, editions: ["cloud"] },
-  { name: "Cloud Link", href: "/settings/cloud", icon: Link2, editions: ["local", "cloud"] },
-  { name: "Usage", href: "/status", icon: Gauge, editions: ["cloud"] },
-  { name: "Users", href: "/users", icon: Users, editions: ["cloud"] },
-  { name: "Accounts", href: "/admin/users", icon: ShieldAlert, badge: "Admin", adminOnly: true },
-  { name: "Code", href: "/code", icon: Code2, badge: "Local", editions: ["local"] },
+  {
+    name: "Code",
+    icon: Code2,
+    items: [
+      { name: "Code Search", href: "/code", icon: Code2, editions: ["local"] },
+    ],
+  },
+  {
+    name: "Settings",
+    icon: Settings,
+    items: [
+      { name: "Settings", href: "/settings", icon: Settings },
+      { name: "API Keys", href: "/api-keys", icon: Key },
+      { name: "Sync", href: "/settings/cloud", icon: RefreshCw, editions: ["local"] },
+      { name: "Cloud Link", href: "/settings/cloud", icon: Link2, editions: ["local", "cloud"] },
+      { name: "Sync Status", href: "/settings/sync", icon: RefreshCw },
+      { name: "Reconcile", href: "/settings/reconcile", icon: ArrowLeftRight },
+      { name: "Billing", href: "/billing", icon: CreditCard, editions: ["cloud"] },
+      { name: "Users", href: "/users", icon: Users, editions: ["cloud"] },
+      {
+        name: "Accounts",
+        href: "/admin/users",
+        icon: ShieldAlert,
+        badge: "Admin",
+        adminOnly: true,
+      },
+    ],
+  },
 ];
+
+function MobileNavSection({
+  section,
+  pathname,
+  edition,
+  isAdmin,
+  onNavigate,
+}: {
+  section: NavSection;
+  pathname: string;
+  edition: string;
+  isAdmin: boolean;
+  onNavigate: () => void;
+}) {
+  const visibleItems = section.items.filter(
+    (item) =>
+      (!item.adminOnly || isAdmin) &&
+      (!item.editions || item.editions.includes(edition))
+  );
+
+  const hasActiveItem = visibleItems.some(
+    (item) =>
+      pathname === item.href ||
+      (item.href !== "/" && item.href !== "/dashboard" && pathname.startsWith(item.href))
+  );
+
+  const [open, setOpen] = useState(false);
+  const expanded = open || hasActiveItem;
+
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <div className="space-y-0.5">
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors select-none min-h-[40px]",
+          hasActiveItem
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <section.icon className="h-3.5 w-3.5 shrink-0" />
+        <span>{section.name}</span>
+        <span className="ml-auto">
+          {expanded ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="space-y-0.5">
+          {visibleItems.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && item.href !== "/dashboard" && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.name + item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors min-h-[44px]",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80"
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                {item.name}
+                {item.badge && (
+                  <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
-  const [identityOpen, setIdentityOpen] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
   const { mode } = useInstance();
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  const isAdmin = !!(user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()));
 
   const edition = mode === "self-hosted" ? "local" : "cloud";
-
-  const filteredNav = navigation
-    .filter((item) => !item.adminOnly || isAdmin)
-    .filter((item) => !item.editions || item.editions.includes(edition));
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -141,85 +265,18 @@ export function MobileNav() {
             <span className="text-xl font-bold">Engram</span>
           </SheetTitle>
         </SheetHeader>
-        
-        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-          {filteredNav.map((item) => {
-            if (item.children) {
-              const isChildActive = item.children.some(
-                (child) => pathname === child.href || pathname.startsWith(child.href + "/")
-              );
-              return (
-                <div key={item.name}>
-                  <button
-                    onClick={() => setIdentityOpen(!identityOpen)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors min-h-[44px] w-full",
-                      isChildActive
-                        ? "text-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
-                    <ChevronDown
-                      className={cn(
-                        "ml-auto h-4 w-4 transition-transform",
-                        identityOpen && "rotate-180"
-                      )}
-                    />
-                  </button>
-                  {(identityOpen || isChildActive) && (
-                    <div className="ml-4 space-y-1">
-                      {item.children.map((child) => {
-                        const isActive = pathname === child.href;
-                        return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            onClick={() => setOpen(false)}
-                            className={cn(
-                              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors min-h-[40px]",
-                              isActive
-                                ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            )}
-                          >
-                            <child.icon className="h-4 w-4" />
-                            {child.name}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            }
 
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && item.href !== "/dashboard" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name + item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors min-h-[44px]",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-                {item.badge && (
-                  <span className="ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-3 p-4 overflow-y-auto">
+          {navSections.map((section) => (
+            <MobileNavSection
+              key={section.name}
+              section={section}
+              pathname={pathname}
+              edition={edition}
+              isAdmin={isAdmin}
+              onNavigate={() => setOpen(false)}
+            />
+          ))}
         </nav>
 
         <div className="border-t p-4">
