@@ -76,6 +76,7 @@ const navigation: NavItem[] = [
     icon: Fingerprint,
     children: [
       { name: "Overview", href: "/identity", icon: Fingerprint },
+      { name: "Profiles", href: "/identity/profiles", icon: UsersRound },
       { name: "Contracts", href: "/identity/contracts", icon: FileText },
       { name: "Tasks", href: "/identity/tasks", icon: ListTodo },
       { name: "Teams", href: "/identity/teams", icon: UsersRound },
