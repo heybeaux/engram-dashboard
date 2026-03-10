@@ -99,6 +99,7 @@ const navSections: NavSection[] = [
     icon: Fingerprint,
     items: [
       { name: "Overview", href: "/identity", icon: Fingerprint },
+      { name: "Profiles", href: "/identity/profiles", icon: UsersRound },
       { name: "Agents", href: "/agents", icon: Bot },
       { name: "Teams", href: "/identity/teams", icon: UsersRound },
       { name: "Contracts", href: "/identity/contracts", icon: FileText },

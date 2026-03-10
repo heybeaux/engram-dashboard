@@ -789,6 +789,18 @@ export class EngramClient {
   }
 
   // ==========================================================================
+  // HEALTH METRICS
+  // ==========================================================================
+
+  async getHealthMetrics(): Promise<import('./types').HealthMetricsResult> {
+    return this.fetch('/v1/health/metrics');
+  }
+
+  async refreshHealthMetrics(): Promise<void> {
+    return this.fetch('/v1/health/metrics/refresh', { method: 'POST' });
+  }
+
+  // ==========================================================================
   // AGENT IDENTITY (Phase 2)
   // ==========================================================================
 
