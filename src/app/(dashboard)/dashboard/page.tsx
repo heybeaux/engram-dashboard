@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Brain, Users, Activity, RefreshCw, AlertCircle, WifiOff } from "lucide-react";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { useInstance } from "@/context/instance-context";
-import { FogIndexCard } from "@/components/fog-index-card";
+import { HealthMetricsCards } from "@/components/health-metrics-cards";
+// import { FogIndexCard } from "@/components/fog-index-card"; // replaced by HealthMetricsCards
 import { AccountUsageCard } from "@/components/account-usage-card";
 import { ApiRequestsCard } from "@/components/api-requests-card";
 
@@ -250,7 +251,7 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        <FogIndexCard />
+        <HealthMetricsCards />
 
         <AccountUsageCard />
       </div>
