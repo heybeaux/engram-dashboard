@@ -578,6 +578,25 @@ export interface FogIndexHistory {
 }
 
 // ============================================================================
+// HEALTH METRICS
+// ============================================================================
+
+export interface HealthMetrics {
+  memoryCount: number;
+  embeddingCoverage: number;
+  dedupPendingClusters: number;
+  avgRecallLatencyMs: number;
+  dreamCycleStatus: string;
+  dreamCycleLastRun: string;
+  decayPercentage: number;
+  freshnessPercentage: number;
+}
+
+export interface HealthMetricsResult {
+  metrics: HealthMetrics;
+}
+
+// ============================================================================
 // AGENT IDENTITY (Phase 2)
 // ============================================================================
 
