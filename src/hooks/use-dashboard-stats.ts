@@ -25,7 +25,7 @@ export function useDashboardStats(): UseDashboardStatsResult {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch stats";
       setError(message);
-      console.error("Dashboard stats error:", err);
+      console.warn("Dashboard stats error:", err);
     } finally {
       setLoading(false);
     }

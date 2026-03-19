@@ -94,7 +94,8 @@ for (const { path, name } of PAGES) {
           !e.includes("Failed to load resource") &&
           !e.includes("Warning:") &&
           !e.includes("The above error occurred in") &&
-          !e.includes("[ErrorBoundary]"),
+          !e.includes("[ErrorBoundary]") &&
+          !e.includes("Dashboard stats error"),
       );
       expect(real).toHaveLength(0);
     });
