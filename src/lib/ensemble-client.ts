@@ -123,20 +123,26 @@ export async function getMemoryEmbeddings(
     );
   } catch (error) {
     if (error instanceof EngramApiError && error.statusCode === 404) {
-      console.warn('GET /ensemble/memories/:id/embeddings not implemented. Returning mock data.');
-      // Return mock data showing endpoint not implemented
-      const status = await getEnsembleStatus();
+      console.warn('GET /ensemble/memories/:id/embeddings not implemented. Returning fallback.');
+      // Return empty result when ensemble endpoints are not available (self-hosted)
+      let models: string[] = [];
+      try {
+        const status = await getEnsembleStatus();
+        models = status.models;
+      } catch {
+        // Ensemble status also unavailable — return empty embeddings
+      }
       return {
         memoryId,
-        embeddings: status.models.map(model => ({
+        embeddings: models.map(model => ({
           model,
           status: 'pending' as const,
           dimensions: undefined,
           embeddedAt: undefined,
         })),
-        totalModels: status.models.length,
+        totalModels: models.length,
         embeddedCount: 0,
-        pendingCount: status.models.length,
+        pendingCount: models.length,
         failedCount: 0,
       };
     }
