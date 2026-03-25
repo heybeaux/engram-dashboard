@@ -8,6 +8,8 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM base AS build
+ARG NEXT_PUBLIC_ENGRAM_API_URL=https://api.openengram.ai
+ENV NEXT_PUBLIC_ENGRAM_API_URL=$NEXT_PUBLIC_ENGRAM_API_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build

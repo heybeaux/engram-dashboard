@@ -292,12 +292,14 @@ export type ReconcileStrategy = 'push-all' | 'pull-all' | 'selective';
 export const identityApi = {
   // --- Agents ---
   async listAgents(): Promise<Agent[]> {
-    return identityFetch<Agent[]>('/v1/identity/agents');
+    const res = await identityFetch<Agent[] | { agents: Agent[] }>('/v1/identity/agents');
+    return Array.isArray(res) ? res : (res?.agents ?? []);
   },
 
   // --- Teams ---
   async listTeams(): Promise<Team[]> {
-    return identityFetch<Team[]>('/v1/identity/teams');
+    const res = await identityFetch<Team[] | { teams: Team[] }>('/v1/identity/teams');
+    return Array.isArray(res) ? res : (res?.teams ?? []);
   },
 
   async getTeam(id: string): Promise<Team> {
