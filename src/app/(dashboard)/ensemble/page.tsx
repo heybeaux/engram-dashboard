@@ -663,6 +663,12 @@ function EnsemblePageContent() {
   const [loading, setLoading] = useState(true);
   const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
   const [triggering, setTriggering] = useState(false);
+  const [triggerError, setTriggerError] = useState<string | null>(null);
+  const [selectedMode, setSelectedMode] = useState<"incremental" | "full">("incremental");
+  const [lastTriggerTime, setLastTriggerTime] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return parseInt(localStorage.getItem("engram:reembed:lastTriggeredAt") ?? "0", 10);
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -703,16 +709,33 @@ function EnsemblePageContent() {
     return () => clearInterval(interval);
   }, [reembedJobs]);
 
+  const RATE_LIMIT_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   const handleTriggerReembed = async () => {
+    const now = Date.now();
+    if (now - lastTriggerTime < RATE_LIMIT_MS) {
+      const availableAt = new Date(lastTriggerTime + RATE_LIMIT_MS);
+      setTriggerError(
+        `Re-embedding can only be triggered once per 24 hours. Available again at ${availableAt.toLocaleTimeString()}.`
+      );
+      return;
+    }
+
     setTriggering(true);
+    setTriggerError(null);
     try {
       await ensembleApi.reembedding.trigger({
-        mode: "incremental",
+        mode: selectedMode,
       });
+      const now2 = Date.now();
+      setLastTriggerTime(now2);
+      localStorage.setItem("engram:reembed:lastTriggeredAt", String(now2));
       setTriggerDialogOpen(false);
       await fetchData();
     } catch (error) {
-      console.error("Failed to trigger re-embedding:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to trigger re-embedding.";
+      setTriggerError(message);
     } finally {
       setTriggering(false);
     }
@@ -795,7 +818,10 @@ function EnsemblePageContent() {
       </Tabs>
 
       {/* Trigger Re-embed Dialog */}
-      <Dialog open={triggerDialogOpen} onOpenChange={setTriggerDialogOpen}>
+      <Dialog open={triggerDialogOpen} onOpenChange={(open) => {
+        setTriggerDialogOpen(open);
+        if (!open) setTriggerError(null);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Trigger Re-embedding</DialogTitle>
@@ -805,14 +831,42 @@ function EnsemblePageContent() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="space-y-2 text-sm">
-              <p>
-                <strong>Mode:</strong> Incremental (only changed memories)
-              </p>
+            <div className="space-y-3 text-sm">
+              <div>
+                <strong className="block mb-1.5">Mode:</strong>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={selectedMode === "incremental" ? "default" : "outline"}
+                    onClick={() => setSelectedMode("incremental")}
+                  >
+                    Incremental
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={selectedMode === "full" ? "default" : "outline"}
+                    onClick={() => setSelectedMode("full")}
+                  >
+                    Full
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedMode === "incremental"
+                    ? "Only re-embed changed memories since last run."
+                    : "Re-embed all memories from scratch."}
+                </p>
+              </div>
               <p>
                 <strong>Models:</strong> {ensembleStatus?.models.join(", ") || "All active"}
               </p>
             </div>
+            {triggerError && (
+              <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-md text-sm text-red-500">
+                {triggerError}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
