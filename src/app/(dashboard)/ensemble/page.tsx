@@ -294,7 +294,7 @@ function CoverageStatsSection({
         <div className="grid gap-4 mb-6 md:grid-cols-4">
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Total Memories</p>
-            <p className="text-2xl font-bold">{coverage.totalMemories.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{(coverage.totalMemories ?? 0).toLocaleString()}</p>
           </div>
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Models Configured</p>
@@ -303,12 +303,12 @@ function CoverageStatsSection({
           <div className="p-4 bg-green-500/10 rounded-lg">
             <p className="text-sm text-muted-foreground">Full Coverage</p>
             <p className="text-2xl font-bold text-green-500">
-              {coverage.fullCoveragePercentage.toFixed(1)}%
+              {(coverage.fullCoveragePercentage ?? 0).toFixed(1)}%
             </p>
           </div>
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Memories with All Models</p>
-            <p className="text-2xl font-bold">{coverage.fullCoverageCount.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{(coverage.fullCoverageCount ?? 0).toLocaleString()}</p>
           </div>
         </div>
 
@@ -323,14 +323,14 @@ function CoverageStatsSection({
                 <div className="h-3 rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${model.coveragePercentage}%` }}
+                    style={{ width: `${model.coveragePercentage ?? 0}%` }}
                   />
                 </div>
               </div>
               <div className="w-32 text-right text-sm">
-                <span className="font-mono">{model.coveragePercentage.toFixed(1)}%</span>
+                <span className="font-mono">{(model.coveragePercentage ?? 0).toFixed(1)}%</span>
                 <span className="text-muted-foreground ml-2">
-                  ({model.embeddedCount.toLocaleString()})
+                  ({(model.embeddedCount ?? 0).toLocaleString()})
                 </span>
               </div>
             </div>
@@ -405,18 +405,18 @@ function ABTestResultsSection({
         <div className="grid gap-4 mb-6 md:grid-cols-3">
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Total Queries</p>
-            <p className="text-2xl font-bold">{results.totalQueries.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{(results.totalQueries ?? 0).toLocaleString()}</p>
           </div>
           <div className="p-4 bg-green-500/10 rounded-lg">
             <p className="text-sm text-muted-foreground">Consensus Rate</p>
             <p className="text-2xl font-bold text-green-500">
-              {(results.consensusRate * 100).toFixed(1)}%
+              {((results.consensusRate ?? 0) * 100).toFixed(1)}%
             </p>
           </div>
           <div className="p-4 bg-primary/10 rounded-lg">
             <p className="text-sm text-muted-foreground">Fusion Improvement</p>
             <p className="text-2xl font-bold text-primary">
-              +{(results.fusionImprovement * 100).toFixed(1)}%
+              +{((results.fusionImprovement ?? 0) * 100).toFixed(1)}%
             </p>
           </div>
         </div>
@@ -441,17 +441,17 @@ function ABTestResultsSection({
                     <div className="h-2 w-16 rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-primary"
-                        style={{ width: `${model.hitRate * 100}%` }}
+                        style={{ width: `${(model.hitRate ?? 0) * 100}%` }}
                       />
                     </div>
                     <span className="text-sm font-mono">
-                      {(model.hitRate * 100).toFixed(1)}%
+                      {((model.hitRate ?? 0) * 100).toFixed(1)}%
                     </span>
                   </div>
                 </TableCell>
-                <TableCell>{model.uniqueHits.toLocaleString()}</TableCell>
+                <TableCell>{(model.uniqueHits ?? 0).toLocaleString()}</TableCell>
                 <TableCell className="font-mono">
-                  {model.avgRankContribution.toFixed(3)}
+                  {(model.avgRankContribution ?? 0).toFixed(3)}
                 </TableCell>
               </TableRow>
             ))}
