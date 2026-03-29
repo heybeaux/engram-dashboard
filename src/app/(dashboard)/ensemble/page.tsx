@@ -294,7 +294,7 @@ function CoverageStatsSection({
         <div className="grid gap-4 mb-6 md:grid-cols-4">
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Total Memories</p>
-            <p className="text-2xl font-bold">{coverage.totalMemories.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{(coverage.totalMemories ?? 0).toLocaleString()}</p>
           </div>
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Models Configured</p>
@@ -303,12 +303,12 @@ function CoverageStatsSection({
           <div className="p-4 bg-green-500/10 rounded-lg">
             <p className="text-sm text-muted-foreground">Full Coverage</p>
             <p className="text-2xl font-bold text-green-500">
-              {coverage.fullCoveragePercentage.toFixed(1)}%
+              {(coverage.fullCoveragePercentage ?? 0).toFixed(1)}%
             </p>
           </div>
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Memories with All Models</p>
-            <p className="text-2xl font-bold">{coverage.fullCoverageCount.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{(coverage.fullCoverageCount ?? 0).toLocaleString()}</p>
           </div>
         </div>
 
@@ -323,14 +323,14 @@ function CoverageStatsSection({
                 <div className="h-3 rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${model.coveragePercentage}%` }}
+                    style={{ width: `${model.coveragePercentage ?? 0}%` }}
                   />
                 </div>
               </div>
               <div className="w-32 text-right text-sm">
-                <span className="font-mono">{model.coveragePercentage.toFixed(1)}%</span>
+                <span className="font-mono">{(model.coveragePercentage ?? 0).toFixed(1)}%</span>
                 <span className="text-muted-foreground ml-2">
-                  ({model.embeddedCount.toLocaleString()})
+                  ({(model.embeddedCount ?? 0).toLocaleString()})
                 </span>
               </div>
             </div>
@@ -405,18 +405,18 @@ function ABTestResultsSection({
         <div className="grid gap-4 mb-6 md:grid-cols-3">
           <div className="p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">Total Queries</p>
-            <p className="text-2xl font-bold">{results.totalQueries.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{(results.totalQueries ?? 0).toLocaleString()}</p>
           </div>
           <div className="p-4 bg-green-500/10 rounded-lg">
             <p className="text-sm text-muted-foreground">Consensus Rate</p>
             <p className="text-2xl font-bold text-green-500">
-              {(results.consensusRate * 100).toFixed(1)}%
+              {((results.consensusRate ?? 0) * 100).toFixed(1)}%
             </p>
           </div>
           <div className="p-4 bg-primary/10 rounded-lg">
             <p className="text-sm text-muted-foreground">Fusion Improvement</p>
             <p className="text-2xl font-bold text-primary">
-              +{(results.fusionImprovement * 100).toFixed(1)}%
+              +{((results.fusionImprovement ?? 0) * 100).toFixed(1)}%
             </p>
           </div>
         </div>
@@ -441,17 +441,17 @@ function ABTestResultsSection({
                     <div className="h-2 w-16 rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-primary"
-                        style={{ width: `${model.hitRate * 100}%` }}
+                        style={{ width: `${(model.hitRate ?? 0) * 100}%` }}
                       />
                     </div>
                     <span className="text-sm font-mono">
-                      {(model.hitRate * 100).toFixed(1)}%
+                      {((model.hitRate ?? 0) * 100).toFixed(1)}%
                     </span>
                   </div>
                 </TableCell>
-                <TableCell>{model.uniqueHits.toLocaleString()}</TableCell>
+                <TableCell>{(model.uniqueHits ?? 0).toLocaleString()}</TableCell>
                 <TableCell className="font-mono">
-                  {model.avgRankContribution.toFixed(3)}
+                  {(model.avgRankContribution ?? 0).toFixed(3)}
                 </TableCell>
               </TableRow>
             ))}
@@ -663,6 +663,12 @@ function EnsemblePageContent() {
   const [loading, setLoading] = useState(true);
   const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
   const [triggering, setTriggering] = useState(false);
+  const [triggerError, setTriggerError] = useState<string | null>(null);
+  const [selectedMode, setSelectedMode] = useState<"incremental" | "full">("incremental");
+  const [lastTriggerTime, setLastTriggerTime] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return parseInt(localStorage.getItem("engram:reembed:lastTriggeredAt") ?? "0", 10);
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -703,16 +709,33 @@ function EnsemblePageContent() {
     return () => clearInterval(interval);
   }, [reembedJobs]);
 
+  const RATE_LIMIT_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   const handleTriggerReembed = async () => {
+    const now = Date.now();
+    if (now - lastTriggerTime < RATE_LIMIT_MS) {
+      const availableAt = new Date(lastTriggerTime + RATE_LIMIT_MS);
+      setTriggerError(
+        `Re-embedding can only be triggered once per 24 hours. Available again at ${availableAt.toLocaleTimeString()}.`
+      );
+      return;
+    }
+
     setTriggering(true);
+    setTriggerError(null);
     try {
       await ensembleApi.reembedding.trigger({
-        mode: "incremental",
+        mode: selectedMode,
       });
+      const now2 = Date.now();
+      setLastTriggerTime(now2);
+      localStorage.setItem("engram:reembed:lastTriggeredAt", String(now2));
       setTriggerDialogOpen(false);
       await fetchData();
     } catch (error) {
-      console.error("Failed to trigger re-embedding:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to trigger re-embedding.";
+      setTriggerError(message);
     } finally {
       setTriggering(false);
     }
@@ -795,7 +818,10 @@ function EnsemblePageContent() {
       </Tabs>
 
       {/* Trigger Re-embed Dialog */}
-      <Dialog open={triggerDialogOpen} onOpenChange={setTriggerDialogOpen}>
+      <Dialog open={triggerDialogOpen} onOpenChange={(open) => {
+        setTriggerDialogOpen(open);
+        if (!open) setTriggerError(null);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Trigger Re-embedding</DialogTitle>
@@ -805,14 +831,42 @@ function EnsemblePageContent() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="space-y-2 text-sm">
-              <p>
-                <strong>Mode:</strong> Incremental (only changed memories)
-              </p>
+            <div className="space-y-3 text-sm">
+              <div>
+                <strong className="block mb-1.5">Mode:</strong>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={selectedMode === "incremental" ? "default" : "outline"}
+                    onClick={() => setSelectedMode("incremental")}
+                  >
+                    Incremental
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={selectedMode === "full" ? "default" : "outline"}
+                    onClick={() => setSelectedMode("full")}
+                  >
+                    Full
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedMode === "incremental"
+                    ? "Only re-embed changed memories since last run."
+                    : "Re-embed all memories from scratch."}
+                </p>
+              </div>
               <p>
                 <strong>Models:</strong> {ensembleStatus?.models.join(", ") || "All active"}
               </p>
             </div>
+            {triggerError && (
+              <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-md text-sm text-red-500">
+                {triggerError}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
