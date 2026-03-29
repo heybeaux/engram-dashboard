@@ -176,7 +176,7 @@ function ModelRegistrySection({
                   </TableCell>
                   <TableCell>{config?.dimensions || "—"}</TableCell>
                   <TableCell>
-                    <span className="font-mono">{model.weight.toFixed(2)}</span>
+                    <span className="font-mono">{(model.weight ?? 1).toFixed(2)}</span>
                   </TableCell>
                   <TableCell className="text-right">
                     {qualityScore != null && qualityScore > 0 ? (
@@ -221,7 +221,7 @@ function ModelRegistrySection({
               </div>
               <div>
                 <span className="text-muted-foreground">Active Models:</span>
-                <span className="ml-2 font-mono">{ensembleConfig.models.length}</span>
+                <span className="ml-2 font-mono">{(ensembleConfig.models ?? []).length}</span>
               </div>
             </div>
           </div>
@@ -433,7 +433,7 @@ function ABTestResultsSection({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {results.modelHitRates.map((model) => (
+            {(results.modelHitRates ?? []).map((model) => (
               <TableRow key={model.model}>
                 <TableCell className="font-medium">{model.model}</TableCell>
                 <TableCell>
@@ -459,12 +459,12 @@ function ABTestResultsSection({
         </Table>
 
         {/* Query Type Breakdown */}
-        {results.queryTypeBreakdown.length > 0 && (
+        {(results.queryTypeBreakdown ?? []).length > 0 && (
           <>
             <Separator className="my-6" />
             <h4 className="font-medium mb-3">Query Type Performance</h4>
             <div className="space-y-2">
-              {results.queryTypeBreakdown.map((qt) => (
+              {(results.queryTypeBreakdown ?? []).map((qt) => (
                 <div
                   key={qt.queryType}
                   className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
@@ -555,8 +555,8 @@ function ReembeddingSection({
               <div className="flex justify-between text-sm mb-1">
                 <span>Progress</span>
                 <span>
-                  {activeJob.processedMemories.toLocaleString()} /{" "}
-                  {activeJob.totalMemories.toLocaleString()}
+                  {(activeJob.processedMemories ?? 0).toLocaleString()} /{" "}
+                  {(activeJob.totalMemories ?? 0).toLocaleString()}
                 </span>
               </div>
               <div className="h-3 rounded-full bg-muted">
@@ -564,8 +564,8 @@ function ReembeddingSection({
                   className="h-full rounded-full bg-blue-500 transition-all"
                   style={{
                     width: `${
-                      activeJob.totalMemories > 0
-                        ? (activeJob.processedMemories / activeJob.totalMemories) * 100
+                      (activeJob.totalMemories ?? 0) > 0
+                        ? ((activeJob.processedMemories ?? 0) / (activeJob.totalMemories ?? 1)) * 100
                         : 0
                     }%`,
                   }}
@@ -573,7 +573,7 @@ function ReembeddingSection({
               </div>
             </div>
             <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>Models: {activeJob.models.join(", ")}</span>
+              <span>Models: {(activeJob.models ?? []).join(", ")}</span>
               <span>Mode: {activeJob.mode}</span>
             </div>
           </div>
@@ -608,8 +608,8 @@ function ReembeddingSection({
                     </TableCell>
                     <TableCell className="capitalize">{job.mode}</TableCell>
                     <TableCell>
-                      {job.processedMemories.toLocaleString()}
-                      {job.failedMemories > 0 && (
+                      {(job.processedMemories ?? 0).toLocaleString()}
+                      {(job.failedMemories ?? 0) > 0 && (
                         <span className="text-red-500 ml-1">
                           ({job.failedMemories} failed)
                         </span>
