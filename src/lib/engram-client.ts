@@ -207,6 +207,8 @@ export class EngramClient {
       layers?: MemoryLayer[];
       includeChains?: boolean;
       projectId?: string;
+      /** Search across all users in the authenticated account instead of only the resolved/default user. */
+      scope?: 'account';
     },
     userId?: string
   ): Promise<QueryResult> {
@@ -218,7 +220,11 @@ export class EngramClient {
       projectId: options?.projectId,
     };
 
-    return this.fetch<QueryResult>('/v1/memories/query', {
+    const endpoint = options?.scope === 'account'
+      ? '/v1/memories/query?scope=account'
+      : '/v1/memories/query';
+
+    return this.fetch<QueryResult>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
       userId,
