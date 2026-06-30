@@ -5,7 +5,7 @@ Engram Dashboard has two Playwright layers:
 - `pnpm test:e2e` — normal CI E2E smoke tests.
 - `pnpm test:e2e:visual` — opt-in visual audit suite for broad page coverage, screenshot evidence, console errors, page errors, bad HTTP responses, and obvious placeholder copy.
 
-The visual audit is intentionally **not** part of the default E2E run yet. The first sweep exposed multiple existing UI/API integration failures, so the audit should be used to generate evidence and then fixed in batches until it can be promoted into required CI.
+The visual audit is intentionally separate from default E2E. It is designed to generate page-by-page visual evidence and catch UI regressions across the whole product surface without depending on a live seeded Engram backend.
 
 ## Run locally
 
@@ -23,29 +23,52 @@ Artifacts:
 
 ## Route manifest
 
-Routes live in `e2e/page-manifest.ts`. The opt-in suite uses `playwright.visual.config.ts` so `e2e/visual-audit.ts` is not discovered by normal `pnpm test:e2e` runs. and are grouped as:
+Routes live in `e2e/page-manifest.ts`. The opt-in suite uses `playwright.visual.config.ts` so `e2e/visual-audit.ts` is not discovered by normal `pnpm test:e2e` runs.
+
+The manifest is grouped as:
 
 - auth pages
 - public docs pages
 - authenticated dashboard pages
 
-Authenticated dashboard routes use a minimal unsigned JWT cookie because the middleware accepts decoded JWTs when `JWT_SECRET` is unset in local/test mode. The audit does not fake successful backend data; API failures still surface as console errors or bad responses.
+## Authentication and API data
 
-## First-run findings from this PR
+Authenticated dashboard routes use a signed visual-audit JWT plus matching `localStorage` state. This exercises the same middleware/client auth paths as the dashboard without requiring a real user login.
 
-A local Chromium sweep produced 55 passing checks and 16 failing checks. The failures are useful backlog signal, not harness defects:
+The suite also installs representative read-only API mocks for broad page rendering:
 
-- docs pages with generic `404`/placeholder-like text trips
-- authenticated dashboard routes redirecting to `/login`
-- missing API proxy route: `/api/engram/v1/notifications/config`
-- unauthorized user fetches on `/users`
-- Engram Code project route fetch errors
-- several data-dependent pages that render but emit console/API failures
+- dashboard stats/account data
+- memories/users
+- merge candidates
+- sessions
+- consolidation reports
+- pools
+- notifications config
+- ensemble status/coverage/eval/re-embedding
+- Engram Code projects
+
+This keeps the visual audit deterministic and focused on UI rendering. Live backend/API integration coverage should remain in normal E2E or dedicated integration tests.
+
+## Current state
+
+After the first fix pass, the local Chromium visual audit is green:
+
+```bash
+pnpm test:e2e:visual
+# 71 passed
+```
+
+The initial sweep exposed these classes of issues and the harness now covers them:
+
+- synthetic auth needed to seed both cookie and `localStorage`
+- docs pages legitimately mention terms like `404` and should not be treated as generic 404 pages
+- notification settings uses `GET /v1/notifications/config` and `POST /v1/notifications/configure`
+- API-backed pages need deterministic data to be visually audited without a live seeded backend
+- optional Engram Code service failures should render as page state, not noisy console errors
 
 ## Promotion path
 
-1. Land the audit harness.
-2. Fix failing pages in small batches.
-3. Reduce allowlisted console noise.
-4. Add visual snapshots for stable pages.
-5. Move `pnpm test:e2e:visual` into required CI once the suite is green and stable.
+1. Keep expanding the route manifest as new pages ship.
+2. Add stable visual snapshots for the most important pages once layout churn slows down.
+3. Add live-backend integration tests for auth/API behavior separately from this mocked visual layer.
+4. Move `pnpm test:e2e:visual` into required CI once the suite is stable enough and artifact volume is acceptable.
