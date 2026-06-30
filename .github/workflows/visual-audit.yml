@@ -1,13 +1,10 @@
-name: E2E Tests
+name: Playwright Visual Audit
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  e2e:
+  visual-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -38,17 +35,17 @@ jobs:
           NEXT_PUBLIC_ENGRAM_API_KEY: test_key
           NEXT_PUBLIC_ENGRAM_USER_ID: test_user
 
-      - name: Run Playwright tests
-        run: pnpm test:e2e --project=chromium
+      - name: Run visual audit
+        run: pnpm test:e2e:visual
         env:
           CI: true
 
-      - name: Upload Playwright report
+      - name: Upload Playwright visual audit artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-visual-audit
           path: |
             playwright-report/
             test-results/
-          retention-days: 7
+          retention-days: 14
