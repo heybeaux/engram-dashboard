@@ -65,44 +65,48 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-center text-xl">Invalid reset link</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            This password reset link is invalid or has expired. Please request a new one.
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Link href="/forgot-password" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mx-auto">
-            <ArrowLeft className="h-3 w-3" />
-            Request new reset link
-          </Link>
-        </CardFooter>
-      </Card>
+      <main className="w-full">
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-center text-xl">Invalid reset link</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              This password reset link is invalid or has expired. Please request a new one.
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Link href="/forgot-password" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mx-auto">
+              <ArrowLeft className="h-3 w-3" />
+              Request new reset link
+            </Link>
+          </CardFooter>
+        </Card>
+      </main>
     );
   }
 
   if (success) {
     return (
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-center text-xl">Password reset</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 rounded-md bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            Your password has been reset successfully.
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={() => router.push('/login')}>
-            Sign in
-          </Button>
-        </CardFooter>
-      </Card>
+      <main className="w-full">
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-center text-xl">Password reset</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2 rounded-md bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Your password has been reset successfully.
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" onClick={() => router.push('/login')}>
+              Sign in
+            </Button>
+          </CardFooter>
+        </Card>
+      </main>
     );
   }
 

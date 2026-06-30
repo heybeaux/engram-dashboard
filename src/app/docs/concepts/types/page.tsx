@@ -91,7 +91,7 @@ export default function MemoryTypesPage() {
             <ul>
               <li>&quot;We need to review PR #123 by Friday&quot;</li>
               <li>&quot;Remind me to call the dentist tomorrow&quot;</li>
-              <li>&quot;TODO: write migration script for the new schema&quot;</li>
+              <li>&quot;Action item: write migration script for the new schema&quot;</li>
               <li>&quot;Deploy the staging build after tests pass&quot;</li>
             </ul>
             <p><strong>Retrieval behavior:</strong></p>
@@ -180,7 +180,7 @@ export default function MemoryTypesPage() {
                 <td><strong>2</strong></td>
                 <td>Project</td>
                 <td>Evicted only by CONSTRAINT</td>
-                <td>Active tasks, reminders, TODOs</td>
+                <td>Active tasks, reminders, task notes</td>
               </tr>
               <tr>
                 <td><code>FACT</code></td>

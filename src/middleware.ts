@@ -11,6 +11,7 @@ const SELF_HOSTED_ONLY_PATHS = ['/setup'];
 const SELF_HOSTED_ONLY_PREFIXES = ['/code'];
 
 const IS_CLOUD = process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === 'cloud';
+const IS_LOCAL_EDITION = process.env.NEXT_PUBLIC_EDITION === 'local';
 
 const JWT_SECRET = process.env.JWT_SECRET || '';
 
@@ -34,8 +35,12 @@ async function isValidToken(token: string): Promise<boolean> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Root redirect: authenticated → /dashboard, otherwise → /login
+  // Root redirect: local/self-hosted uses LAN bypass; cloud requires a valid JWT.
   if (pathname === '/') {
+    if (IS_LOCAL_EDITION) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
     const token = request.cookies.get('engram_token')?.value;
     const valid = token ? await isValidToken(token) : false;
     const target = valid ? '/dashboard' : '/login';
@@ -55,6 +60,10 @@ export async function middleware(request: NextRequest) {
   // Allow public paths
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
+
+  // Local/self-hosted dashboard intentionally supports LAN bypass. Do this after
+  // public route handling so auth/docs/setup pages still render normally.
+  if (IS_LOCAL_EDITION) return NextResponse.next();
 
   const token = request.cookies.get('engram_token')?.value;
 
