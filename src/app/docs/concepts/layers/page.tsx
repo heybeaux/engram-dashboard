@@ -158,7 +158,7 @@ Total Context Budget: 1,800 tokens`}
           </pre>
           <p>
             After just 3 days, a task memory retains only 50% of its score. After 6 days, 25%.
-            This aggressive decay prevents stale todos from cluttering context. Important tasks
+            This aggressive decay prevents stale action items from cluttering context. Important tasks
             that persist should be promoted to the PROJECT layer or pinned by the user.
           </p>
 

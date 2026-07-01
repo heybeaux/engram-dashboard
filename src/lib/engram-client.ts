@@ -63,6 +63,34 @@ const getConfig = () => ({
   defaultUserId: getDefaultUserId(),
 });
 
+function stringField(
+  value: unknown,
+  fallback = '',
+): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+function nullableStringField(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function normalizeAgentSession(
+  raw: Record<string, unknown>,
+): import('./types').AgentSession {
+  return {
+    id: stringField(raw.id),
+    sessionKey: stringField(raw.sessionKey ?? raw.session_key),
+    label: nullableStringField(raw.label),
+    status: stringField(raw.status, 'ACTIVE') as import('./types').AgentSessionStatus,
+    parentSessionKey: nullableStringField(raw.parentSessionKey ?? raw.parent_session_key),
+    taskDescription: nullableStringField(raw.taskDescription ?? raw.task_description),
+    startedAt: stringField(raw.startedAt ?? raw.started_at ?? raw.createdAt ?? raw.created_at),
+    endedAt: nullableStringField(raw.endedAt ?? raw.ended_at),
+    createdAt: stringField(raw.createdAt ?? raw.created_at),
+    updatedAt: stringField(raw.updatedAt ?? raw.updated_at),
+  };
+}
+
 // ============================================================================
 // CLIENT CLASS
 // ============================================================================
@@ -207,6 +235,8 @@ export class EngramClient {
       layers?: MemoryLayer[];
       includeChains?: boolean;
       projectId?: string;
+      /** Search across all users in the authenticated account instead of only the resolved/default user. */
+      scope?: 'account';
     },
     userId?: string
   ): Promise<QueryResult> {
@@ -218,7 +248,11 @@ export class EngramClient {
       projectId: options?.projectId,
     };
 
-    return this.fetch<QueryResult>('/v1/memories/query', {
+    const endpoint = options?.scope === 'account'
+      ? '/v1/memories/query?scope=account'
+      : '/v1/memories/query';
+
+    return this.fetch<QueryResult>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
       userId,
@@ -704,8 +738,9 @@ export class EngramClient {
     const qs = sp.toString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await this.fetch<any>(`/v1/agent-sessions${qs ? `?${qs}` : ''}`);
+    const rawSessions = Array.isArray(data) ? data : data.sessions ?? [];
     return {
-      sessions: Array.isArray(data) ? data : data.sessions ?? [],
+      sessions: rawSessions.map((session: Record<string, unknown>) => normalizeAgentSession(session)),
       total: Array.isArray(data) ? data.length : data.total ?? 0,
     };
   }

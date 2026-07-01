@@ -183,7 +183,15 @@ export default function MemoriesPage() {
         const layers = layerFilter ? [layerFilter] : undefined;
         const result = await engram.searchMemories(
           search,
-          { limit: PAGE_SIZE, layers },
+          {
+            limit: PAGE_SIZE,
+            layers,
+            // The Memories index is account-wide by default. Without this,
+            // the API resolves a missing X-AM-User-ID to the default/login user
+            // and semantic search can return zero results even when other
+            // account users have matching memories.
+            scope: userFilter ? undefined : 'account',
+          },
           userFilter ?? ''
         );
         setMemories(result.memories ?? []);

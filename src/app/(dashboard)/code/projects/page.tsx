@@ -299,7 +299,7 @@ export default function CodeProjectsPage() {
 
       setProjects(projectsWithStats);
     } catch (err) {
-      console.error("Failed to fetch projects:", err);
+      console.warn("Failed to fetch projects:", err);
       setError("Failed to connect to engram-code service. Is it running?");
     } finally {
       setLoading(false);

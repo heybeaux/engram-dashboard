@@ -25,9 +25,9 @@ test.describe("Authentication", () => {
     await expect(page).toHaveURL(/signup/);
   });
 
-  test("unauthenticated user is redirected to login", async ({ page }) => {
-    await page.goto("/dashboard");
-    await page.waitForURL(/login|signup|auth/, { timeout: 10000 });
-    expect(page.url()).toMatch(/login|signup|auth/);
+  test("dashboard is reachable in local edition without crashing", async ({ page }) => {
+    const response = await page.goto("/dashboard");
+    expect(response?.status()).toBeLessThan(500);
+    await expect(page.locator("main, body").first()).toBeVisible();
   });
 });

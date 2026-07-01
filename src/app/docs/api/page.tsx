@@ -1531,11 +1531,11 @@ Response: {
   "statusCode": 403
 }
 
-// 404 Not Found
+// Not Found response
 {
   "message": "Memory not found",
   "error": "Not Found", 
-  "statusCode": 404
+  "statusCode": "not_found"
 }
 
 // 400 Bad Request

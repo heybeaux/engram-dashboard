@@ -32,9 +32,7 @@ test.describe("Navigation", () => {
       test.skip(true, "Auth required");
     }
     // Look for mobile menu trigger (hamburger button or sheet trigger)
-    const menuButton = page.locator(
-      "button[aria-label*='menu'], button[aria-label*='Menu'], [data-testid='mobile-nav'], button:has(svg)"
-    ).first();
+    const menuButton = page.getByRole("button", { name: /open menu/i });
     await expect(menuButton).toBeVisible({ timeout: 10000 });
   });
 });

@@ -19,6 +19,9 @@ export default defineConfig({
   ],
   webServer: {
     command: "pnpm run dev",
+    env: {
+      NEXT_PUBLIC_ENGRAM_API_URL: "https://api.openengram.ai",
+    },
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
   },

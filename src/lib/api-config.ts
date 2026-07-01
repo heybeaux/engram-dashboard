@@ -31,6 +31,16 @@ export function getApiBaseUrl(): string {
   );
 }
 
+/**
+ * Returns the API base URL browser code should call directly.
+ *
+ * Most authenticated dashboard requests should go through the Next.js proxy so
+ * API keys stay server-side and local/prod auth behavior is centralized.
+ */
+export function getBrowserApiBaseUrl(): string {
+  return '/api/engram';
+}
+
 // ============================================================================
 // CREDENTIALS
 // ============================================================================
@@ -114,7 +124,8 @@ export async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit & { userId?: string }
 ): Promise<T> {
-  const url = `${getApiBaseUrl()}${endpoint}`;
+  const baseUrl = typeof window === 'undefined' ? getApiBaseUrl() : getBrowserApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
 
   const userId =
     options?.userId !== undefined ? options.userId : getDefaultUserId();

@@ -60,7 +60,7 @@ export default function IntroductionPage() {
             <li><strong>IDENTITY</strong>: Who you are (never decays) — preferences, relationships, facts about you</li>
             <li><strong>PROJECT</strong>: What you&apos;re working on (60-day half-life) — goals, context, decisions</li>
             <li><strong>SESSION</strong>: Recent context (14-day half-life) — conversations, tasks, events</li>
-            <li><strong>TASK</strong>: Ephemeral (3-day half-life) — immediate todos, reminders</li>
+            <li><strong>TASK</strong>: Ephemeral (3-day half-life) — immediate action items and reminders</li>
           </ul>
 
           <h3>3. Semantic Retrieval</h3>

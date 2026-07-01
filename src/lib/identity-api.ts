@@ -542,7 +542,7 @@ export async function getNotificationConfig(): Promise<NotificationConfigRespons
 }
 
 export async function saveNotificationConfig(config: NotificationConfig & { test?: boolean }): Promise<void> {
-  return identityFetch<void>('/v1/notifications/config', {
+  return identityFetch<void>('/v1/notifications/configure', {
     method: 'POST',
     body: JSON.stringify(config),
   });
