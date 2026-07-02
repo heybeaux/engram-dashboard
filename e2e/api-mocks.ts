@@ -226,9 +226,9 @@ function routeBody(method: string, pathWithQuery: string): unknown {
       status: "COMPLETED",
       memoriesCreated: 1,
       memoriesAccessed: 0,
-      uniqueMemories: 1,
+      // Production can return this backend field and omit topTopics.
+      uniqueMemoriesAccessed: 1,
       duration: 60000,
-      topTopics: ["qa"],
     };
   }
 
@@ -283,7 +283,10 @@ function routeBody(method: string, pathWithQuery: string): unknown {
   if (path === "/v1/agents/test-agent/trust/history") return { history: [] };
   if (path === "/v1/agents/test-agent/trust/narrative") return { narrative: "Stable test trust profile." };
   if (path === "/v1/identity/agents") return { agents: [agent] };
-  if (path === "/v1/identity/agents/test-agent") return agent;
+  if (path === "/v1/identity/agents/test-agent") {
+    const { capabilities: _capabilities, ...agentWithoutCapabilities } = agent;
+    return agentWithoutCapabilities;
+  }
   if (path === "/v1/identity/agents/test-agent/export") return { agent, memories: [memory] };
   if (path === "/v1/identity/agents/test-agent/trust-profile") return { agentId: "test-agent", overallTrust: 0.8, domains: [], history: [] };
   if (path === "/v1/identity/trust/test-agent") return trustProfile;

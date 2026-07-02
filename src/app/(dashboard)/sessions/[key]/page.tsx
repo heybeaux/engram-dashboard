@@ -73,10 +73,13 @@ export default function SessionDetailPage() {
     );
   }
 
+  const topTopics = Array.isArray(summary.topTopics) ? summary.topTopics : [];
+  const uniqueMemories = summary.uniqueMemories ?? (summary as { uniqueMemoriesAccessed?: number }).uniqueMemoriesAccessed ?? 0;
+
   const stats = [
-    { label: "Memories Created", value: summary.memoriesCreated, icon: Brain },
-    { label: "Memories Accessed", value: summary.memoriesAccessed, icon: Eye },
-    { label: "Unique Memories", value: summary.uniqueMemories, icon: Hash },
+    { label: "Memories Created", value: summary.memoriesCreated ?? 0, icon: Brain },
+    { label: "Memories Accessed", value: summary.memoriesAccessed ?? 0, icon: Eye },
+    { label: "Unique Memories", value: uniqueMemories, icon: Hash },
     { label: "Duration", value: formatDuration(summary.duration), icon: Clock },
   ];
 
@@ -110,7 +113,7 @@ export default function SessionDetailPage() {
         ))}
       </div>
 
-      {summary.topTopics.length > 0 && (
+      {topTopics.length > 0 && (
         <Card>
           <CardHeader className="pb-2 md:pb-4">
             <CardTitle className="text-base md:text-lg flex items-center gap-2">
@@ -119,7 +122,7 @@ export default function SessionDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {summary.topTopics.map((topic) => (
+              {topTopics.map((topic) => (
                 <Badge key={topic} variant="secondary">{topic}</Badge>
               ))}
             </div>

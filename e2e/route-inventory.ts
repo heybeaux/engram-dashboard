@@ -37,6 +37,8 @@ export const AUTH_ROUTES: AuditRoute[] = [
   { path: "/forgot-password", name: "Forgot Password", kind: "auth" },
   { path: "/reset-password", name: "Reset Password", kind: "auth" },
   { path: "/setup", name: "Setup", kind: "auth" },
+  { path: "/terms", name: "Terms", kind: "auth" },
+  { path: "/privacy", name: "Privacy", kind: "auth" },
 ];
 
 export const DASHBOARD_ROUTES: AuditRoute[] = [

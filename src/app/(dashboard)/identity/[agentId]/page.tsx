@@ -120,16 +120,21 @@ export default function AgentDetailPage() {
     );
   }
 
-  const radarData = trust?.domainScores.map((d) => ({
+  const capabilities = Array.isArray(agent.capabilities) ? agent.capabilities : [];
+  const domainScores = Array.isArray(trust?.domainScores) ? trust.domainScores : [];
+  const behavioralPatterns = Array.isArray(trust?.behavioralPatterns) ? trust.behavioralPatterns : [];
+  const recentCompletions = Array.isArray(trust?.recentCompletions) ? trust.recentCompletions : [];
+
+  const radarData = domainScores.map((d) => ({
     domain: d.domain,
     confidence: Math.round(d.confidence * 100),
-  })) ?? [];
+  }));
 
-  const barData = trust?.domainScores.map((d) => ({
+  const barData = domainScores.map((d) => ({
     domain: d.domain,
     tasks: d.taskCount,
     confidence: Math.round(d.confidence * 100),
-  })) ?? [];
+  }));
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -157,7 +162,7 @@ export default function AgentDetailPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5 mt-4">
-            {agent.capabilities.map((cap) => (
+            {capabilities.map((cap) => (
               <Badge key={cap} variant="outline">{cap}</Badge>
             ))}
           </div>
@@ -229,12 +234,12 @@ export default function AgentDetailPage() {
       )}
 
       {/* Behavioral Patterns */}
-      {trust && trust.behavioralPatterns.length > 0 && (
+      {trust && behavioralPatterns.length > 0 && (
         <Card>
           <CardContent className="pt-6">
             <h2 className="text-lg font-semibold mb-4">Behavioral Patterns</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {trust.behavioralPatterns.map((pattern) => (
+              {behavioralPatterns.map((pattern) => (
                 <div key={pattern.label} className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{pattern.label}</span>
@@ -250,7 +255,7 @@ export default function AgentDetailPage() {
       )}
 
       {/* Recent Completions */}
-      {trust && trust.recentCompletions.length > 0 && (
+      {trust && recentCompletions.length > 0 && (
         <Card>
           <CardContent className="pt-6">
             <h2 className="text-lg font-semibold mb-4">Recent Task Completions</h2>
@@ -266,7 +271,7 @@ export default function AgentDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {trust.recentCompletions.map((task) => (
+                  {recentCompletions.map((task) => (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">{task.taskName}</TableCell>
                       <TableCell><Badge variant="outline">{task.domain}</Badge></TableCell>
@@ -285,7 +290,7 @@ export default function AgentDetailPage() {
             </div>
             {/* Mobile list */}
             <div className="md:hidden space-y-3">
-              {trust.recentCompletions.map((task) => (
+              {recentCompletions.map((task) => (
                 <div key={task.id} className="border rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{task.taskName}</span>
