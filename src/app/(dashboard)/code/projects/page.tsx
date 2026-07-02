@@ -33,6 +33,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { engramCode, CodeProject, ProjectStats, CreateProjectDto } from "@/lib/engram-code";
+import { useInstance } from "@/context/instance-context";
+import { CodeComingSoon } from "@/components/code/code-coming-soon";
 
 // ============================================================================
 // Utility Functions
@@ -271,6 +273,9 @@ function DeleteProjectDialog({
 // ============================================================================
 
 export default function CodeProjectsPage() {
+  const { mode, isCloud, features, isLoading: instanceLoading } = useInstance();
+  const isCloudMode = isCloud || mode === "cloud";
+  const codeSearchEnabled = !isCloudMode || features?.codeSearch === true;
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -307,8 +312,10 @@ export default function CodeProjectsPage() {
   };
 
   useEffect(() => {
+    if (instanceLoading || !codeSearchEnabled) return;
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instanceLoading, codeSearchEnabled]);
 
   const handleIngest = async (projectId: string) => {
     setIngestingProjectId(projectId);
@@ -326,6 +333,19 @@ export default function CodeProjectsPage() {
     setProjectToDelete(project);
     setDeleteDialogOpen(true);
   };
+
+  if (instanceLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (!codeSearchEnabled) {
+    return <CodeComingSoon />;
+  }
 
   return (
     <div className="space-y-6">

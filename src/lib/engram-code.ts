@@ -32,10 +32,16 @@ import {
 // CONFIGURATION
 // ============================================================================
 
+const codeUrl = process.env.NEXT_PUBLIC_ENGRAM_CODE_URL ||
+  process.env.ENGRAM_CODE_URL ||
+  'https://code.openengram.ai';
+
+const cloudCodeEnabled = process.env.NEXT_PUBLIC_DEPLOYMENT_MODE !== 'cloud' ||
+  Boolean(process.env.NEXT_PUBLIC_ENGRAM_CODE_URL || process.env.ENGRAM_CODE_URL);
+
 const getConfig = () => ({
-  baseUrl: process.env.NEXT_PUBLIC_ENGRAM_CODE_URL ||
-           process.env.ENGRAM_CODE_URL ||
-           'https://code.openengram.ai',
+  baseUrl: codeUrl,
+  enabled: cloudCodeEnabled,
 });
 
 // ============================================================================
@@ -44,10 +50,12 @@ const getConfig = () => ({
 
 export class EngramCodeClient {
   private baseUrl: string;
+  private enabled: boolean;
 
-  constructor(options?: { baseUrl?: string }) {
+  constructor(options?: { baseUrl?: string; enabled?: boolean }) {
     const config = getConfig();
     this.baseUrl = options?.baseUrl ?? config.baseUrl;
+    this.enabled = options?.enabled ?? config.enabled;
   }
 
   // ==========================================================================
@@ -58,6 +66,14 @@ export class EngramCodeClient {
     endpoint: string,
     options?: RequestInit
   ): Promise<T> {
+    if (!this.enabled) {
+      throw new EngramCodeError(
+        503,
+        'Code indexing service is not configured for this deployment',
+        { code: 'CODE_SERVICE_DISABLED' },
+      );
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
 
     const headers: Record<string, string> = {
@@ -259,7 +275,7 @@ export const engramCode = new EngramCodeClient();
 /**
  * Create a new client with custom configuration
  */
-export function createEngramCodeClient(options?: { baseUrl?: string }): EngramCodeClient {
+export function createEngramCodeClient(options?: { baseUrl?: string; enabled?: boolean }): EngramCodeClient {
   return new EngramCodeClient(options);
 }
 

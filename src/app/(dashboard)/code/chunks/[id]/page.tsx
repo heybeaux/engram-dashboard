@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { engramCode, CodeChunk, ChunkType } from "@/lib/engram-code";
 import { CodeViewer } from "@/components/code/code-viewer";
+import { useInstance } from "@/context/instance-context";
+import { CodeComingSoon } from "@/components/code/code-coming-soon";
 
 /**
  * Get badge variant based on chunk type
@@ -52,6 +54,9 @@ function getChunkTypeBadge(type: ChunkType): {
 export default function ChunkDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { mode, isCloud, features, isLoading: instanceLoading } = useInstance();
+  const isCloudMode = isCloud || mode === "cloud";
+  const codeSearchEnabled = !isCloudMode || features?.codeSearch === true;
   const chunkId = params.id as string;
 
   const [chunk, setChunk] = useState<CodeChunk | null>(null);
@@ -60,7 +65,7 @@ export default function ChunkDetailPage() {
   const [copied, setCopied] = useState(false);
 
   const fetchChunk = useCallback(async () => {
-    if (!chunkId) return;
+    if (!chunkId || instanceLoading || !codeSearchEnabled) return;
 
     setLoading(true);
     setError(null);
@@ -74,11 +79,24 @@ export default function ChunkDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [chunkId]);
+  }, [chunkId, instanceLoading, codeSearchEnabled]);
 
   useEffect(() => {
     fetchChunk();
   }, [fetchChunk]);
+
+  if (instanceLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (!codeSearchEnabled) {
+    return <CodeComingSoon />;
+  }
 
   const handleCopyCode = async () => {
     if (!chunk) return;

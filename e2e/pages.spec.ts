@@ -112,4 +112,11 @@ test.describe("reported regressions", () => {
     await expect(page.locator("body")).not.toContainText("API Error");
     expect(calls.some((call) => call.method === "POST" && call.path === "/v1/ensemble/drift/analyze")).toBe(true);
   });
+
+  test("/code/projects shows coming soon in cloud instead of calling an unavailable code service", async ({ page }) => {
+    const calls = await mockEngramApi(page);
+    await page.goto("/code/projects", { waitUntil: "networkidle" });
+    await expect(page.getByText("Cloud code search is coming soon")).toBeVisible();
+    expect(calls.some((call) => call.path.startsWith("/v1/code"))).toBe(false);
+  });
 });

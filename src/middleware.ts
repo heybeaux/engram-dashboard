@@ -53,6 +53,9 @@ export async function middleware(request: NextRequest) {
       SELF_HOSTED_ONLY_PATHS.includes(pathname) ||
       SELF_HOSTED_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
     if (isSelfHostedRoute) {
+      if (pathname === '/code' || pathname.startsWith('/code/')) {
+        return NextResponse.next();
+      }
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

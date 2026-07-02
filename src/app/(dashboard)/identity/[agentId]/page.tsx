@@ -38,8 +38,11 @@ import {
   type AgentTrustProfile,
 } from "@/lib/identity-api";
 
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString(undefined, {
+function formatDate(dateString?: string | null): string {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -156,8 +159,12 @@ export default function AgentDetailPage() {
               )}
               <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-muted-foreground">
                 <code className="text-xs bg-muted px-2 py-0.5 rounded">{agent.id}</code>
-                <span>·</span>
-                <span>Created {formatDate(agent.createdAt)}</span>
+                {agent.createdAt ? (
+                  <>
+                    <span>·</span>
+                    <span>Created {formatDate(agent.createdAt)}</span>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>

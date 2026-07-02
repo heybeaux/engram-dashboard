@@ -221,9 +221,19 @@ export class EngramClient {
       );
     }
 
-    // Handle 204 No Content
+    // Handle empty success bodies defensively. Some backend miss paths can
+    // currently arrive through the dashboard proxy as 200 + empty text, which
+    // should not crash detail pages while the route renders its not-found state.
     if (response.status === 204) {
       return undefined as T;
+    }
+
+    if (typeof response.text === "function") {
+      const text = await response.text();
+      if (!text.trim()) {
+        return null as T;
+      }
+      return JSON.parse(text) as T;
     }
 
     return response.json();

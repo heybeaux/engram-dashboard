@@ -1,24 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code2, Server } from "lucide-react";
 import { useInstance } from "@/context/instance-context";
+import { CodeComingSoon } from "@/components/code/code-coming-soon";
 
 export default function CodePage() {
-  const { mode, isLoading } = useInstance();
-  const router = useRouter();
+  const { mode, isCloud, features, isLoading } = useInstance();
+  const isCloudMode = isCloud || mode === "cloud";
+  const codeSearchEnabled = !isCloudMode || features?.codeSearch === true;
 
-  // Redirect to dashboard if on cloud mode (this page is self-hosted only)
-  useEffect(() => {
-    if (!isLoading && mode === "cloud") {
-      router.replace("/dashboard");
-    }
-  }, [isLoading, mode, router]);
-
-  if (isLoading || mode === "cloud") {
+  if (isLoading) {
     return null;
+  }
+
+  if (!codeSearchEnabled) {
+    return <CodeComingSoon />;
   }
 
   return (
