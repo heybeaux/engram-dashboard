@@ -119,4 +119,14 @@ test.describe("reported regressions", () => {
     await expect(page.getByText("Cloud code search is coming soon")).toBeVisible();
     expect(calls.some((call) => call.path.startsWith("/v1/code"))).toBe(false);
   });
+
+  test("/status presents account usage and API health with readable hierarchy", async ({ page }) => {
+    await page.goto("/status", { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: /Account limits and API health/i })).toBeVisible();
+    await expect(page.getByText("API status")).toBeVisible();
+    await expect(page.getByText("Memories stored")).toBeVisible();
+    await expect(page.getByText("API calls today")).toBeVisible();
+    await expect(page.getByText("Configured endpoint")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/Something went wrong|API Error|Invalid Date/i);
+  });
 });
