@@ -127,6 +127,8 @@ test.describe("reported regressions", () => {
     await expect(page.getByText("Memories stored")).toBeVisible();
     await expect(page.getByText("API calls today")).toBeVisible();
     await expect(page.getByText("Configured endpoint")).toBeVisible();
-    await expect(page.locator("body")).not.toContainText(/Something went wrong|API Error|Invalid Date/i);
+    await expect(page.getByText("Unlimited agent allocation")).toBeVisible();
+    await expect(page.getByText("Unlimited users can be attached")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/Something went wrong|API Error|Invalid Date|\/ -1|\b-1\b/i);
   });
 });

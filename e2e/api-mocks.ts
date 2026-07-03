@@ -69,9 +69,9 @@ const account = {
   id: "test-account",
   email: "qa@example.com",
   name: "QA Account",
-  plan: "free",
+  plan: "scale",
   usage: { memoriesUsed: 1, apiCallsToday: 2 },
-  limits: { memories: 1000, apiCallsPerDay: 100, agents: 3, usersPerAgent: 10 },
+  limits: { memories: 1000, apiCallsPerDay: 100, agents: -1, usersPerAgent: -1 },
   agents: [{ id: "test-agent", name: "Test Agent" }],
 };
 
