@@ -32,7 +32,20 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
 }
 
+function isUnlimitedLimit(value: number) {
+  return value < 0;
+}
+
+function formatLimit(value: number) {
+  return isUnlimitedLimit(value) ? 'Unlimited' : formatNumber(value);
+}
+
+function formatUsagePair(value: number, max: number) {
+  return `${formatNumber(value)} / ${formatLimit(max)}`;
+}
+
 function formatPercent(value: number, max: number) {
+  if (isUnlimitedLimit(max)) return 'Unlimited';
   if (max <= 0) return '0%';
   return `${Math.min(100, Math.round((value / max) * 100))}%`;
 }
@@ -49,7 +62,7 @@ function formatUptime(seconds?: number) {
 }
 
 function usageTone(value: number, max: number): 'healthy' | 'warning' | 'critical' {
-  if (max <= 0) return 'healthy';
+  if (isUnlimitedLimit(max) || max <= 0) return 'healthy';
   const pct = value / max;
   if (pct >= 0.9) return 'critical';
   if (pct >= 0.7) return 'warning';
@@ -90,7 +103,8 @@ function ProgressMeter({
   label: string;
   helper?: string;
 }) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  const isUnlimited = isUnlimitedLimit(max);
+  const pct = !isUnlimited && max > 0 ? Math.min((value / max) * 100, 100) : 0;
   const tone = usageTone(value, max);
   const classes = toneClasses(tone);
 
@@ -110,7 +124,7 @@ function ProgressMeter({
       </div>
       <div className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
         <span>{formatNumber(value)} used</span>
-        <span>{formatNumber(max)} limit</span>
+        <span>{isUnlimited ? 'Unlimited limit' : `${formatNumber(max)} limit`}</span>
       </div>
     </div>
   );
@@ -237,26 +251,34 @@ export default function StatusPage() {
       {
         icon: Database,
         label: 'Memories',
-        value: `${formatNumber(account.memoriesUsed)} / ${formatNumber(account.limits.memories)}`,
-        detail: `${formatPercent(account.memoriesUsed, account.limits.memories)} of storage allowance used.`,
+        value: formatUsagePair(account.memoriesUsed, account.limits.memories),
+        detail: isUnlimitedLimit(account.limits.memories)
+          ? 'Unlimited storage allowance on this plan.'
+          : `${formatPercent(account.memoriesUsed, account.limits.memories)} of storage allowance used.`,
       },
       {
         icon: Activity,
         label: 'API calls',
-        value: `${formatNumber(account.apiCallsToday)} / ${formatNumber(account.limits.apiCallsPerDay)}`,
-        detail: `${formatPercent(account.apiCallsToday, account.limits.apiCallsPerDay)} of today’s request allowance used.`,
+        value: formatUsagePair(account.apiCallsToday, account.limits.apiCallsPerDay),
+        detail: isUnlimitedLimit(account.limits.apiCallsPerDay)
+          ? 'Unlimited API calls on this plan.'
+          : `${formatPercent(account.apiCallsToday, account.limits.apiCallsPerDay)} of today’s request allowance used.`,
       },
       {
         icon: Users,
         label: 'Agents',
-        value: `${formatNumber(account.agents.length)} / ${formatNumber(account.limits.agents)}`,
-        detail: `Current account agent allocation on the ${account.plan} plan.`,
+        value: formatUsagePair(account.agents.length, account.limits.agents),
+        detail: isUnlimitedLimit(account.limits.agents)
+          ? `Unlimited agent allocation on the ${account.plan} plan.`
+          : `Current account agent allocation on the ${account.plan} plan.`,
       },
       {
         icon: KeyRound,
         label: 'Users / agent',
-        value: formatNumber(account.limits.usersPerAgent),
-        detail: 'Maximum users that can be attached to each agent.',
+        value: formatLimit(account.limits.usersPerAgent),
+        detail: isUnlimitedLimit(account.limits.usersPerAgent)
+          ? 'Unlimited users can be attached to each agent.'
+          : 'Maximum users that can be attached to each agent.',
       },
     ];
   }, [account]);
