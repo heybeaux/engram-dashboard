@@ -356,15 +356,30 @@ export interface DriftHistoryResponse {
   count: number;
 }
 
+export type DriftAnalyzeJobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface DriftAnalyzeSnapshotResult {
+  modelId: string;
+  avgDrift: number;
+  maxDrift: number;
+  sampleCount: number;
+  alertLevel: string;
+}
+
 export interface DriftAnalyzeResponse {
-  snapshots: Array<{
-    modelId: string;
-    avgDrift: number;
-    maxDrift: number;
-    sampleCount: number;
-    alertLevel: string;
-  }>;
-  summary: string;
+  jobId?: string;
+  status?: DriftAnalyzeJobStatus;
+  createdAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+  progress?: {
+    current: number;
+    total: number;
+    message?: string;
+  };
+  snapshots?: DriftAnalyzeSnapshotResult[];
+  summary?: string;
+  error?: string;
 }
 
 /**
@@ -391,12 +406,19 @@ export async function getDriftHistory(params?: {
 }
 
 /**
- * Trigger drift analysis
+ * Queue drift analysis
  */
 export async function analyzeDrift(): Promise<DriftAnalyzeResponse> {
   return apiFetch<DriftAnalyzeResponse>('/v1/ensemble/drift/analyze', {
     method: 'POST',
   });
+}
+
+/**
+ * Get queued drift analysis job status
+ */
+export async function getDriftAnalyzeJob(jobId: string): Promise<DriftAnalyzeResponse> {
+  return apiFetch<DriftAnalyzeResponse>(`/v1/ensemble/drift/analyze/jobs/${jobId}`);
 }
 
 // ============================================================================
@@ -424,5 +446,6 @@ export const ensembleApi = {
     getLatest: getLatestDrift,
     getHistory: getDriftHistory,
     analyze: analyzeDrift,
+    getAnalyzeJob: getDriftAnalyzeJob,
   },
 };

@@ -34,6 +34,7 @@ import {
   ensembleApi,
   DriftLatestResponse,
   DriftHistoryResponse,
+  DriftAnalyzeResponse,
   // DriftSnapshotResponse,
 } from "@/lib/ensemble-client";
 
@@ -73,6 +74,7 @@ export default function DriftPage() {
   const [history, setHistory] = useState<DriftHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeJob, setAnalyzeJob] = useState<DriftAnalyzeResponse | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
 
@@ -101,8 +103,28 @@ export default function DriftPage() {
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
+    setError(null);
+
     try {
-      await ensembleApi.drift.analyze();
+      let job = await ensembleApi.drift.analyze();
+      setAnalyzeJob(job);
+
+      // Backward compatibility: older API deployments returned the completed
+      // snapshot payload synchronously. If no jobId is present, treat it as
+      // already complete and refresh the page data.
+      if (job.jobId) {
+        const jobId = job.jobId;
+        while (job.status === "queued" || job.status === "running") {
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+          job = await ensembleApi.drift.getAnalyzeJob(jobId);
+          setAnalyzeJob(job);
+        }
+
+        if (job.status === "failed") {
+          throw new Error(job.error || "Analysis failed");
+        }
+      }
+
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");
@@ -174,10 +196,32 @@ export default function DriftPage() {
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" />
             )}
-            Analyze Now
+            {analyzing ? "Analyzing..." : "Analyze Now"}
           </Button>
         </div>
       </div>
+
+      {analyzeJob && (analyzing || analyzeJob.status === "succeeded" || analyzeJob.status === "failed") && (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between gap-4 text-sm">
+              <div>
+                <p className="font-medium">
+                  Drift analysis {analyzeJob.status || "completed"}
+                </p>
+                <p className="text-muted-foreground">
+                  {analyzeJob.summary || analyzeJob.progress?.message || (analyzeJob.jobId ? `Job ${analyzeJob.jobId}` : "Analysis completed")}
+                </p>
+              </div>
+              {analyzeJob.progress && analyzeJob.progress.total > 0 && (
+                <Badge variant="outline">
+                  {analyzeJob.progress.current}/{analyzeJob.progress.total}
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <Card className="border-destructive">
