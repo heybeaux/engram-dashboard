@@ -32,11 +32,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://us.i.posthog.com https://www.googletagmanager.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://us.i.posthog.com https://www.googletagmanager.com https://openpanel.dev",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              `connect-src 'self' http://localhost:3001 http://localhost:3002 http://10.0.0.55:3001 http://10.0.0.55:3002 https://api.openengram.ai https://staging-api.openengram.ai https://us.i.posthog.com https://*.sentry.io https://www.google-analytics.com https://region1.google-analytics.com https://www.google.com${extraConnectSrc}`,
+              `connect-src 'self' http://localhost:3001 http://localhost:3002 http://10.0.0.55:3001 http://10.0.0.55:3002 https://api.openengram.ai https://staging-api.openengram.ai https://us.i.posthog.com https://api.openpanel.dev https://*.sentry.io https://www.google-analytics.com https://region1.google-analytics.com https://www.google.com${extraConnectSrc}`,
               "worker-src 'self' blob:",
               "frame-ancestors 'none'",
             ].join('; '),
