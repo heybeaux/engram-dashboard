@@ -8,9 +8,10 @@ import { AuthProvider } from "@/lib/auth-context";
 import { InstanceProvider } from "@/context/instance-context";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { Toaster } from "sonner";
+import { buildGaConfigScript, buildOpenPanelScript, sanitizeAnalyticsId } from "@/lib/analytics-script";
 
-const gaId = process.env.NEXT_PUBLIC_GA_ID;
-const openpanelId = process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID;
+const gaId = sanitizeAnalyticsId(process.env.NEXT_PUBLIC_GA_ID);
+const openpanelId = sanitizeAnalyticsId(process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID);
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,13 +31,13 @@ export default function RootLayout({
         <>
           <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
           <Script id="ga4" strategy="afterInteractive">
-            {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${gaId}');`}
+            {buildGaConfigScript(gaId)}
           </Script>
         </>
       )}
       {process.env.NODE_ENV === "production" && openpanelId && (
         <Script id="openpanel" strategy="afterInteractive">
-          {`!function(){var e="https://openpanel.dev/op.js",t=window.op=window.op||function(){(window.op.q=window.op.q||[]).push(arguments)};t("init",{clientId:"${openpanelId}",trackScreenViews:true,trackOutgoingLinks:true,trackAttributes:true}); var a=document.createElement("script");a.async=!0,a.src=e;var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(a,s)}();`}
+          {buildOpenPanelScript(openpanelId)}
         </Script>
       )}
       <body className={`${inter.className} antialiased`}>
