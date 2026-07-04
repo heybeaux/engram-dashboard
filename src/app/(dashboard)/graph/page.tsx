@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { forceCollide } from 'd3';
 import { engram as engramClient } from '@/lib/engram-client';
 import type { GraphData } from '@/lib/types';
 
@@ -331,6 +332,15 @@ export default function GraphPage() {
               : false;
             return isEntityHub ? 0.3 : 0.15 + (link.confidence || 0) * 0.15;
           });
+
+        // Prevent dense memory/entity clusters from visually collapsing on top of
+        // themselves when the graph reaches the default 500-node limit.
+        fg.d3Force(
+          'collision',
+          forceCollide((node: any) => Math.max(8, node.radius ?? 8) + 8)
+            .strength(0.7)
+            .iterations(2),
+        );
 
         fg.d3Force('center')?.strength(0.05);
         fg.d3ReheatSimulation();
