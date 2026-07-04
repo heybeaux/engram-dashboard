@@ -46,6 +46,11 @@ import {
   ApiKey,
   EngramApiError,
   MergeCandidate,
+  Timeline,
+  TimelineLod,
+  ArcSearchRequest,
+  ArcSearchResponse,
+  GetTimelinesParams,
 } from './types';
 
 // ============================================================================
@@ -691,6 +696,55 @@ export class EngramClient {
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/v1/analytics/breakdown/layer?${queryString}` : '/v1/analytics/breakdown/layer';
     return this.fetch<import('./types').LayerDistributionResponse>(endpoint);
+  }
+
+  // ==========================================================================
+  // TIMELINES / ARCS (add-arc-search — ENG-166)
+  // ==========================================================================
+
+  /**
+   * Browse daily timelines by date range.
+   * @endpoint GET /v1/timelines
+   */
+  async getTimelines(params?: GetTimelinesParams): Promise<Timeline[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.from) searchParams.set('from', params.from);
+    if (params?.to) searchParams.set('to', params.to);
+    if (params?.arcId) searchParams.set('arcId', params.arcId);
+    if (params?.lod) searchParams.set('lod', params.lod);
+
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/v1/timelines?${queryString}` : '/v1/timelines';
+
+    const data = await this.fetch<Timeline[] | { timelines?: Timeline[] } | null>(endpoint);
+    if (Array.isArray(data)) return data;
+    return data?.timelines ?? [];
+  }
+
+  /**
+   * Recall an entire arc's member day timelines in chronological order.
+   * @endpoint GET /v1/timelines/arc/:arcId
+   */
+  async getArc(arcId: string, lod: TimelineLod = 'summary'): Promise<Timeline[]> {
+    const searchParams = new URLSearchParams({ lod });
+    const endpoint = `/v1/timelines/arc/${encodeURIComponent(arcId)}?${searchParams.toString()}`;
+
+    const data = await this.fetch<Timeline[] | { timelines?: Timeline[] } | null>(endpoint);
+    if (Array.isArray(data)) return data;
+    return data?.timelines ?? [];
+  }
+
+  /**
+   * Search arcs semantically and/or by calendar window.
+   * At least one of query/from/to must be provided (else the backend 400s).
+   * @endpoint POST /v1/timelines/arc/search
+   */
+  async searchArcs(body: ArcSearchRequest): Promise<ArcSearchResponse> {
+    const data = await this.fetch<ArcSearchResponse | null>('/v1/timelines/arc/search', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    return { arcs: data?.arcs ?? [] };
   }
 
   // ==========================================================================

@@ -42,6 +42,7 @@ import {
   ListTodo,
   Lightbulb,
   Swords,
+  Waypoints,
 } from "lucide-react";
 import type { Edition } from "@/types/instance";
 
@@ -75,6 +76,7 @@ const navSections: NavSection[] = [
     icon: Brain,
     items: [
       { name: "Memories", href: "/memories", icon: Brain },
+      { name: "Timelines", href: "/timelines", icon: Waypoints },
       { name: "Graph", href: "/graph", icon: Network },
       { name: "Search", href: "/code", icon: Search },
       { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
