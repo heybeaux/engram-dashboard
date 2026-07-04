@@ -19,6 +19,8 @@ describe('Content-Security-Policy headers', () => {
     expect(csp).toContain('https://www.google-analytics.com');
     expect(csp).toContain('https://region1.google-analytics.com');
     expect(csp).toContain('https://www.google.com');
+    expect(csp).toMatch(/script-src[^;]*https:\/\/openpanel\.dev/);
+    expect(csp).toMatch(/connect-src[^;]*https:\/\/api\.openpanel\.dev/);
     expect(csp).toMatch(/connect-src[^;]*https:\/\/www\.google\.com/);
   });
 });
