@@ -52,6 +52,7 @@ import {
   ChevronDown,
   ChevronRight,
   Mail,
+  Waypoints,
 } from "lucide-react";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
@@ -86,6 +87,7 @@ const navSections: NavSection[] = [
     icon: Brain,
     items: [
       { name: "Memories", href: "/memories", icon: Brain },
+      { name: "Timelines", href: "/timelines", icon: Waypoints },
       { name: "Graph", href: "/graph", icon: Network },
       { name: "Search", href: "/code", icon: Search },
       { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },

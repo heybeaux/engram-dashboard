@@ -685,6 +685,86 @@ export interface AgentTrustNarrative {
 }
 
 // ============================================================================
+// TIMELINES / ARCS (add-arc-search — ENG-166)
+// ============================================================================
+
+/** Level-of-detail tiers for timeline/arc text, matching the Engram backend. */
+export type TimelineLod = 'index' | 'summary' | 'standard';
+
+/**
+ * A single day's timeline entry as returned by the Engram API after LOD
+ * projection. The backend collapses `indexText`/`summaryText`/`standardText`
+ * into a single `text` field for the requested LOD (see `applyLod`).
+ * Dates arrive as ISO strings over JSON.
+ */
+export interface Timeline {
+  id?: string;
+  agentLocalDate: string;
+  timezone?: string;
+  chapter?: string;
+  arcId?: string | null;
+  /** The narrative text at the requested LOD. */
+  text: string;
+  events?: unknown[];
+  decisions?: unknown[];
+  openThreadIds?: string[];
+  people?: string[];
+  mood?: string | null;
+  significance?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Evidence day surfaced alongside an arc search result. */
+export interface ArcTopDay {
+  date: string;
+  score: number;
+}
+
+/**
+ * A ranked arc from `POST /v1/timelines/arc/search`. Mirrors the backend
+ * `ArcSearchResult` DTO (query-time aggregation, Option A).
+ */
+export interface ArcSearchResult {
+  arcId: string;
+  title: string;
+  summary: string;
+  /** Span start (YYYY-MM-DD). */
+  from: string;
+  /** Span end (YYYY-MM-DD). */
+  to: string;
+  dayCount: number;
+  score: number;
+  topDays?: ArcTopDay[];
+}
+
+/** Request body for `POST /v1/timelines/arc/search`. */
+export interface ArcSearchRequest {
+  query?: string;
+  /** YYYY-MM-DD lower bound (inclusive). */
+  from?: string;
+  /** YYYY-MM-DD upper bound (inclusive). */
+  to?: string;
+  /** 1-50, default 10. */
+  limit?: number;
+  /** Level of detail for the representative summary. Default 'summary'. */
+  lod?: TimelineLod;
+}
+
+/** Response envelope for arc search. */
+export interface ArcSearchResponse {
+  arcs: ArcSearchResult[];
+}
+
+/** Query params for `GET /v1/timelines`. */
+export interface GetTimelinesParams {
+  from?: string;
+  to?: string;
+  arcId?: string;
+  lod?: TimelineLod;
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 
