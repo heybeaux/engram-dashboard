@@ -52,6 +52,7 @@ import {
   ChevronDown,
   ChevronRight,
   Mail,
+  Waypoints,
 } from "lucide-react";
 
 const ADMIN_EMAILS = ["hello@heybeaux.dev"];
@@ -86,6 +87,7 @@ const navSections: NavSection[] = [
     icon: Brain,
     items: [
       { name: "Memories", href: "/memories", icon: Brain },
+      { name: "Timelines", href: "/timelines", icon: Waypoints },
       { name: "Graph", href: "/graph", icon: Network },
       { name: "Search", href: "/code", icon: Search },
       { name: "Merge Review", href: "/memories/merge-review", icon: GitMerge },
@@ -110,6 +112,7 @@ const navSections: NavSection[] = [
     icon: Fingerprint,
     items: [
       { name: "Overview", href: "/identity", icon: Fingerprint },
+      { name: "Profiles", href: "/identity/profiles", icon: UsersRound },
       { name: "Agents", href: "/agents", icon: Bot },
       { name: "Teams", href: "/identity/teams", icon: UsersRound },
       { name: "Contracts", href: "/identity/contracts", icon: FileText },
@@ -176,7 +179,7 @@ function MobileNavSection({
       (item.href !== "/" && item.href !== "/dashboard" && pathname.startsWith(item.href))
   );
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const expanded = open || hasActiveItem;
 
   if (visibleItems.length === 0) return null;
