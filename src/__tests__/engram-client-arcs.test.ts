@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { EngramClient } from "@/lib/engram-client";
 
+type FetchMock = (input: string, init?: RequestInit) => Promise<Response>;
+
 describe("EngramClient arc/timeline methods", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it("searchArcs posts the body and returns the arcs envelope", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn<FetchMock>(async () =>
       new Response(
         JSON.stringify({
           arcs: [
@@ -47,7 +49,7 @@ describe("EngramClient arc/timeline methods", () => {
   });
 
   it("getArc requests the arc endpoint with the lod query param", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn<FetchMock>(async () =>
       new Response(
         JSON.stringify([{ agentLocalDate: "2026-03-02", text: "day one" }]),
         { status: 200 },
@@ -66,7 +68,7 @@ describe("EngramClient arc/timeline methods", () => {
   });
 
   it("getTimelines builds query params and unwraps arrays", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn<FetchMock>(async () =>
       new Response(
         JSON.stringify([{ agentLocalDate: "2026-03-02", text: "day one" }]),
         { status: 200 },
@@ -78,7 +80,7 @@ describe("EngramClient arc/timeline methods", () => {
     const days = await client.getTimelines({ from: "2026-03-01", to: "2026-03-31", lod: "index" });
 
     expect(days).toHaveLength(1);
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = fetchMock.mock.calls[0][0];
     expect(url).toContain("/v1/timelines?");
     expect(url).toContain("from=2026-03-01");
     expect(url).toContain("to=2026-03-31");
