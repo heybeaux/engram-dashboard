@@ -112,6 +112,7 @@ const navSections: NavSection[] = [
     icon: Fingerprint,
     items: [
       { name: "Overview", href: "/identity", icon: Fingerprint },
+      { name: "Profiles", href: "/identity/profiles", icon: UsersRound },
       { name: "Agents", href: "/agents", icon: Bot },
       { name: "Teams", href: "/identity/teams", icon: UsersRound },
       { name: "Contracts", href: "/identity/contracts", icon: FileText },
@@ -178,7 +179,7 @@ function MobileNavSection({
       (item.href !== "/" && item.href !== "/dashboard" && pathname.startsWith(item.href))
   );
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const expanded = open || hasActiveItem;
 
   if (visibleItems.length === 0) return null;

@@ -155,7 +155,7 @@ function NavSectionGroup({
       (item.href !== "/" && pathname.startsWith(item.href))
   );
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   // Always expand if a child is active; otherwise follow manual toggle state
   const expanded = open || hasActiveItem;
 
