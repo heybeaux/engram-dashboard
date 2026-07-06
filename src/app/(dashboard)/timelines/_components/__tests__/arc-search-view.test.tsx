@@ -93,6 +93,24 @@ describe("ArcSearchView", () => {
     expect(searchArcs).not.toHaveBeenCalled();
   });
 
+  it("searches with the current date input values even if React state has not caught up", async () => {
+    render(<ArcSearchView />);
+
+    const fromInput = screen.getByLabelText("From") as HTMLInputElement;
+    const toInput = screen.getByLabelText("To") as HTMLInputElement;
+
+    fromInput.value = "2026-03-01";
+    toInput.value = "2026-03-31";
+
+    fireEvent.click(screen.getByRole("button", { name: /^Search$/i }));
+
+    await waitFor(() =>
+      expect(searchArcs).toHaveBeenCalledWith(
+        expect.objectContaining({ from: "2026-03-01", to: "2026-03-31", lod: "summary" }),
+      ),
+    );
+  });
+
   it("renders the empty state when no arcs match", async () => {
     searchArcs.mockResolvedValue({ arcs: [] });
     render(<ArcSearchView />);
