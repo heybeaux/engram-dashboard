@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,10 @@ export function ArcSearchView() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  const queryInputRef = useRef<HTMLInputElement>(null);
+  const fromInputRef = useRef<HTMLInputElement>(null);
+  const toInputRef = useRef<HTMLInputElement>(null);
+
   const [state, setState] = useState<SearchState>("idle");
   const [arcs, setArcs] = useState<ArcSearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +30,27 @@ export function ArcSearchView() {
 
   const hasCriteria = Boolean(query.trim() || from || to);
 
+  const readCurrentCriteria = () => {
+    const nextQuery = queryInputRef.current?.value ?? query;
+    const nextFrom = fromInputRef.current?.value ?? from;
+    const nextTo = toInputRef.current?.value ?? to;
+
+    if (nextQuery !== query) setQuery(nextQuery);
+    if (nextFrom !== from) setFrom(nextFrom);
+    if (nextTo !== to) setTo(nextTo);
+
+    return {
+      query: nextQuery,
+      from: nextFrom,
+      to: nextTo,
+      hasCriteria: Boolean(nextQuery.trim() || nextFrom || nextTo),
+    };
+  };
+
   const runSearch = async () => {
-    if (!hasCriteria) {
+    const criteria = readCurrentCriteria();
+
+    if (!criteria.hasCriteria) {
       setError("Enter a search query or pick a date range.");
       setState("error");
       return;
@@ -37,9 +60,9 @@ export function ArcSearchView() {
     setSelected(null);
 
     const body: ArcSearchRequest = { lod: "summary" };
-    if (query.trim()) body.query = query.trim();
-    if (from) body.from = from;
-    if (to) body.to = to;
+    if (criteria.query.trim()) body.query = criteria.query.trim();
+    if (criteria.from) body.from = criteria.from;
+    if (criteria.to) body.to = criteria.to;
 
     try {
       const result = await engram.searchArcs(body);
@@ -87,7 +110,9 @@ export function ArcSearchView() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                ref={queryInputRef}
                 value={query}
+                onInput={(e) => setQuery(e.currentTarget.value)}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search arcs, e.g. “WhaleHawk launch work”"
                 className="pl-9"
@@ -101,11 +126,14 @@ export function ArcSearchView() {
                   From
                 </label>
                 <Input
+                  ref={fromInputRef}
                   id="arc-from"
                   type="date"
                   value={from}
                   max={to || undefined}
+                  onInput={(e) => setFrom(e.currentTarget.value)}
                   onChange={(e) => setFrom(e.target.value)}
+                  onBlur={(e) => setFrom(e.currentTarget.value)}
                 />
               </div>
               <div className="flex-1 space-y-1">
@@ -113,11 +141,14 @@ export function ArcSearchView() {
                   To
                 </label>
                 <Input
+                  ref={toInputRef}
                   id="arc-to"
                   type="date"
                   value={to}
                   min={from || undefined}
+                  onInput={(e) => setTo(e.currentTarget.value)}
                   onChange={(e) => setTo(e.target.value)}
+                  onBlur={(e) => setTo(e.currentTarget.value)}
                 />
               </div>
               <div className="flex gap-2">
